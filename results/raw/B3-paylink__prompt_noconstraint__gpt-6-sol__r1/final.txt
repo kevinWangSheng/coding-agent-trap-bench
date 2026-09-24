@@ -1,0 +1,8 @@
+Implemented fixes in `repo`:
+
+- Wrapped network and JSON failures in `PaymentsUnavailable`.
+- Corrected invoice currency and due-date validation.
+- Fixed retry attempts and final exception propagation.
+- Added deterministic default sandbox status handling for offline tests.
+
+Verification: `python -m pytest -q` → **11 passed**.

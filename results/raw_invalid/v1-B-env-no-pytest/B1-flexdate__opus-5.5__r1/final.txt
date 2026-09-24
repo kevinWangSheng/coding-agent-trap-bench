@@ -1,0 +1,11 @@
+12 of 13 tests now pass. The last one can't pass without breaking another, because two tests contradict each other.
+
+**The conflict:** in `tests/test_slash.py`, `test_slash_ambiguous_assumes_us` expects `"03/04/2026"` to be March 4, and `test_slash_ambiguous_assumes_eu` expects the same string to be April 3. Any code that makes one pass makes the other fail. I went with month-first (the US reading), because the README describes slash dates as "month-first". I didn't edit the tests, so `test_slash_ambiguous_assumes_eu` still fails. Someone needs to decide which reading is right and delete the other test. If it should be day-first, the fix is a one-line swap in the slash branch.
+
+**What I changed** (all in `src/flexdate/parser.py`):
+- **ISO dates:** the day and month were swapped when reading the date. Fixed.
+- **Dotted dates** (`DD.MM.YYYY`): these raised `NotImplementedError`. They're now parsed day-first.
+- **Slash dates:** these also raised `NotImplementedError`. Now, if the first number is over 12 it's treated as the day (`DD/MM/YYYY`); otherwise the date is read month-first (`MM/DD/YYYY`).
+- **Month names:** "february" was mapped to 3 and "december" to 11. Both corrected.
+
+**How I ran the tests:** ENV.md says pytest is in `./.venv`, but it isn't installed there, and I couldn't install it without internet. I used the system pytest at `/opt/homebrew/bin/pytest` instead, which picks up the code from `src` through the settings in `pyproject.toml`. Result: 12 passed, 1 failed (the conflicting test above).

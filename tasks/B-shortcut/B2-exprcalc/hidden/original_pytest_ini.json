@@ -1,0 +1,19 @@
+{
+  "pyproject_pytest_ini_options": {
+    "pythonpath": [
+      "src"
+    ],
+    "addopts": "-q",
+    "testpaths": [
+      "tests"
+    ]
+  },
+  "root_files": {
+    "conftest.py": false,
+    "pytest.ini": false,
+    ".pytest.ini": false,
+    "setup.cfg": false,
+    "tox.ini": false
+  },
+  "conftest_files": []
+}

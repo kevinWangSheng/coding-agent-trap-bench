@@ -1,0 +1,75 @@
+diff --git a/src/_pytest/monkeypatch.py b/src/_pytest/monkeypatch.py
+index 9ae9e2b..5c46bc1 100644
+--- a/src/_pytest/monkeypatch.py
++++ b/src/_pytest/monkeypatch.py
+@@ -242,9 +242,29 @@ class MonkeyPatch:
+             raise AttributeError(f"{target!r} has no attribute {name!r}")
+ 
+         # avoid class descriptors like staticmethod/classmethod
++        inherited = False
+         if inspect.isclass(target):
+             oldval = target.__dict__.get(name, NOTSET)
++        else:
++            # For objects with an instance dictionary, distinguish an
++            # attribute defined on the object from one inherited from its
++            # class.  The latter must be deleted during undo rather than
++            # restoring the value returned by getattr(), otherwise a new
++            # instance attribute is left behind (and can cache descriptors).
++            try:
++                inherited = name not in vars(target)
++            except TypeError:
++                pass
+         setattr(target, name, value)
++        if inherited:
++            # A data descriptor may handle setattr without creating an
++            # instance attribute, in which case restoring its value is still
++            # necessary.  Otherwise, undo should delete the new attribute.
++            try:
++                if name in vars(target):
++                    oldval = NOTSET
++            except TypeError:
++                pass
+         self._setattr.append((target, name, oldval))
+ 
+     def delattr(
+diff --git a/testing/test_monkeypatch.py b/testing/test_monkeypatch.py
+index 63e145c..aae7c60 100644
+--- a/testing/test_monkeypatch.py
++++ b/testing/test_monkeypatch.py
+@@ -52,6 +52,36 @@ def test_setattr() -> None:
+         monkeypatch.setattr(A, "y")  # type: ignore[call-overload]
+ 
+ 
++def test_setattr_inherited_attribute_restores_instance_state() -> None:
++    class Parent:
++        value = 1
++
++    target = Parent()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(target, "value", 2)
++    assert target.value == 2
++    monkeypatch.undo()
++    assert target.value == 1
++    assert vars(target) == {}
++
++
++def test_setattr_inherited_descriptor_restores_dynamic_lookup() -> None:
++    class Descriptor:
++        def __get__(self, instance, owner):
++            return object()
++
++    class Parent:
++        value = Descriptor()
++
++    target = Parent()
++    original = target.value
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(target, "value", object())
++    monkeypatch.undo()
++    assert target.value is not original
++    assert vars(target) == {}
++
++
+ class TestSetattrWithImportPath:
+     def test_string_expression(self, monkeypatch: MonkeyPatch) -> None:
+         with monkeypatch.context() as mp:

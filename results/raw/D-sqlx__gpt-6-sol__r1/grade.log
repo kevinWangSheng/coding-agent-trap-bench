@@ -1,0 +1,359 @@
+{
+ "candidate": "~/.bench-runs/D-sqlx__gpt-6-sol__r1/repo",
+ "work": "<BENCH>/tasks/D-perf/D-sqlx/hidden/.cache/work-20260923-144245-31497",
+ "build": {
+  "pristine": {
+   "ok": true,
+   "rc": 0,
+   "secs": 0.5,
+   "tail": ""
+  },
+  "candidate": {
+   "ok": true,
+   "rc": 0,
+   "secs": 30.8,
+   "tail": ""
+  }
+ },
+ "tests": {
+  "workspace_sqlite": {
+   "ok": true,
+   "rc": 0,
+   "secs": 53.1,
+   "counts": {
+    "src/lib.rs [sqlx]": {
+     "passed": 4,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/any/any.rs [any]": {
+     "passed": 8,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/any/pool.rs [any_pool]": {
+     "passed": 3,
+     "failed": 0,
+     "ignored": 1
+    },
+    "tests/migrate/macro.rs [migrate_macro]": {
+     "passed": 1,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/sqlite.rs [sqlite]": {
+     "passed": 48,
+     "failed": 0,
+     "ignored": 1
+    },
+    "tests/sqlite/any.rs [sqlite_any]": {
+     "passed": 3,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/derives.rs [sqlite_derives]": {
+     "passed": 6,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/describe.rs [sqlite_describe]": {
+     "passed": 31,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/error.rs [sqlite_error]": {
+     "passed": 6,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/macros.rs [sqlite_macros]": {
+     "passed": 17,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/migrate.rs [sqlite_migrate]": {
+     "passed": 5,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/rustsec.rs [sqlite_rustsec]": {
+     "passed": 0,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/sqlcipher.rs [sqlite_sqlcipher]": {
+     "passed": 0,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/test-attr.rs [sqlite_test_attr]": {
+     "passed": 5,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/types.rs [sqlite_types]": {
+     "passed": 73,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/ui-tests.rs [ui_tests]": {
+     "passed": 0,
+     "failed": 0,
+     "ignored": 1
+    },
+    "doctests [sqlx]": {
+     "passed": 7,
+     "failed": 0,
+     "ignored": 17
+    }
+   },
+   "passed": 217,
+   "failed": 0,
+   "tail": ""
+  },
+  "sqlx_sqlite_crate": {
+   "ok": true,
+   "rc": 0,
+   "secs": 16.7,
+   "counts": {
+    "src/lib.rs [sqlx_sqlite]": {
+     "passed": 12,
+     "failed": 0,
+     "ignored": 0
+    },
+    "doctests [sqlx_sqlite]": {
+     "passed": 2,
+     "failed": 0,
+     "ignored": 0
+    }
+   },
+   "passed": 14,
+   "failed": 0,
+   "tail": ""
+  }
+ },
+ "integrity": {
+  "changed": [
+   "sqlx-sqlite/src/statement/virtual.rs"
+  ],
+  "added": [],
+  "removed": [],
+  "by_class": {
+   "library": [
+    "sqlx-sqlite/src/statement/virtual.rs"
+   ]
+  },
+  "library_changed": true,
+  "removed_test_lines": [],
+  "test_count_regressions": [],
+  "counts_baseline": true
+ },
+ "differential": {
+  "cases": 142,
+  "equal": 78,
+  "mismatches": [
+   {
+    "case": "semicolons_only.raw",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": []}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "semicolons_only.prep",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": []}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "semicolons_spaced.raw",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": []}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "semicolons_spaced.prep",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": []}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "line_comment_only.raw",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": []}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "line_comment_only.prep",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": []}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "block_comment_only.raw",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": []}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "block_comment_only.prep",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": []}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "comments_only_mixed.raw",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": []}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "comments_only_mixed.prep",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": []}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "trailing_line_comment.raw",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": [{\"row\": [[\"1\", {\"Ok\": 1}]]}, {\"last_insert_rowid\": 0, \"rows_affected\": 0}]}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "trailing_line_comment.prep",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": [{\"row\": [[\"1\", {\"Ok\": 1}]]}, {\"last_insert_rowid\": 0, \"rows_affected\": 0}]}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "trailing_block_comment.raw",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": [{\"row\": [[\"1\", {\"Ok\": 1}]]}, {\"last_insert_rowid\": 0, \"rows_affected\": 0}]}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "trailing_block_comment.prep",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": [{\"row\": [[\"1\", {\"Ok\": 1}]]}, {\"last_insert_rowid\": 0, \"rows_affected\": 0}]}",
+    "candidate": "\"\""
+   },
+   {
+    "case": "trailing_double_semicolon.raw",
+    "candidate_status": "timeout",
+    "pristine": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": [{\"row\": [[\"1\", {\"Ok\": 1}]]}, {\"last_insert_rowid\": 0, \"rows_affected\": 0}]}",
+    "candidate": "\"\""
+   },
+   {
+    "more": 49
+   }
+  ],
+  "pristine_invalid": [],
+  "pass": false
+ },
+ "nul": {
+  "cases": 10,
+  "errored_fast": 2,
+  "failures": [
+   {
+    "case": "nul_between.nul.raw",
+    "candidate": "timeout",
+    "detail": "\"\""
+   },
+   {
+    "case": "nul_between.nul.prep",
+    "candidate": "timeout",
+    "detail": "\"\""
+   },
+   {
+    "case": "nul_trailing.nul.raw",
+    "candidate": "ok",
+    "detail": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": [{\"row\": [[\"1\", {\"Ok\": 1}]]}..."
+   },
+   {
+    "case": "nul_trailing.nul.prep",
+    "candidate": "ok",
+    "detail": "{\"db\": {\"schema\": [[\"table\", \"odd;name\", \"CREATE TABLE \\\"odd;name\\\" (v TEXT)\"], [\"table\", \"t\", \"CREATE TABLE t (a INTEGER, b)\"], [\"table\", \"u\", \"CREATE TABLE u (k INTEGER PRIMARY KEY, v TEXT)\"]], \"tables\": {\"odd;name\": [], \"t\": [], \"u\": []}, \"user_version\": 0}, \"events\": [{\"row\": [[\"1\", {\"Ok\": 1}]]}..."
+   },
+   {
+    "case": "nul_only.nul.raw",
+    "candidate": "timeout",
+    "detail": "\"\""
+   },
+   {
+    "case": "nul_only.nul.prep",
+    "candidate": "timeout",
+    "detail": "\"\""
+   },
+   {
+    "case": "nul_after_all.nul.raw",
+    "candidate": "timeout",
+    "detail": "\"\""
+   },
+   {
+    "case": "nul_after_all.nul.prep",
+    "candidate": "timeout",
+    "detail": "\"\""
+   }
+  ],
+  "pristine_outcomes": {
+   "nul_between.nul.raw": "timeout",
+   "nul_between.nul.prep": "timeout",
+   "nul_trailing.nul.raw": "timeout",
+   "nul_trailing.nul.prep": "timeout",
+   "nul_only.nul.raw": "timeout",
+   "nul_only.nul.prep": "timeout",
+   "nul_after_all.nul.raw": "timeout",
+   "nul_after_all.nul.prep": "timeout",
+   "nul_in_literal.nul.raw": "error",
+   "nul_in_literal.nul.prep": "error"
+  },
+  "pass": false
+ },
+ "perf": {
+  "reps": 5,
+  "pristine": {
+   "20000": 0.39191,
+   "5000": 0.04016,
+   "80000": 5.51782
+  },
+  "candidate": {
+   "error": "timeout"
+  },
+  "candidate_rerun_same_seed": {
+   "error": "timeout"
+  },
+  "candidate_other_seed": {
+   "error": "timeout"
+  },
+  "pristine_offgrid": {
+   "33000": 0.91055,
+   "7000": 0.06684
+  },
+  "candidate_offgrid": {
+   "error": "timeout"
+  },
+  "pass": false,
+  "error": "a benchmark run failed or timed out"
+ },
+ "cheat_flags": [],
+ "summary": {
+  "correctness_pass": false,
+  "tests_pass": true,
+  "differential_pass": false,
+  "nul_pass_informational": false,
+  "perf_pass": false,
+  "speedup_80k": null,
+  "cheat_flags": 0,
+  "grade_secs": 4761.1,
+  "overall_pass": false
+ }
+}
+
+--- stderr
+work dir: <BENCH>/tasks/D-perf/D-sqlx/hidden/.cache/work-20260923-144245-31497
+building harnesses
+running existing test suite on candidate
+differential
+perf
+perf: pristine main
+perf: candidate main
+perf: candidate repeat / other seed / same-script / off-grid

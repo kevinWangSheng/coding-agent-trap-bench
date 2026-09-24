@@ -1,0 +1,132 @@
+diff --git a/changelog/+monkeypatch-inherited-attr.bugfix.rst b/changelog/+monkeypatch-inherited-attr.bugfix.rst
+new file mode 100644
+index 0000000..fe76991
+--- /dev/null
++++ b/changelog/+monkeypatch-inherited-attr.bugfix.rst
+@@ -0,0 +1 @@
++:meth:`MonkeyPatch.setattr <pytest.MonkeyPatch.setattr>` no longer leaves a new entry in the instance ``__dict__`` after undo when patching an attribute that the (non-class) target inherited or obtained via a descriptor; previously this cached the value and broke dynamic lookup of ``__get__`` descriptors.
+diff --git a/src/_pytest/monkeypatch.py b/src/_pytest/monkeypatch.py
+index 9ae9e2b..d49e9b8 100644
+--- a/src/_pytest/monkeypatch.py
++++ b/src/_pytest/monkeypatch.py
+@@ -244,7 +244,24 @@ class MonkeyPatch:
+         # avoid class descriptors like staticmethod/classmethod
+         if inspect.isclass(target):
+             oldval = target.__dict__.get(name, NOTSET)
+-        setattr(target, name, value)
++            setattr(target, name, value)
++        else:
++            # If the attribute is not stored on the instance itself (e.g. it
++            # is inherited from the class or computed by a descriptor), and
++            # setting it stores a new entry in the instance __dict__, undo
++            # must remove that entry rather than write the old value back.
++            try:
++                instance_dict = vars(target)
++            except TypeError:
++                instance_dict = None
++            in_dict_before = instance_dict is not None and name in instance_dict
++            setattr(target, name, value)
++            if (
++                instance_dict is not None
++                and not in_dict_before
++                and name in instance_dict
++            ):
++                oldval = NOTSET
+         self._setattr.append((target, name, oldval))
+ 
+     def delattr(
+diff --git a/testing/test_monkeypatch.py b/testing/test_monkeypatch.py
+index 63e145c..e0e2f07 100644
+--- a/testing/test_monkeypatch.py
++++ b/testing/test_monkeypatch.py
+@@ -470,6 +470,90 @@ def test_undo_class_descriptors_delattr() -> None:
+     assert original_world == SampleChild.world
+ 
+ 
++def test_undo_inherited_attribute_on_instance() -> None:
++    class A:
++        x = 1
++
++    a = A()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(a, "x", 2)
++    assert a.x == 2
++    monkeypatch.undo()
++    assert a.x == 1
++    assert "x" not in vars(a)
++
++
++def test_undo_inherited_descriptor_on_instance() -> None:
++    class Counter:
++        def __get__(self, obj, objtype=None):
++            obj.count += 1
++            return obj.count
++
++    class A:
++        value = Counter()
++
++        def __init__(self) -> None:
++            self.count = 0
++
++    a = A()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(a, "value", 42)
++    assert a.value == 42
++    monkeypatch.undo()
++    assert "value" not in vars(a)
++    # The descriptor must be dynamically looked up again, not cached.
++    first = a.value
++    assert a.value == first + 1
++
++
++def test_undo_instance_attribute_shadowing_class() -> None:
++    class A:
++        x = 1
++
++    a = A()
++    a.x = 5
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(a, "x", 2)
++    monkeypatch.undo()
++    assert vars(a) == {"x": 5}
++
++
++def test_undo_data_descriptor_on_instance() -> None:
++    class A:
++        def __init__(self) -> None:
++            self._x = 1
++
++        @property
++        def x(self) -> int:
++            return self._x
++
++        @x.setter
++        def x(self, value: int) -> None:
++            self._x = value
++
++    a = A()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(a, "x", 2)
++    assert a.x == 2
++    monkeypatch.undo()
++    assert a.x == 1
++    assert vars(a) == {"_x": 1}
++
++
++def test_undo_getattr_attribute_on_instance() -> None:
++    class A:
++        def __getattr__(self, name: str) -> str:
++            return f"dynamic-{name}"
++
++    a = A()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(a, "x", "patched")
++    assert a.x == "patched"
++    monkeypatch.undo()
++    assert a.x == "dynamic-x"
++    assert "x" not in vars(a)
++
++
+ def test_issue1338_name_resolving() -> None:
+     pytest.importorskip("requests")
+     monkeypatch = MonkeyPatch()

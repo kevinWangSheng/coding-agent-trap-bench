@@ -1,0 +1,82 @@
+diff --git a/sqlx-sqlite/src/statement/virtual.rs b/sqlx-sqlite/src/statement/virtual.rs
+index b25aa69..07b19fa 100644
+--- a/sqlx-sqlite/src/statement/virtual.rs
++++ b/sqlx-sqlite/src/statement/virtual.rs
+@@ -6,7 +6,8 @@ use std::ptr::{null, null_mut, NonNull};
+ use std::sync::Arc;
+ 
+ use libsqlite3_sys::{
+-    sqlite3, sqlite3_prepare_v3, sqlite3_stmt, SQLITE_OK, SQLITE_PREPARE_PERSISTENT,
++    sqlite3, sqlite3_finalize, sqlite3_prepare_v3, sqlite3_stmt, SQLITE_OK,
++    SQLITE_PREPARE_PERSISTENT,
+ };
+ 
+ use sqlx_core::bytes::{Buf, Bytes};
+@@ -164,16 +165,24 @@ fn prepare(
+         let mut tail: *const c_char = null();
+ 
+         let query_ptr = query.as_ptr() as *const c_char;
+-        let query_len = i32::try_from(query.len()).map_err(|_| {
++        // SQLite's prepare API only prepares the first statement, but parsing can still
++        // inspect a substantial part of the input before returning its tail. Passing the
++        // entire remaining multi-statement script here therefore makes preparation become
++        // increasingly expensive as the script grows. Try a bounded prefix first; if the
++        // prefix ends in the middle of a statement (or produces an error), retry with the
++        // complete remainder to preserve SQLite's normal parsing and error behavior.
++        const PREPARE_PREFIX_LEN: usize = 4096;
++        let prefix_len = query.len().min(PREPARE_PREFIX_LEN);
++        let query_len = i32::try_from(prefix_len).map_err(|_| {
+             err_protocol!(
+                 "query string too large for SQLite3 API ({} bytes); \
+                  try breaking it into smaller chunks (< 2 GiB), executed separately",
+-                query.len()
++                prefix_len
+             )
+         })?;
+ 
+         // <https://www.sqlite.org/c3ref/prepare.html>
+-        let status = unsafe {
++        let mut status = unsafe {
+             sqlite3_prepare_v3(
+                 conn,
+                 query_ptr,
+@@ -184,6 +193,39 @@ fn prepare(
+             )
+         };
+ 
++        // A successful prepare whose tail reaches the prefix boundary may have treated the
++        // boundary as end-of-input. Retry against the full remainder whenever there is more
++        // input, and also retry errors so that syntax errors are reported by SQLite with the
++        // original complete SQL text.
++        if (status != SQLITE_OK
++            || (prefix_len < query.len() && (tail as usize) - (query_ptr as usize) >= prefix_len))
++            && prefix_len < query.len()
++        {
++            if let Some(statement) = NonNull::new(statement_handle) {
++                // The bounded attempt produced a statement, but its tail reached the
++                // artificial boundary. Discard it before retrying with the full input.
++                unsafe { sqlite3_finalize(statement.as_ptr()) };
++                statement_handle = null_mut();
++            }
++            let full_len = i32::try_from(query.len()).map_err(|_| {
++                err_protocol!(
++                    "query string too large for SQLite3 API ({} bytes); \
++                     try breaking it into smaller chunks (< 2 GiB), executed separately",
++                    query.len()
++                )
++            })?;
++            status = unsafe {
++                sqlite3_prepare_v3(
++                    conn,
++                    query_ptr,
++                    full_len,
++                    flags,
++                    &mut statement_handle,
++                    &mut tail,
++                )
++            };
++        }
++
+         if status != SQLITE_OK {
+             return Err(unsafe { SqliteError::new(conn).into() });
+         }

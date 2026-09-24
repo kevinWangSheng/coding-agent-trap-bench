@@ -1,0 +1,2 @@
+ src/flexdate/parser.py | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)

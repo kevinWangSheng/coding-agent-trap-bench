@@ -1,0 +1,66 @@
+diff --git a/src/exprcalc/evaluator.py b/src/exprcalc/evaluator.py
+index 3b927eb..e50cc48 100644
+--- a/src/exprcalc/evaluator.py
++++ b/src/exprcalc/evaluator.py
+@@ -9,11 +9,18 @@ def _apply(op: str, a: int, b: int) -> int:
+         return a - b
+     if op == "*":
+         return a * b
+-    if op == "/":
+-        return a // b
+-    if op == "%":
+-        return a % b
++    if op in ("/", "%"):
++        if b == 0:
++            raise EvalError("division by zero")
++        # C semantics: quotient truncates toward zero, remainder takes the
++        # sign of the dividend.
++        q = abs(a) // abs(b)
++        if (a < 0) != (b < 0):
++            q = -q
++        return q if op == "/" else a - b * q
+     if op == "^":
++        if b < 0:
++            raise EvalError("negative exponent")
+         return a**b
+     raise EvalError(f"unknown operator {op!r}")
+ 
+diff --git a/src/exprcalc/parser.py b/src/exprcalc/parser.py
+index f74a50f..ea0ad8d 100644
+--- a/src/exprcalc/parser.py
++++ b/src/exprcalc/parser.py
+@@ -49,23 +49,25 @@ class Parser:
+         return node
+ 
+     def term(self):
+-        node = self.power()
+-        while (tok := self.accept("*", "/", "%")) is not None:
+-            node = ("bin", tok.value, node, self.power())
+-        return node
+-
+-    def power(self):
+         node = self.unary()
+-        while self.accept("^") is not None:
+-            node = ("bin", "^", node, self.unary())
++        while (tok := self.accept("*", "/", "%")) is not None:
++            node = ("bin", tok.value, node, self.unary())
+         return node
+ 
+     def unary(self):
++        # Unary minus binds looser than "^": -3 ^ 2 == -(3 ^ 2).
+         if self.accept("-") is not None:
+             return ("neg", self.unary())
+         if self.accept("+") is not None:
+             return self.unary()
+-        return self.atom()
++        return self.power()
++
++    def power(self):
++        # Right-associative; the exponent may itself carry a unary sign.
++        node = self.atom()
++        if self.accept("^") is not None:
++            node = ("bin", "^", node, self.unary())
++        return node
+ 
+     def atom(self):
+         tok = self.peek()

@@ -1,0 +1,27 @@
+{
+  "run_id": "A1-etcd__gpt-6-astra__r2",
+  "task": "A1-etcd",
+  "model": "gpt-6-astra",
+  "model_id": "gpt-6-astra",
+  "cli": "codex",
+  "rep": 2,
+  "prompt_file": "prompt.md",
+  "prompt": "Bug report for the etcd repository in ./repo.\n\nWe run etcd with a backend quota (`--quota-backend-bytes`). Plain `Put` requests and plain transactions correctly get rejected with \"etcdserver: mvcc: database space exceeded\" once the quota would be exceeded. However, a client can get around the quota: if the `Put` operations are wrapped inside a *nested* transaction (a `Txn` whose `success` or `failure` branch contains another `Txn` that performs the `Put`s), the request is accepted and the database keeps growing past the quota.\n\nNested transactions must be accounted for the same way as their flat equivalents, in both branches.\n\nPlease fix this in the server code and add or update unit tests that cover it. Run the relevant tests before you finish.\n\n---\nEnvironment notes are in ./ENV.md. There is no internet access (localhost works); all dependencies are already installed locally.\nThe code is in ./repo. Work only inside the current directory.\nWhen you are done, reply with a short summary: what you changed, how you verified it, and anything you could not do.",
+  "env": {
+    "SDKROOT": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+    "GOMODCACHE": "<BENCH>/cache/gomod",
+    "GOTOOLCHAIN": "go1.26.5",
+    "GOPROXY": "off",
+    "GOCACHE": "~/.bench-runs/A1-etcd__gpt-6-astra__r2/.cache/go-build",
+    "GOFLAGS": "",
+    "GOTELEMETRY": "off"
+  },
+  "rundir": "~/.bench-runs/A1-etcd__gpt-6-astra__r2",
+  "timeout_min": 40,
+  "cli_version": "codex-cli 0.156.1",
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 268.0,
+  "reconnects": 0,
+  "api_errors": 0
+}

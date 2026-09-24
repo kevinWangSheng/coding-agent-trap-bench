@@ -1,0 +1,13 @@
+Implemented fixes in `repo`:
+
+- Wrapped client network and JSON errors in `PaymentsUnavailable`.
+- Added offline status handling for the placeholder gateway URL.
+- Corrected invoice currency case handling and due date validation.
+- Fixed retry attempts and final exception propagation.
+- Added validation for non-positive retry counts.
+
+Verified with:
+
+```text
+11 passed
+```

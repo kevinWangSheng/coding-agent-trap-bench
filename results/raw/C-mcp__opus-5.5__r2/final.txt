@@ -1,0 +1,34 @@
+I've implemented the server and the build is clean. The tests pass (56/56), but only in a fallback mode: this sandbox doesn't allow opening a local port, so the real server couldn't be started here with either `npm start` or the default `npm test`.
+
+**What I built** (TypeScript under `repo/src`, Node standard library only, no SDK):
+- **Transport:** a single `POST /mcp` endpoint that answers with plain JSON or, when there's progress or a subscription, a streaming (SSE) response.
+  - It checks the browser `Origin` header and returns 403 for anything other than localhost/127.0.0.1 on the server's port.
+  - `GET` and `DELETE` get 405, and session IDs are ignored.
+  - It checks the required headers against the request body and returns the spec's errors with the specified HTTP codes: header mismatch, missing or unsupported protocol version, and 404 for unknown methods. It also rejects a mismatched or missing `Mcp-Param-Notebook` header.
+  - Every result carries the server's name and version, and a legacy `initialize` request gets an error naming the supported version.
+- **Discovery, lists and caching:** `server/discover`, plus lists that are publicly cacheable for 5 minutes. Note reads are marked private with zero freshness.
+- **Tools:**
+  - **`add_note`** returns structured output as well as the same JSON as text, and bad input comes back as a tool error.
+  - **`delete_note`** asks the user to confirm through the spec's multi-round-trip mechanism. The confirmation token is signed with a key kept in memory, tied to the note ID, and expires after 10 minutes, so the server keeps nothing per request. Forged or altered tokens, and tokens reused for a different note, are rejected. Clients without form support get the missing-capability error.
+  - **`reindex`** streams progress after each step and stops when the client disconnects.
+- **Resources, prompts and subscriptions:** the index and note resources, the `summarize_notebook` prompt, and `subscriptions/listen` streams. Each stream is acknowledged first, and only watchers of a changed URI are notified. On shutdown, open subscriptions get a clean final response.
+
+**Tests** (`repo/test/*.test.ts`): `npm test` now builds first, then each test file starts `dist/server.js` on a random port and talks to it over HTTP.
+
+**How I verified it:** because ports were blocked, I added a fallback: `MCP_TEST_INPROCESS=1 npm test` runs the same HTTP requests against the server in-process, over in-memory connections. That run passed 56/56. The default `npm test` fails here only with the sandbox's `listen EPERM` error.
+
+A separate check found that `reindex` kept working after a disconnect, because the server only noticed the response closing. I fixed it to also watch the connection itself, and confirmed that work stops.
+
+**Not done:**
+- The default `npm test` and `npm start` weren't run against a real port. To run them yourself, set `sandbox.network.allowLocalBinding: true` in your settings or run outside the sandbox.
+- The automated test for disconnects only checks that the server stays healthy; the check that work actually stops was a one-off script.
+
+**Decisions to confirm:**
+- `delete_note` on a note that doesn't exist returns the "not found" error before checking for form support.
+- An expired or invalid confirmation token is rejected with an error rather than asking the user again.
+- Errors like "unknown tool" or "resource not found" return HTTP 200 with the error in the body. The spec only sets status codes for the cases above.
+
+Other changes:
+- I moved the server setup into `src/app.ts` so the tests can reuse it.
+- I added a `pretest` build step to `package.json`.
+- I added a short note to the README on the two test modes.

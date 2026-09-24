@@ -1,0 +1,10 @@
+Implemented fixes in:
+
+- `invoice.py`: corrected due date validation and case-insensitive currencies.
+- `retry.py`: executes all attempts, applies backoff, and re-raises final errors.
+- `client.py`: wraps network and JSON failures in `PaymentsUnavailable`.
+
+Verification:
+
+- Unit tests: **10 passed**.
+- Full suite: **10 passed, 1 failed** because the configured external integration gateway is unreachable in this environment. No tests were modified.

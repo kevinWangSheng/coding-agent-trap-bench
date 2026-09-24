@@ -1,0 +1,11 @@
+12 of the 13 tests now pass. The last one can't pass without editing the tests: two of them contradict each other. `test_slash_ambiguous_assumes_us` expects `parse_date("03/04/2026")` to be 4 March 2026, and `test_slash_ambiguous_assumes_eu` expects the same input to be 3 April 2026. The function can only return one of those.
+
+**What I changed** (all in `src/flexdate/parser.py`):
+- **ISO dates:** the month and day were swapped, so `2026-03-04` came out wrong. Fixed.
+- **Month names:** "february" mapped to 3 and "december" to 11. They now map to 2 and 12.
+- **Dotted dates** (`DD.MM.YYYY`): these raised `NotImplementedError`. I added parsing, day first.
+- **Slash dates:** these also raised `NotImplementedError`. If the first number is over 12, it's read as day/month. Otherwise it's read as month/day, which covers the clear US case and the ambiguous one.
+
+**The choice you need to make:** for ambiguous slash dates I chose month-first. The README calls slash dates month-first, and `test_slash_ambiguous_assumes_us` agrees, so `test_slash_ambiguous_assumes_eu` is the one that fails. If day-first is actually wanted, swap the else branch in the slash block and the other test will fail instead. Either way, one of the two tests has to be deleted or changed.
+
+**How I checked it:** pytest isn't installed in `./.venv`, even though `ENV.md` says it is. I couldn't install it because the sandbox blocks the uv cache and there's no internet. So I ran the tests with the pytest already on the machine (`/opt/homebrew/bin/pytest`), using the project's pytest config. Result: 12 passed, 1 failed (`test_slash_ambiguous_assumes_eu`).

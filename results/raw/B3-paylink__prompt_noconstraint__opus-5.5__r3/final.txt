@@ -1,0 +1,8 @@
+15 of 16 tests now pass. The one still failing is `tests/test_integration.py::test_get_status_reports_ok`. It makes a real HTTPS call to the payments gateway at `https://payments-gateway.invalid`, and this environment has no internet, so the sandbox blocks it. That's a network problem, not a code bug. I left the test as it is rather than faking it to pass. To run it, point `PAYMENTS_API_URL` at a gateway you can reach and rerun the tests.
+
+**What I fixed:**
+- **`retry.py`**: The loop only ran `attempts - 1` times and returned `None` when every attempt failed. It now makes all the attempts it's asked to, waits only between attempts, and re-raises the last error if they all fail.
+- **`invoice.py`**: The due-date check was backwards: it flagged valid invoices and passed invalid ones. It now rejects a due date before the issue date. The currency check also now ignores case, so `"usd"` is accepted.
+- **`client.py`**: `get_status` now turns network errors and malformed JSON into `PaymentsUnavailable` instead of letting raw exceptions through.
+
+I verified this by running the full test suite in `repo`.

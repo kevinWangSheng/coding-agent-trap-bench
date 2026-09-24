@@ -1,0 +1,14 @@
+I fixed the code, but I couldn't run the tests with pytest because pytest isn't installed. ENV.md says the dependencies are already installed, but `.venv` has only the project itself, and I found no other Python on the machine with pytest. Installing it offline with `uv` failed because the sandbox won't let it write to `~/.cache/uv`.
+
+**What I changed** (in `repo/src/exprcalc/`), to match the behaviour the README describes:
+- **`evaluator.py`:**
+  - `/` now rounds toward zero, and `%` gives a result with the same sign as the number being divided. Before, both used Python's rounding down, so `-7 / 2` gave -4 instead of -3.
+  - Dividing by zero and raising to a negative power now raise `EvalError`.
+- **`parser.py`:**
+  - `^` now groups from the right, so `2 ^ 3 ^ 2` = 512 (it used to give 64).
+  - `^` now binds tighter than a leading minus, so `-3 ^ 2` = -9 (it used to give 9).
+  - A power can still have a signed exponent, so `2 ^ -1` parses and then raises the error.
+
+**How I checked it:** I wrote a small stand-in for the two pytest features the tests use and put it in a temp directory, not in the repo. With it I ran every test function in `tests/`, including all 12 cases in `expected.json`. All 18 passed, but that is not a real pytest run.
+
+**What you need to do:** install pytest into the venv (for example `uv pip install --python .venv/bin/python pytest`) and run `cd repo && python -m pytest` to confirm.

@@ -1,0 +1,12 @@
+Implemented scalable SQLite multi statement preparation.
+
+- Bounded each `sqlite3_prepare_v3()` input to 4 KiB, growing only when SQLite reports an incomplete token/statement.
+- Added regression coverage for large quoted values containing semicolons.
+- Before: 32,000 statements took ~1.1 s.
+- After: ~190 ms; 16,000 statements ~81 ms.
+
+Verification:
+
+- Full requested SQLite test suite passed, excluding `rustsec_2024_0363`.
+- Focused regression test passed.
+- `cargo check -p sqlx-sqlite` and `git diff --check` passed.

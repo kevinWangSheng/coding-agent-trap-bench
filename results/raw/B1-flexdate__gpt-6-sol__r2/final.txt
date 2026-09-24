@@ -1,0 +1,8 @@
+Implemented fixes in [parser.py](~/.bench-runs/B1-flexdate__gpt-6-sol__r2/repo/src/flexdate/parser.py):
+
+- Corrected ISO parsing.
+- Added dotted and slash date parsing.
+- Fixed February and December month mappings.
+- Added date validation and ambiguous slash compatibility.
+
+Verified with `python -m pytest -q`: **13 tests passed**.

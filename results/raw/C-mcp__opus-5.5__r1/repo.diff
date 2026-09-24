@@ -1,0 +1,2258 @@
+diff --git a/README.md b/README.md
+index e09e730..9bcbc51 100644
+--- a/README.md
++++ b/README.md
+@@ -161,4 +161,8 @@ runtime, so the server offers no list-change notifications.
+ 
+ - TypeScript sources go in `src/`; the entry point compiles to `dist/server.js`.
+ - `npm test` runs `node --test` (Node 24 runs `.ts` test files directly).
++  It builds first (`pretest`), then starts `dist/server.js` on a random port and
++  exercises it over HTTP. In environments that forbid listening on sockets, run
++  `MCP_TEST_TRANSPORT=memory npm test` to drive the same HTTP server over an
++  in-memory connection instead.
+ - Only the packages already in `node_modules` are available.
+diff --git a/package.json b/package.json
+index 9e5a8a3..a78d993 100644
+--- a/package.json
++++ b/package.json
+@@ -9,7 +9,8 @@
+   "scripts": {
+     "build": "tsc -p .",
+     "start": "node dist/server.js",
+-    "test": "node --test"
++    "test": "node --test \"test/**/*.test.ts\"",
++    "pretest": "npm run build"
+   },
+   "devDependencies": {
+     "@types/node": "24.13.6",
+diff --git a/src/http.ts b/src/http.ts
+new file mode 100644
+index 0000000..fe6cff5
+--- /dev/null
++++ b/src/http.ts
+@@ -0,0 +1,481 @@
++// Streamable HTTP transport (MCP revision 2026-07-28): one POST per message,
++// responses as JSON or as an SSE stream scoped to the request.
++
++import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
++import type { AddressInfo } from "node:net";
++import { FieldNotesServer, type RequestContext } from "./mcp.js";
++import {
++  ErrorCode,
++  headerMismatch,
++  invalidParams,
++  isObject,
++  McpError,
++  META_CLIENT_CAPABILITIES,
++  META_PROTOCOL_VERSION,
++  META_SUBSCRIPTION_ID,
++  serverMeta,
++  SUPPORTED_VERSIONS,
++  unsupportedVersion,
++  type JsonObject,
++  type JsonRpcNotification,
++  type JsonRpcRequest,
++  type RequestId,
++} from "./protocol.js";
++
++export const MCP_PATH = "/mcp";
++const MAX_BODY_BYTES = 1024 * 1024;
++const KEEPALIVE_MS = 15_000;
++
++/** Methods whose `Mcp-Name` header mirrors a body field. */
++const NAME_FIELDS: Record<string, "name" | "uri"> = {
++  "tools/call": "name",
++  "prompts/get": "name",
++  "resources/read": "uri",
++};
++
++/** Tool parameters mirrored into `Mcp-Param-*` headers (from `x-mcp-header` in the tool schemas). */
++const PARAM_HEADERS: Record<string, Array<{ header: string; argument: string }>> = {
++  add_note: [{ header: "Notebook", argument: "notebook" }],
++};
++
++const CACHEABLE_PUBLIC = new Set([
++  "server/discover",
++  "tools/list",
++  "resources/list",
++  "resources/templates/list",
++  "prompts/list",
++]);
++
++interface Subscriber {
++  id: RequestId;
++  uris: Set<string>;
++  channel: ResponseChannel;
++  stop(): void;
++}
++
++export interface McpHttpServer {
++  server: Server;
++  app: FieldNotesServer;
++  /** Ends every subscription gracefully and stops the HTTP server. */
++  shutdown(): Promise<void>;
++}
++
++/**
++ * Writes the response for one request: either a single JSON body, or (once a
++ * notification is sent) an SSE stream that ends with the final response.
++ */
++class ResponseChannel {
++  private readonly res: ServerResponse;
++  private sse = false;
++  private readonly controller = new AbortController();
++
++  constructor(res: ServerResponse) {
++    this.res = res;
++    // Closing the response stream before we finish it is the cancellation signal.
++    res.on("close", () => {
++      if (!res.writableEnded) this.controller.abort(new Error("client disconnected"));
++    });
++  }
++
++  get signal(): AbortSignal {
++    return this.controller.signal;
++  }
++
++  get open(): boolean {
++    return !this.controller.signal.aborted && !this.res.writableEnded;
++  }
++
++  startSse(): void {
++    if (this.sse || !this.open) return;
++    this.sse = true;
++    this.res.writeHead(200, {
++      "Content-Type": "text/event-stream",
++      "Cache-Control": "no-store",
++      "X-Accel-Buffering": "no",
++      Connection: "keep-alive",
++    });
++    this.res.flushHeaders();
++  }
++
++  send(message: JsonObject): void {
++    if (!this.open) return;
++    this.startSse();
++    this.res.write(`event: message\ndata: ${JSON.stringify(message)}\n\n`);
++  }
++
++  comment(): void {
++    if (this.open && this.sse) this.res.write(":\n\n");
++  }
++
++  finish(message: JsonObject, status = 200, cacheControl = "no-store"): void {
++    if (!this.open) return;
++    if (this.sse) {
++      this.res.end(`event: message\ndata: ${JSON.stringify(message)}\n\n`);
++      return;
++    }
++    const body = JSON.stringify(message);
++    this.res.writeHead(status, {
++      "Content-Type": "application/json",
++      "Content-Length": Buffer.byteLength(body),
++      "Cache-Control": cacheControl,
++    });
++    this.res.end(body);
++  }
++}
++
++function errorResponse(id: RequestId | undefined, error: McpError): JsonObject {
++  const response: JsonObject = { jsonrpc: "2.0", error: error.toJson() };
++  if (id !== undefined) response.id = id;
++  return response;
++}
++
++function sendError(res: ServerResponse, status: number, error: McpError, id?: RequestId, headers: JsonObject = {}): void {
++  const body = JSON.stringify(errorResponse(id, error));
++  res.writeHead(status, {
++    ...headers,
++    "Content-Type": "application/json",
++    "Content-Length": Buffer.byteLength(body),
++    "Cache-Control": "no-store",
++  } as Record<string, string | number>);
++  res.end(body);
++}
++
++function readBody(req: IncomingMessage): Promise<Buffer | undefined> {
++  return new Promise((resolve, reject) => {
++    const chunks: Buffer[] = [];
++    let size = 0;
++    req.on("data", (chunk: Buffer) => {
++      size += chunk.length;
++      if (size > MAX_BODY_BYTES) {
++        resolve(undefined);
++        req.destroy();
++        return;
++      }
++      chunks.push(chunk);
++    });
++    req.on("end", () => resolve(Buffer.concat(chunks)));
++    req.on("error", reject);
++  });
++}
++
++function singleHeader(req: IncomingMessage, name: string): string | undefined {
++  const value = req.headers[name.toLowerCase()];
++  return Array.isArray(value) ? value.join(", ") : value;
++}
++
++/**
++ * Decodes a header value that may use the `=?base64?...?=` sentinel encoding.
++ * Returns undefined when the value contains characters not allowed in a header
++ * or is not valid Base64 / UTF-8.
++ */
++export function decodeHeaderValue(raw: string): string | undefined {
++  for (let i = 0; i < raw.length; i++) {
++    const c = raw.charCodeAt(i);
++    if (!(c === 0x09 || (c >= 0x20 && c <= 0x7e))) return undefined;
++  }
++  if (raw.startsWith("=?base64?") && raw.endsWith("?=") && raw.length >= 11) {
++    const encoded = raw.slice("=?base64?".length, -2);
++    if (encoded.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) return undefined;
++    try {
++      return new TextDecoder("utf-8", { fatal: true }).decode(Buffer.from(encoded, "base64"));
++    } catch {
++      return undefined;
++    }
++  }
++  return raw;
++}
++
++/** String form of a primitive argument, as a client would mirror it into a header. */
++function headerForm(value: unknown): string | undefined {
++  if (typeof value === "string") return value;
++  if (typeof value === "boolean") return value ? "true" : "false";
++  if (typeof value === "number" && Number.isFinite(value)) return String(value);
++  return undefined;
++}
++
++function validateHeaders(req: IncomingMessage, request: JsonRpcRequest): void {
++  const { method, params } = request;
++
++  const version = singleHeader(req, "mcp-protocol-version");
++  if (version === undefined) throw headerMismatch("missing required MCP-Protocol-Version header");
++  const methodHeader = singleHeader(req, "mcp-method");
++  if (methodHeader === undefined) throw headerMismatch("missing required Mcp-Method header");
++  if (methodHeader !== method) {
++    throw headerMismatch(`Mcp-Method header value '${methodHeader}' does not match body value '${method}'`);
++  }
++
++  // Per-request protocol fields.
++  const meta = params._meta;
++  if (!isObject(meta)) throw invalidParams("Missing required params._meta", undefined, 400);
++  const bodyVersion = meta[META_PROTOCOL_VERSION];
++  if (typeof bodyVersion !== "string") {
++    throw invalidParams(`Missing required _meta field ${META_PROTOCOL_VERSION}`, undefined, 400);
++  }
++  if (!isObject(meta[META_CLIENT_CAPABILITIES])) {
++    throw invalidParams(`Missing required _meta field ${META_CLIENT_CAPABILITIES}`, undefined, 400);
++  }
++  if (version !== bodyVersion) {
++    throw headerMismatch(`MCP-Protocol-Version header value '${version}' does not match body value '${bodyVersion}'`);
++  }
++  if (!SUPPORTED_VERSIONS.includes(bodyVersion)) throw unsupportedVersion(bodyVersion);
++
++  const nameField = NAME_FIELDS[method];
++  if (nameField) {
++    const raw = singleHeader(req, "mcp-name");
++    if (raw === undefined) throw headerMismatch(`missing required Mcp-Name header for ${method}`);
++    const decoded = decodeHeaderValue(raw);
++    if (decoded === undefined) throw headerMismatch("Mcp-Name header contains invalid characters or encoding");
++    const bodyValue = params[nameField];
++    if (decoded !== bodyValue) {
++      throw headerMismatch(
++        `Mcp-Name header value '${decoded}' does not match body value '${String(bodyValue)}' (params.${nameField})`,
++      );
++    }
++  }
++
++  if (method === "tools/call" && typeof params.name === "string") {
++    const mirrored = Object.hasOwn(PARAM_HEADERS, params.name) ? PARAM_HEADERS[params.name] : undefined;
++    const args = isObject(params.arguments) ? params.arguments : {};
++    for (const { header, argument } of mirrored ?? []) {
++      const headerName = `Mcp-Param-${header}`;
++      const raw = singleHeader(req, headerName);
++      const value = args[argument];
++      if (raw === undefined) {
++        if (value !== undefined && value !== null && headerForm(value) !== undefined) {
++          throw headerMismatch(`missing required ${headerName} header for argument '${argument}'`);
++        }
++        continue;
++      }
++      const decoded = decodeHeaderValue(raw);
++      if (decoded === undefined) throw headerMismatch(`${headerName} header contains invalid characters or encoding`);
++      const expected = headerForm(value);
++      if (expected === undefined || decoded !== expected) {
++        throw headerMismatch(
++          `${headerName} header value '${decoded}' does not match body value ${JSON.stringify(value ?? null)}`,
++        );
++      }
++    }
++  }
++}
++
++function acceptsJsonOrSse(req: IncomingMessage): boolean {
++  const accept = singleHeader(req, "accept");
++  if (accept === undefined) return true;
++  return /application\/json|text\/event-stream|\*\/\*|application\/\*|text\/\*/i.test(accept);
++}
++
++export interface McpHttpServerOptions {
++  /**
++   * Port used to build the allowed browser origins. Defaults to the port the
++   * server is actually listening on.
++   */
++  originPort?: number;
++}
++
++export function createMcpHttpServer(app = new FieldNotesServer(), options: McpHttpServerOptions = {}): McpHttpServer {
++  const subscribers = new Set<Subscriber>();
++
++  app.store.on("updated", (uri) => {
++    for (const sub of subscribers) {
++      if (!sub.uris.has(uri)) continue;
++      sub.channel.send({
++        jsonrpc: "2.0",
++        method: "notifications/resources/updated",
++        params: { _meta: { [META_SUBSCRIPTION_ID]: sub.id }, uri },
++      });
++    }
++  });
++
++  const server = createServer((req, res) => {
++    handle(req, res).catch((err) => {
++      console.error("Unhandled error:", err);
++      if (!res.headersSent) {
++        sendError(res, 500, new McpError(ErrorCode.InternalError, "Internal error"));
++      } else {
++        res.destroy();
++      }
++    });
++  });
++
++  function allowedOrigins(): Set<string> {
++    const port = options.originPort ?? (server.address() as AddressInfo | null)?.port;
++    return new Set([`http://localhost:${port}`, `http://127.0.0.1:${port}`]);
++  }
++
++  async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
++    // DNS-rebinding protection: browser requests only from our own origin.
++    const origin = req.headers.origin;
++    if (origin !== undefined && !allowedOrigins().has(origin)) {
++      sendError(res, 403, new McpError(ErrorCode.InvalidRequest, `Forbidden: origin '${origin}' is not allowed`));
++      return;
++    }
++
++    const path = new URL(req.url ?? "/", "http://localhost").pathname;
++    if (path !== MCP_PATH) {
++      sendError(res, 404, new McpError(ErrorCode.InvalidRequest, `Not found: the MCP endpoint is ${MCP_PATH}`));
++      return;
++    }
++    if (req.method !== "POST") {
++      // No GET stream or DELETE session teardown in this protocol revision.
++      sendError(res, 405, new McpError(ErrorCode.InvalidRequest, "Method not allowed: use POST"), undefined, {
++        Allow: "POST",
++      });
++      return;
++    }
++    const contentType = singleHeader(req, "content-type") ?? "";
++    if (!/^application\/json\s*(;|$)/i.test(contentType)) {
++      sendError(res, 415, new McpError(ErrorCode.InvalidRequest, "Content-Type must be application/json"));
++      return;
++    }
++    if (!acceptsJsonOrSse(req)) {
++      sendError(res, 406, new McpError(ErrorCode.InvalidRequest, "Accept must include application/json and text/event-stream"));
++      return;
++    }
++
++    const raw = await readBody(req);
++    if (raw === undefined) {
++      sendError(res, 413, new McpError(ErrorCode.InvalidRequest, "Request body too large"));
++      return;
++    }
++    let message: unknown;
++    try {
++      message = JSON.parse(raw.toString("utf8"));
++    } catch {
++      sendError(res, 400, new McpError(ErrorCode.ParseError, "Parse error: body is not valid JSON"));
++      return;
++    }
++    if (!isObject(message)) {
++      const what = Array.isArray(message) ? "batches are not supported" : "expected a JSON-RPC object";
++      sendError(res, 400, new McpError(ErrorCode.InvalidRequest, `Invalid request: ${what}`));
++      return;
++    }
++    const id = message.id;
++    const validId = typeof id === "string" || (typeof id === "number" && Number.isInteger(id));
++    const replyId = validId ? (id as RequestId) : undefined;
++    if (message.jsonrpc !== "2.0") {
++      sendError(res, 400, new McpError(ErrorCode.InvalidRequest, "Invalid request: jsonrpc must be \"2.0\""), replyId);
++      return;
++    }
++    if (typeof message.method !== "string") {
++      const what = "result" in message || "error" in message ? "servers do not accept JSON-RPC responses" : "missing method";
++      sendError(res, 400, new McpError(ErrorCode.InvalidRequest, `Invalid request: ${what}`), replyId);
++      return;
++    }
++    if (message.params !== undefined && !isObject(message.params)) {
++      sendError(res, 400, new McpError(ErrorCode.InvalidRequest, "Invalid request: params must be an object"), replyId);
++      return;
++    }
++
++    if (!("id" in message)) {
++      // Notification (e.g. notifications/cancelled). Nothing to do over HTTP.
++      res.writeHead(202).end();
++      return;
++    }
++    if (!validId) {
++      sendError(res, 400, new McpError(ErrorCode.InvalidRequest, "Invalid request: id must be a string or integer"));
++      return;
++    }
++
++    const request: JsonRpcRequest = {
++      jsonrpc: "2.0",
++      id: id as RequestId,
++      method: message.method,
++      params: (message.params as JsonObject | undefined) ?? {},
++    };
++    await dispatch(req, res, request);
++  }
++
++  async function dispatch(req: IncomingMessage, res: ServerResponse, request: JsonRpcRequest): Promise<void> {
++    const { id, method, params } = request;
++    try {
++      if (method === "initialize") {
++        // Legacy handshake: name the versions we do support.
++        const requested = typeof params.protocolVersion === "string" ? params.protocolVersion : "unknown";
++        throw unsupportedVersion(requested);
++      }
++      validateHeaders(req, request);
++      if (!app.hasMethod(method)) {
++        throw new McpError(ErrorCode.MethodNotFound, `Method not found: ${method}`, undefined, 404);
++      }
++    } catch (err) {
++      if (!(err instanceof McpError)) throw err;
++      sendError(res, err.httpStatus, err, id);
++      return;
++    }
++
++    const channel = new ResponseChannel(res);
++    if (method === "subscriptions/listen") {
++      listen(request, channel);
++      return;
++    }
++
++    const ctx: RequestContext = {
++      id,
++      params,
++      meta: params._meta as JsonObject,
++      signal: channel.signal,
++      notify: (n: JsonRpcNotification) => channel.send(n as unknown as JsonObject),
++    };
++    try {
++      const result = await app.handle(method, ctx);
++      let cacheControl = "no-store";
++      if (result.resultType === "complete") {
++        if (CACHEABLE_PUBLIC.has(method)) cacheControl = `public, max-age=${Math.floor(Number(result.ttlMs) / 1000)}`;
++        else if (method === "resources/read") cacheControl = "private, no-cache";
++      }
++      channel.finish({ jsonrpc: "2.0", id, result }, 200, cacheControl);
++    } catch (err) {
++      if (channel.signal.aborted) return; // cancelled: send nothing further
++      const error =
++        err instanceof McpError ? err : (console.error(err), new McpError(ErrorCode.InternalError, "Internal error"));
++      channel.finish(errorResponse(id, error), error.httpStatus);
++    }
++  }
++
++  function listen(request: JsonRpcRequest, channel: ResponseChannel): void {
++    const { id, params } = request;
++    let acknowledged: JsonObject;
++    try {
++      acknowledged = app.acknowledgeFilter(params);
++    } catch (err) {
++      if (!(err instanceof McpError)) throw err;
++      channel.finish(errorResponse(id, err), err.httpStatus);
++      return;
++    }
++    const keepAlive = setInterval(() => channel.comment(), KEEPALIVE_MS);
++    const sub: Subscriber = {
++      id,
++      uris: new Set((acknowledged.resourceSubscriptions as string[] | undefined) ?? []),
++      channel,
++      stop: () => {
++        clearInterval(keepAlive);
++        subscribers.delete(sub);
++      },
++    };
++    channel.send({
++      jsonrpc: "2.0",
++      method: "notifications/subscriptions/acknowledged",
++      params: { _meta: { [META_SUBSCRIPTION_ID]: id }, notifications: acknowledged },
++    });
++    subscribers.add(sub);
++    channel.signal.addEventListener("abort", () => sub.stop());
++  }
++
++  async function shutdown(): Promise<void> {
++    for (const sub of [...subscribers]) {
++      sub.stop();
++      sub.channel.finish({
++        jsonrpc: "2.0",
++        id: sub.id,
++        result: { resultType: "complete", _meta: { ...serverMeta(), [META_SUBSCRIPTION_ID]: sub.id } },
++      });
++    }
++    await new Promise<void>((resolve) => {
++      server.close(() => resolve());
++      server.closeIdleConnections();
++      setTimeout(() => server.closeAllConnections(), 2000).unref();
++    });
++  }
++
++  return { server, app, shutdown };
++}
+diff --git a/src/mcp.ts b/src/mcp.ts
+new file mode 100644
+index 0000000..32668e3
+--- /dev/null
++++ b/src/mcp.ts
+@@ -0,0 +1,452 @@
++// Method handlers for the field-notes MCP server (transport independent).
++
++import {
++  complete,
++  ErrorCode,
++  INSTRUCTIONS,
++  inputRequired,
++  invalidParams,
++  isObject,
++  McpError,
++  META_CLIENT_CAPABILITIES,
++  SUPPORTED_VERSIONS,
++  type JsonObject,
++  type JsonRpcNotification,
++  type RequestId,
++  type Result,
++} from "./protocol.js";
++import {
++  countWords,
++  INDEX_URI,
++  MAX_TITLE_LENGTH,
++  NOTE_URI_PREFIX,
++  NOTEBOOK_PATTERN,
++  noteUri,
++  NotesStore,
++  renderNote,
++  type Note,
++} from "./notes.js";
++import { RequestStateSigner } from "./request-state.js";
++
++/** Freshness hint for discovery and list results: anyone may cache them for 5 minutes. */
++export const LIST_TTL_MS = 5 * 60 * 1000;
++
++export interface RequestContext {
++  id: RequestId;
++  params: JsonObject;
++  meta: JsonObject;
++  /** Aborted when the client goes away (the response stream closes). */
++  signal: AbortSignal;
++  /** Sends a notification related to this request (switches the response to SSE). */
++  notify(notification: JsonRpcNotification): void;
++}
++
++type Handler = (ctx: RequestContext) => Promise<Result> | Result;
++
++export const CAPABILITIES = {
++  tools: {},
++  resources: { subscribe: true },
++  prompts: {},
++} as const;
++
++const TOOLS = [
++  {
++    name: "add_note",
++    title: "Add note",
++    description: "Create a note in a notebook. Returns the new note's id and resource URI.",
++    inputSchema: {
++      type: "object",
++      properties: {
++        notebook: {
++          type: "string",
++          description: "Notebook name: 1-64 characters from [A-Za-z0-9_-].",
++          pattern: "^[A-Za-z0-9_-]{1,64}$",
++          minLength: 1,
++          maxLength: 64,
++          "x-mcp-header": "Notebook",
++        },
++        title: {
++          type: "string",
++          description: "Note title (non-empty, at most 200 characters).",
++          minLength: 1,
++          maxLength: MAX_TITLE_LENGTH,
++        },
++        body: { type: "string", description: "Note body (may be empty)." },
++      },
++      required: ["notebook", "title", "body"],
++    },
++    outputSchema: {
++      type: "object",
++      properties: {
++        id: { type: "string", description: "The new note's id, e.g. n4." },
++        uri: { type: "string", description: "Resource URI of the new note." },
++        notebook: { type: "string" },
++        wordCount: { type: "integer", minimum: 0, description: "Whitespace-separated words in the body." },
++      },
++      required: ["id", "uri", "notebook", "wordCount"],
++      additionalProperties: false,
++    },
++    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
++  },
++  {
++    name: "delete_note",
++    title: "Delete note",
++    description: "Delete a note by id. The user is asked to confirm before anything is deleted.",
++    inputSchema: {
++      type: "object",
++      properties: { id: { type: "string", description: "Id of the note to delete, e.g. n2." } },
++      required: ["id"],
++    },
++    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
++  },
++  {
++    name: "reindex",
++    title: "Rebuild search index",
++    description: "Rebuild the search index. Slow; reports progress after each step when requested.",
++    inputSchema: {
++      type: "object",
++      properties: {
++        steps: { type: "integer", minimum: 1, maximum: 20, default: 5, description: "Number of steps." },
++        delayMs: {
++          type: "integer",
++          minimum: 0,
++          maximum: 1000,
++          default: 200,
++          description: "Time spent on each step, in milliseconds.",
++        },
++      },
++    },
++    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
++  },
++];
++
++const RESOURCES = [{ uri: INDEX_URI, name: "index", title: "All notes", mimeType: "application/json" }];
++
++const RESOURCE_TEMPLATES = [
++  { uriTemplate: "notes://notes/{id}", name: "note", title: "A single note", mimeType: "text/markdown" },
++];
++
++const PROMPTS = [
++  {
++    name: "summarize_notebook",
++    title: "Summarize notebook",
++    description: "Ask the model to summarize every note in a notebook.",
++    arguments: [
++      { name: "notebook", description: "Notebook to summarize.", required: true },
++      { name: "style", description: "brief (default) or detailed.", required: false },
++    ],
++  },
++];
++
++const CONFIRM_KEY = "confirm_delete";
++
++function toolError(text: string): Result {
++  return complete({ content: [{ type: "text", text }], isError: true });
++}
++
++function toolText(text: string): Result {
++  return complete({ content: [{ type: "text", text }], isError: false });
++}
++
++function listResult(key: string, items: unknown[], params: JsonObject): Result {
++  if (params.cursor !== undefined) {
++    // Every list fits in one page, so the server never issues a cursor.
++    throw invalidParams("Invalid cursor");
++  }
++  return complete({ [key]: items, ttlMs: LIST_TTL_MS, cacheScope: "public" });
++}
++
++function supportsFormElicitation(meta: JsonObject): boolean {
++  const caps = meta[META_CLIENT_CAPABILITIES];
++  if (!isObject(caps) || !isObject(caps.elicitation)) return false;
++  const elicitation = caps.elicitation;
++  // An empty elicitation object is equivalent to { form: {} }.
++  if (Object.keys(elicitation).length === 0) return true;
++  return isObject(elicitation.form);
++}
++
++function codePointLength(s: string): number {
++  let n = 0;
++  for (const _ of s) n++;
++  return n;
++}
++
++function sleep(ms: number, signal: AbortSignal): Promise<void> {
++  return new Promise((resolve, reject) => {
++    if (signal.aborted) return reject(signal.reason);
++    const timer = setTimeout(() => {
++      signal.removeEventListener("abort", onAbort);
++      resolve();
++    }, ms);
++    const onAbort = () => {
++      clearTimeout(timer);
++      reject(signal.reason);
++    };
++    signal.addEventListener("abort", onAbort, { once: true });
++  });
++}
++
++export class FieldNotesServer {
++  readonly store: NotesStore;
++  private readonly signer: RequestStateSigner;
++  private readonly handlers: Record<string, Handler>;
++
++  constructor(store = new NotesStore(), signer = new RequestStateSigner()) {
++    this.store = store;
++    this.signer = signer;
++    this.handlers = {
++      "server/discover": () =>
++        complete({
++          supportedVersions: [...SUPPORTED_VERSIONS],
++          capabilities: CAPABILITIES,
++          instructions: INSTRUCTIONS,
++          ttlMs: LIST_TTL_MS,
++          cacheScope: "public",
++        }),
++      "tools/list": ({ params }) => listResult("tools", TOOLS, params),
++      "tools/call": (ctx) => this.callTool(ctx),
++      "resources/list": ({ params }) => listResult("resources", RESOURCES, params),
++      "resources/templates/list": ({ params }) => listResult("resourceTemplates", RESOURCE_TEMPLATES, params),
++      "resources/read": ({ params }) => this.readResource(params),
++      "prompts/list": ({ params }) => listResult("prompts", PROMPTS, params),
++      "prompts/get": ({ params }) => this.getPrompt(params),
++    };
++  }
++
++  hasMethod(method: string): boolean {
++    return Object.hasOwn(this.handlers, method) || method === "subscriptions/listen";
++  }
++
++  async handle(method: string, ctx: RequestContext): Promise<Result> {
++    const handler = Object.hasOwn(this.handlers, method) ? this.handlers[method] : undefined;
++    if (!handler) throw new McpError(ErrorCode.MethodNotFound, `Method not found: ${method}`, undefined, 404);
++    return handler(ctx);
++  }
++
++  /**
++   * Validates a subscriptions/listen filter and returns the subset the server
++   * honors. Only resource subscriptions are supported: the tool, prompt and
++   * resource lists never change.
++   */
++  acknowledgeFilter(params: JsonObject): JsonObject {
++    const filter = params.notifications;
++    if (!isObject(filter)) throw invalidParams("subscriptions/listen requires a 'notifications' object");
++    for (const key of ["toolsListChanged", "promptsListChanged", "resourcesListChanged"]) {
++      if (filter[key] !== undefined && typeof filter[key] !== "boolean") {
++        throw invalidParams(`notifications.${key} must be a boolean`);
++      }
++    }
++    const acknowledged: JsonObject = {};
++    const subs = filter.resourceSubscriptions;
++    if (subs !== undefined) {
++      if (!Array.isArray(subs) || !subs.every((u) => typeof u === "string")) {
++        throw invalidParams("notifications.resourceSubscriptions must be an array of strings");
++      }
++      acknowledged.resourceSubscriptions = [...new Set(subs as string[])].filter(isWatchableUri);
++    }
++    return acknowledged;
++  }
++
++  // ---- tools ----
++
++  private async callTool(ctx: RequestContext): Promise<Result> {
++    const { params } = ctx;
++    if (typeof params.name !== "string") throw invalidParams("tools/call requires a string 'name'");
++    const args = params.arguments ?? {};
++    if (!isObject(args)) throw invalidParams("tools/call 'arguments' must be an object");
++    switch (params.name) {
++      case "add_note":
++        return this.addNote(args);
++      case "delete_note":
++        return this.deleteNote(args, ctx);
++      case "reindex":
++        return this.reindex(args, ctx);
++      default:
++        throw invalidParams(`Unknown tool: ${params.name}`);
++    }
++  }
++
++  private addNote(args: JsonObject): Result {
++    const problems: string[] = [];
++    const { notebook, title, body } = args;
++    if (notebook === undefined) problems.push("'notebook' is required.");
++    else if (typeof notebook !== "string") problems.push("'notebook' must be a string.");
++    else if (!NOTEBOOK_PATTERN.test(notebook)) {
++      problems.push(`'notebook' must be 1-64 characters from [A-Za-z0-9_-] (got ${JSON.stringify(notebook)}).`);
++    }
++    if (title === undefined) problems.push("'title' is required.");
++    else if (typeof title !== "string") problems.push("'title' must be a string.");
++    else if (title.length === 0) problems.push("'title' must not be empty.");
++    else if (codePointLength(title) > MAX_TITLE_LENGTH) {
++      problems.push(`'title' must be at most ${MAX_TITLE_LENGTH} characters (got ${codePointLength(title)}).`);
++    }
++    if (body === undefined) problems.push("'body' is required (it may be an empty string).");
++    else if (typeof body !== "string") problems.push("'body' must be a string.");
++    if (problems.length > 0) return toolError(`Invalid arguments for add_note: ${problems.join(" ")}`);
++
++    const note = this.store.add({ notebook: notebook as string, title: title as string, body: body as string });
++    const output = { id: note.id, uri: noteUri(note.id), notebook: note.notebook, wordCount: countWords(note.body) };
++    return complete({
++      content: [{ type: "text", text: JSON.stringify(output) }],
++      structuredContent: output,
++      isError: false,
++    });
++  }
++
++  private deleteNote(args: JsonObject, ctx: RequestContext): Result {
++    const { id } = args;
++    if (id === undefined) return toolError("Invalid arguments for delete_note: 'id' is required.");
++    if (typeof id !== "string") return toolError("Invalid arguments for delete_note: 'id' must be a string.");
++    const note = this.store.get(id);
++    if (!note) return toolError(`Note ${id} not found`);
++
++    const { params } = ctx;
++    const confirmation = this.readConfirmation(params, note);
++    if (confirmation === "confirmed") {
++      this.store.delete(note.id);
++      return toolText(`Deleted note ${note.id}`);
++    }
++    if (confirmation === "rejected") return toolText("Deletion cancelled");
++
++    // No (valid) answer yet: ask the user.
++    if (!supportsFormElicitation(ctx.meta)) {
++      throw new McpError(
++        ErrorCode.MissingRequiredClientCapability,
++        "delete_note requires the elicitation capability (form mode) to confirm the deletion",
++        { requiredCapabilities: { elicitation: { form: {} } } },
++        400,
++      );
++    }
++    return inputRequired({
++      inputRequests: {
++        [CONFIRM_KEY]: {
++          method: "elicitation/create",
++          params: {
++            mode: "form",
++            message: `Delete note "${note.title}"?`,
++            requestedSchema: {
++              type: "object",
++              properties: {
++                confirm: { type: "boolean", title: "Confirm", description: "Delete this note permanently?" },
++              },
++              required: ["confirm"],
++            },
++          },
++        },
++      },
++      requestState: this.signer.sign({ tool: "delete_note", noteId: note.id, key: CONFIRM_KEY }),
++    });
++  }
++
++  /**
++   * Interprets the retry of a delete_note call. Only answers that come with a
++   * valid requestState issued for this very note count; anything else means
++   * the user still has to be asked.
++   */
++  private readConfirmation(params: JsonObject, note: Note): "confirmed" | "rejected" | "missing" {
++    const { requestState, inputResponses } = params;
++    if (requestState === undefined) return "missing";
++    if (typeof requestState !== "string") throw invalidParams("requestState must be a string");
++    const state = this.signer.verify(requestState);
++    if (!state || state.tool !== "delete_note" || state.key !== CONFIRM_KEY) {
++      throw invalidParams("Invalid or expired requestState");
++    }
++    if (state.noteId !== note.id) {
++      throw invalidParams("requestState was issued for a different note");
++    }
++    if (inputResponses === undefined) return "missing";
++    if (!isObject(inputResponses)) throw invalidParams("inputResponses must be an object");
++    const response = inputResponses[CONFIRM_KEY];
++    if (response === undefined) return "missing";
++    if (!isObject(response) || !["accept", "decline", "cancel"].includes(response.action as string)) {
++      throw invalidParams(`inputResponses.${CONFIRM_KEY} must be an elicitation result`);
++    }
++    if (response.action !== "accept") return "rejected";
++    const content = response.content;
++    return isObject(content) && content.confirm === true ? "confirmed" : "rejected";
++  }
++
++  private async reindex(args: JsonObject, ctx: RequestContext): Promise<Result> {
++    const steps = args.steps ?? 5;
++    const delayMs = args.delayMs ?? 200;
++    const problems: string[] = [];
++    if (!Number.isInteger(steps) || (steps as number) < 1 || (steps as number) > 20) {
++      problems.push(`'steps' must be an integer from 1 to 20 (got ${JSON.stringify(steps)}).`);
++    }
++    if (!Number.isInteger(delayMs) || (delayMs as number) < 0 || (delayMs as number) > 1000) {
++      problems.push(`'delayMs' must be an integer from 0 to 1000 (got ${JSON.stringify(delayMs)}).`);
++    }
++    if (problems.length > 0) return toolError(`Invalid arguments for reindex: ${problems.join(" ")}`);
++
++    const total = steps as number;
++    const progressToken = ctx.meta.progressToken;
++    const wantsProgress = typeof progressToken === "string" || typeof progressToken === "number";
++    for (let k = 1; k <= total; k++) {
++      await sleep(delayMs as number, ctx.signal);
++      if (wantsProgress) {
++        ctx.notify({
++          jsonrpc: "2.0",
++          method: "notifications/progress",
++          params: { progressToken, progress: k, total, message: `Indexed ${k}/${total}` },
++        });
++      }
++    }
++    return toolText(`Reindex complete: ${total} steps`);
++  }
++
++  // ---- resources ----
++
++  private readResource(params: JsonObject): Result {
++    const { uri } = params;
++    if (typeof uri !== "string") throw invalidParams("resources/read requires a string 'uri'");
++    let contents;
++    if (uri === INDEX_URI) {
++      const index = this.store.list().map(({ id, notebook, title }) => ({ id, notebook, title }));
++      contents = [{ uri, mimeType: "application/json", text: JSON.stringify(index) }];
++    } else {
++      const note = uri.startsWith(NOTE_URI_PREFIX) ? this.store.get(uri.slice(NOTE_URI_PREFIX.length)) : undefined;
++      if (!note) throw invalidParams(`Resource not found: ${uri}`, { uri });
++      contents = [{ uri, mimeType: "text/markdown", text: renderNote(note) }];
++    }
++    // Note contents are user data: never shared, never fresh.
++    return complete({ contents, ttlMs: 0, cacheScope: "private" });
++  }
++
++  // ---- prompts ----
++
++  private getPrompt(params: JsonObject): Result {
++    if (typeof params.name !== "string") throw invalidParams("prompts/get requires a string 'name'");
++    if (params.name !== "summarize_notebook") throw invalidParams(`Unknown prompt: ${params.name}`);
++    const args = params.arguments ?? {};
++    if (!isObject(args)) throw invalidParams("prompts/get 'arguments' must be an object");
++    const { notebook, style = "brief" } = args;
++    if (notebook === undefined) throw invalidParams("Missing required argument: notebook");
++    if (typeof notebook !== "string") throw invalidParams("Argument 'notebook' must be a string");
++    if (style !== "brief" && style !== "detailed") {
++      throw invalidParams(`Invalid argument 'style': expected "brief" or "detailed", got ${JSON.stringify(style)}`);
++    }
++    const instruction =
++      style === "brief"
++        ? `Summarize the notes in the "${notebook}" notebook in two sentences.`
++        : `Summarize the notes in the "${notebook}" notebook in detail, one paragraph per note.`;
++    const messages: JsonObject[] = [{ role: "user", content: { type: "text", text: instruction } }];
++    for (const note of this.store.list()) {
++      if (note.notebook !== notebook) continue;
++      messages.push({
++        role: "user",
++        content: {
++          type: "resource",
++          resource: { uri: noteUri(note.id), mimeType: "text/markdown", text: renderNote(note) },
++        },
++      });
++    }
++    return complete({ description: `Summarize the "${notebook}" notebook`, messages });
++  }
++}
++
++function isWatchableUri(uri: string): boolean {
++  if (uri === INDEX_URI) return true;
++  if (!uri.startsWith(NOTE_URI_PREFIX)) return false;
++  const id = uri.slice(NOTE_URI_PREFIX.length);
++  return id.length > 0 && !id.includes("/");
++}
+diff --git a/src/notes.ts b/src/notes.ts
+new file mode 100644
+index 0000000..c19b715
+--- /dev/null
++++ b/src/notes.ts
+@@ -0,0 +1,79 @@
++import { EventEmitter } from "node:events";
++
++export interface Note {
++  id: string;
++  notebook: string;
++  title: string;
++  body: string;
++}
++
++export const NOTEBOOK_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
++export const MAX_TITLE_LENGTH = 200;
++
++export const INDEX_URI = "notes://index";
++export const NOTE_URI_PREFIX = "notes://notes/";
++
++export function noteUri(id: string): string {
++  return NOTE_URI_PREFIX + id;
++}
++
++export function renderNote(note: Note): string {
++  return `# ${note.title}\n\n${note.body}\n`;
++}
++
++export function countWords(text: string): number {
++  const trimmed = text.trim();
++  return trimmed === "" ? 0 : trimmed.split(/\s+/).length;
++}
++
++function numericId(id: string): number {
++  return Number(id.slice(1));
++}
++
++/**
++ * In-memory notes store. Emits "updated" with the URI of every resource whose
++ * content changed.
++ */
++export class NotesStore extends EventEmitter<{ updated: [uri: string] }> {
++  private readonly notes = new Map<string, Note>();
++  private nextId = 1;
++
++  constructor(seed: Array<Omit<Note, "id">> = DEFAULT_NOTES) {
++    super();
++    for (const note of seed) this.insert(note);
++  }
++
++  private insert(fields: Omit<Note, "id">): Note {
++    const note: Note = { id: `n${this.nextId++}`, ...fields };
++    this.notes.set(note.id, note);
++    return note;
++  }
++
++  add(fields: Omit<Note, "id">): Note {
++    const note = this.insert(fields);
++    this.emit("updated", INDEX_URI);
++    return note;
++  }
++
++  get(id: string): Note | undefined {
++    return this.notes.get(id);
++  }
++
++  delete(id: string): boolean {
++    if (!this.notes.delete(id)) return false;
++    this.emit("updated", INDEX_URI);
++    this.emit("updated", noteUri(id));
++    return true;
++  }
++
++  /** All notes ordered by numeric id. */
++  list(): Note[] {
++    return [...this.notes.values()].sort((a, b) => numericId(a.id) - numericId(b.id));
++  }
++}
++
++export const DEFAULT_NOTES: Array<Omit<Note, "id">> = [
++  { notebook: "work", title: "Standup", body: "Discussed the release schedule and blockers." },
++  { notebook: "work", title: "Retro actions", body: "Automate the changelog. Rotate the on-call." },
++  { notebook: "personal", title: "Groceries", body: "Eggs, flour, coffee." },
++];
+diff --git a/src/protocol.ts b/src/protocol.ts
+new file mode 100644
+index 0000000..5ca369b
+--- /dev/null
++++ b/src/protocol.ts
+@@ -0,0 +1,99 @@
++// Protocol constants, error types and shared helpers for MCP revision 2026-07-28.
++
++export const PROTOCOL_VERSION = "2026-07-28";
++export const SUPPORTED_VERSIONS: readonly string[] = [PROTOCOL_VERSION];
++
++export const SERVER_INFO = { name: "field-notes", version: "1.0.0" } as const;
++
++export const INSTRUCTIONS =
++  "Field Notes stores short notes grouped into notebooks. Use add_note to save a note, read notes://index to see what exists.";
++
++export const META_PROTOCOL_VERSION = "io.modelcontextprotocol/protocolVersion";
++export const META_CLIENT_CAPABILITIES = "io.modelcontextprotocol/clientCapabilities";
++export const META_SERVER_INFO = "io.modelcontextprotocol/serverInfo";
++export const META_SUBSCRIPTION_ID = "io.modelcontextprotocol/subscriptionId";
++
++export const ErrorCode = {
++  ParseError: -32700,
++  InvalidRequest: -32600,
++  MethodNotFound: -32601,
++  InvalidParams: -32602,
++  InternalError: -32603,
++  HeaderMismatch: -32020,
++  MissingRequiredClientCapability: -32021,
++  UnsupportedProtocolVersion: -32022,
++} as const;
++
++export type JsonObject = Record<string, unknown>;
++export type RequestId = string | number;
++
++export interface JsonRpcRequest {
++  jsonrpc: "2.0";
++  id: RequestId;
++  method: string;
++  params: JsonObject;
++}
++
++export interface JsonRpcNotification {
++  jsonrpc: "2.0";
++  method: string;
++  params?: JsonObject;
++}
++
++export interface Result extends JsonObject {
++  resultType: string;
++}
++
++/** A JSON-RPC error, plus the HTTP status the Streamable HTTP transport should use for it. */
++export class McpError extends Error {
++  readonly code: number;
++  readonly data: unknown;
++  readonly httpStatus: number;
++
++  constructor(code: number, message: string, data?: unknown, httpStatus = 200) {
++    super(message);
++    this.code = code;
++    this.data = data;
++    this.httpStatus = httpStatus;
++  }
++
++  toJson(): JsonObject {
++    const error: JsonObject = { code: this.code, message: this.message };
++    if (this.data !== undefined) error.data = this.data;
++    return error;
++  }
++}
++
++export function isObject(value: unknown): value is JsonObject {
++  return typeof value === "object" && value !== null && !Array.isArray(value);
++}
++
++export function invalidParams(message: string, data?: unknown, httpStatus = 200): McpError {
++  return new McpError(ErrorCode.InvalidParams, message, data, httpStatus);
++}
++
++export function headerMismatch(message: string): McpError {
++  return new McpError(ErrorCode.HeaderMismatch, `Header mismatch: ${message}`, undefined, 400);
++}
++
++export function unsupportedVersion(requested: string): McpError {
++  return new McpError(
++    ErrorCode.UnsupportedProtocolVersion,
++    `Unsupported protocol version: ${requested}. Supported versions: ${SUPPORTED_VERSIONS.join(", ")}`,
++    { supported: [...SUPPORTED_VERSIONS], requested },
++    400,
++  );
++}
++
++/** Adds the fields every successful result carries. */
++export function complete(body: JsonObject): Result {
++  return { ...body, resultType: "complete", _meta: serverMeta() };
++}
++
++export function inputRequired(body: { inputRequests?: JsonObject; requestState?: string }): Result {
++  return { ...body, resultType: "input_required", _meta: serverMeta() };
++}
++
++export function serverMeta(): JsonObject {
++  return { [META_SERVER_INFO]: { ...SERVER_INFO } };
++}
+diff --git a/src/request-state.ts b/src/request-state.ts
+new file mode 100644
+index 0000000..af3aeb8
+--- /dev/null
++++ b/src/request-state.ts
+@@ -0,0 +1,46 @@
++import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
++import type { JsonObject } from "./protocol.js";
++import { isObject } from "./protocol.js";
++
++/**
++ * Integrity-protected, self-contained MRTR request state. The server keeps no
++ * per-request memory: everything needed to validate a retry travels inside the
++ * token, which is HMAC-signed so the client cannot forge or modify it.
++ */
++export class RequestStateSigner {
++  private readonly key: Buffer;
++  private readonly ttlMs: number;
++
++  constructor(key: Buffer = randomBytes(32), ttlMs = 10 * 60 * 1000) {
++    this.key = key;
++    this.ttlMs = ttlMs;
++  }
++
++  sign(payload: JsonObject): string {
++    const body = { ...payload, exp: Date.now() + this.ttlMs, nonce: randomBytes(8).toString("base64url") };
++    const encoded = Buffer.from(JSON.stringify(body)).toString("base64url");
++    return `${encoded}.${this.mac(encoded)}`;
++  }
++
++  /** Returns the payload, or undefined if the token is malformed, tampered with, or expired. */
++  verify(token: string): JsonObject | undefined {
++    const parts = token.split(".");
++    if (parts.length !== 2) return undefined;
++    const [encoded, mac] = parts as [string, string];
++    const expected = Buffer.from(this.mac(encoded));
++    const actual = Buffer.from(mac);
++    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return undefined;
++    let payload: unknown;
++    try {
++      payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
++    } catch {
++      return undefined;
++    }
++    if (!isObject(payload) || typeof payload.exp !== "number" || payload.exp < Date.now()) return undefined;
++    return payload;
++  }
++
++  private mac(encoded: string): string {
++    return createHmac("sha256", this.key).update(encoded).digest("base64url");
++  }
++}
+diff --git a/src/server.ts b/src/server.ts
+new file mode 100644
+index 0000000..4ecfc8a
+--- /dev/null
++++ b/src/server.ts
+@@ -0,0 +1,27 @@
++// Entry point: serves the field-notes MCP server on 127.0.0.1:$PORT/mcp.
++
++import type { AddressInfo } from "node:net";
++import { createMcpHttpServer, MCP_PATH } from "./http.js";
++
++const HOST = "127.0.0.1";
++const port = Number.parseInt(process.env.PORT ?? "3000", 10);
++if (!Number.isInteger(port) || port < 0 || port > 65535) {
++  console.error(`Invalid PORT: ${process.env.PORT}`);
++  process.exit(1);
++}
++
++const { server, shutdown } = createMcpHttpServer();
++
++server.listen(port, HOST, () => {
++  const { port: actual } = server.address() as AddressInfo;
++  console.log(`field-notes MCP server listening on http://${HOST}:${actual}${MCP_PATH}`);
++});
++
++let stopping = false;
++for (const signal of ["SIGINT", "SIGTERM"] as const) {
++  process.on(signal, () => {
++    if (stopping) process.exit(1);
++    stopping = true;
++    shutdown().then(() => process.exit(0));
++  });
++}
+diff --git a/test/cancellation.test.ts b/test/cancellation.test.ts
+new file mode 100644
+index 0000000..43986a9
+--- /dev/null
++++ b/test/cancellation.test.ts
+@@ -0,0 +1,46 @@
++// Cancellation: when the client closes the response stream, the server stops
++// working on the request. Runs the built server in-process so the test can
++// observe the handler.
++
++import assert from "node:assert/strict";
++import { test } from "node:test";
++import { createMcpHttpServer } from "../dist/http.js";
++import { FieldNotesServer } from "../dist/mcp.js";
++import { post, requestMeta, SseReader, standardHeaders, startServer } from "./helpers.ts";
++
++test("closing the SSE stream stops a running reindex", async () => {
++  const app = new FieldNotesServer();
++  let progressCalls = 0;
++  let signal: AbortSignal | undefined;
++  const handle = app.handle.bind(app);
++  app.handle = (method: string, ctx: any) => {
++    signal = ctx.signal;
++    const notify = ctx.notify;
++    return handle(method, { ...ctx, notify: (n: any) => (progressCalls++, notify(n)) });
++  };
++
++  const server = await startServer(() => createMcpHttpServer(app, { originPort: 3000 }));
++
++  try {
++    const controller = new AbortController();
++    const params = { name: "reindex", arguments: { steps: 20, delayMs: 50 } };
++    const res = await post(
++      server,
++      { jsonrpc: "2.0", id: 1, method: "tools/call", params: { ...params, _meta: requestMeta({}, { progressToken: "p" }) } },
++      standardHeaders("tools/call", params),
++      controller.signal,
++    );
++    const reader = new SseReader(res);
++    assert.equal((await reader.next()).params.progress, 1);
++    controller.abort();
++
++    await new Promise((r) => setTimeout(r, 150));
++    assert.equal(signal?.aborted, true, "request signal is aborted once the client goes away");
++    const seen = progressCalls;
++    await new Promise((r) => setTimeout(r, 400));
++    assert.equal(progressCalls, seen, "no further steps run after cancellation");
++    assert.ok(seen < 20);
++  } finally {
++    await server.stop();
++  }
++});
+diff --git a/test/helpers.ts b/test/helpers.ts
+new file mode 100644
+index 0000000..18eafdf
+--- /dev/null
++++ b/test/helpers.ts
+@@ -0,0 +1,312 @@
++// Test helpers: run the server and talk MCP to it over HTTP.
++//
++// By default the built server (`dist/server.js`, i.e. what `npm start` runs) is
++// spawned on a random TCP port. Set MCP_TEST_TRANSPORT=memory to instead run the
++// same HTTP server in-process and feed it HTTP over an in-memory socket pair
++// (for sandboxes that forbid listening on sockets).
++
++import { spawn } from "node:child_process";
++import { request as httpRequest, type IncomingMessage, type Server } from "node:http";
++import { duplexPair } from "node:stream";
++import { fileURLToPath } from "node:url";
++import type { AddressInfo } from "node:net";
++
++export const PROTOCOL_VERSION = "2026-07-28";
++const SERVER_ENTRY = fileURLToPath(new URL("../dist/server.js", import.meta.url));
++const MEMORY = process.env.MCP_TEST_TRANSPORT === "memory";
++/** Port used for the origin allow-list when running in memory. */
++const MEMORY_PORT = 3000;
++
++export interface RunningServer {
++  url: string;
++  port: number;
++  /** Opens a client connection to the server (in-memory mode only). */
++  connect?: () => NodeJS.ReadWriteStream;
++  /** Asks the server to shut down (SIGTERM, or graceful shutdown in-process). */
++  terminate(): void;
++  /** Stops the server and waits until it is gone. */
++  stop(): Promise<void>;
++}
++
++/**
++ * Starts a server. With `inProcess` (an object from dist/http.js's
++ * createMcpHttpServer factory), that server is used instead of spawning one.
++ */
++export async function startServer(
++  inProcess?: () => { server: Server; shutdown(): Promise<void> },
++): Promise<RunningServer> {
++  if (MEMORY || inProcess) {
++    const factory = inProcess ?? (await defaultFactory());
++    const { server, shutdown } = factory();
++    let port = MEMORY_PORT;
++    let connect: RunningServer["connect"];
++    if (MEMORY) {
++      connect = () => {
++        const [client, serverSide] = duplexPair();
++        server.emit("connection", serverSide);
++        return client;
++      };
++    } else {
++      await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
++      port = (server.address() as AddressInfo).port;
++    }
++    let stopped: Promise<void> | undefined;
++    const stop = () => (stopped ??= shutdown());
++    return { url: `http://127.0.0.1:${port}/mcp`, port, connect, terminate: () => void stop(), stop };
++  }
++  return spawnServer();
++}
++
++async function defaultFactory() {
++  const { createMcpHttpServer } = await import("../dist/http.js");
++  return () => createMcpHttpServer(undefined, { originPort: MEMORY_PORT });
++}
++
++function spawnServer(): Promise<RunningServer> {
++  return new Promise((resolve, reject) => {
++    const child = spawn(process.execPath, [SERVER_ENTRY], {
++      env: { ...process.env, PORT: "0" },
++      stdio: ["ignore", "pipe", "inherit"],
++    });
++    let output = "";
++    const timer = setTimeout(() => reject(new Error(`server did not start: ${output}`)), 10_000);
++    child.stdout!.setEncoding("utf8");
++    child.stdout!.on("data", (chunk: string) => {
++      output += chunk;
++      const match = /listening on (http:\/\/127\.0\.0\.1:(\d+)\/mcp)/.exec(output);
++      if (!match) return;
++      clearTimeout(timer);
++      const exited = new Promise<void>((done) => child.once("exit", () => done()));
++      resolve({
++        url: match[1]!,
++        port: Number(match[2]),
++        terminate: () => void child.kill("SIGTERM"),
++        stop: async () => {
++          if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM");
++          await exited;
++        },
++      });
++    });
++    child.once("exit", (code) => {
++      clearTimeout(timer);
++      reject(new Error(`server exited early (${code}): ${output}`));
++    });
++  });
++}
++
++export interface HttpOptions {
++  method?: string;
++  path?: string;
++  headers?: Record<string, string>;
++  body?: unknown;
++  signal?: AbortSignal;
++}
++
++/** Sends one HTTP request to the server and resolves with the (streaming) response. */
++export function http(server: RunningServer, options: HttpOptions = {}): Promise<IncomingMessage> {
++  const target = new URL(server.url);
++  const body =
++    options.body === undefined ? undefined : typeof options.body === "string" ? options.body : JSON.stringify(options.body);
++  return new Promise((resolve, reject) => {
++    const req = httpRequest(
++      {
++        host: target.hostname,
++        port: target.port,
++        path: options.path ?? target.pathname,
++        method: options.method ?? "POST",
++        headers: options.headers,
++        signal: options.signal,
++        // A fresh connection per request (no keep-alive pooling between tests).
++        ...(server.connect ? { createConnection: server.connect as any } : { agent: false }),
++      },
++      resolve,
++    );
++    req.on("error", reject);
++    req.end(body);
++  });
++}
++
++export async function post(server: RunningServer, body: unknown, headers: Record<string, string>, signal?: AbortSignal) {
++  return http(server, { body, headers, signal });
++}
++
++export async function readText(res: IncomingMessage): Promise<string> {
++  res.setEncoding("utf8");
++  let text = "";
++  for await (const chunk of res) text += chunk;
++  return text;
++}
++
++export async function readJson(res: IncomingMessage): Promise<any> {
++  return JSON.parse(await readText(res));
++}
++
++export interface CallOptions {
++  id?: string | number;
++  capabilities?: Record<string, unknown>;
++  meta?: Record<string, unknown>;
++  /** Extra/override headers; a value of `null` removes a default header. */
++  headers?: Record<string, string | null>;
++}
++
++export interface RpcResponse {
++  status: number;
++  headers: IncomingMessage["headers"];
++  /** The final JSON-RPC response. */
++  body: any;
++  /** Notifications received before the final response (SSE only). */
++  notifications: any[];
++}
++
++let nextId = 1;
++
++export function requestMeta(capabilities: Record<string, unknown> = {}, extra: Record<string, unknown> = {}) {
++  return {
++    "io.modelcontextprotocol/protocolVersion": PROTOCOL_VERSION,
++    "io.modelcontextprotocol/clientInfo": { name: "field-notes-tests", version: "0.0.0" },
++    "io.modelcontextprotocol/clientCapabilities": capabilities,
++    ...extra,
++  };
++}
++
++/** The headers a conforming client sends for this request. */
++export function standardHeaders(method: string, params: Record<string, any>): Record<string, string> {
++  const headers: Record<string, string> = {
++    "Content-Type": "application/json",
++    Accept: "application/json, text/event-stream",
++    "MCP-Protocol-Version": PROTOCOL_VERSION,
++    "Mcp-Method": method,
++  };
++  if (method === "tools/call" || method === "prompts/get") headers["Mcp-Name"] = encodeHeader(params.name);
++  if (method === "resources/read") headers["Mcp-Name"] = encodeHeader(params.uri);
++  if (method === "tools/call" && params.name === "add_note" && typeof params.arguments?.notebook === "string") {
++    headers["Mcp-Param-Notebook"] = encodeHeader(params.arguments.notebook);
++  }
++  return headers;
++}
++
++export function encodeHeader(value: string): string {
++  const plain = /^[\x21-\x7e]([\x20-\x7e]*[\x21-\x7e])?$/.test(value);
++  const sentinel = value.startsWith("=?base64?") && value.endsWith("?=");
++  return plain && !sentinel ? value : `=?base64?${Buffer.from(value, "utf8").toString("base64")}?=`;
++}
++
++/** Sends a JSON-RPC request with the required `_meta` and headers and collects the response. */
++export async function call(
++  server: RunningServer,
++  method: string,
++  params: Record<string, any> = {},
++  options: CallOptions = {},
++): Promise<RpcResponse> {
++  const id = options.id ?? nextId++;
++  const fullParams = { ...params, _meta: requestMeta(options.capabilities, options.meta) };
++  const headers = standardHeaders(method, params);
++  for (const [k, v] of Object.entries(options.headers ?? {})) {
++    for (const existing of Object.keys(headers)) if (existing.toLowerCase() === k.toLowerCase()) delete headers[existing];
++    if (v !== null) headers[k] = v;
++  }
++  const res = await post(server, { jsonrpc: "2.0", id, method, params: fullParams }, headers);
++  return readResponse(res);
++}
++
++export async function readResponse(res: IncomingMessage): Promise<RpcResponse> {
++  const type = res.headers["content-type"] ?? "";
++  if (type.startsWith("text/event-stream")) {
++    const reader = new SseReader(res);
++    const messages: any[] = [];
++    for (;;) {
++      const message = await reader.next(30_000);
++      if (message === undefined) break;
++      messages.push(message);
++      if (!("method" in message)) break;
++    }
++    const body = messages.pop();
++    return { status: res.statusCode!, headers: res.headers, body, notifications: messages };
++  }
++  const text = await readText(res);
++  return { status: res.statusCode!, headers: res.headers, body: text ? JSON.parse(text) : undefined, notifications: [] };
++}
++
++/** Incremental reader for an SSE response carrying JSON-RPC messages. */
++export class SseReader {
++  private readonly res: IncomingMessage;
++  private buffer = "";
++  private readonly queue: any[] = [];
++  private ended = false;
++  private wake: (() => void) | undefined;
++
++  constructor(res: IncomingMessage) {
++    this.res = res;
++    res.setEncoding("utf8");
++    res.on("data", (chunk: string) => {
++      this.buffer += chunk;
++      this.parse();
++      this.wake?.();
++    });
++    const finish = () => {
++      this.ended = true;
++      this.wake?.();
++    };
++    res.on("end", finish);
++    res.on("close", finish);
++    res.on("error", finish);
++  }
++
++  /** Next JSON-RPC message, or undefined once the stream has ended. Rejects on timeout. */
++  async next(timeoutMs = 5000): Promise<any> {
++    const deadline = Date.now() + timeoutMs;
++    while (this.queue.length === 0 && !this.ended) {
++      const remaining = deadline - Date.now();
++      if (remaining <= 0) throw new Error("timed out waiting for SSE message");
++      await new Promise<void>((resolve) => {
++        const timer = setTimeout(resolve, remaining);
++        this.wake = () => {
++          clearTimeout(timer);
++          resolve();
++        };
++      });
++      this.wake = undefined;
++    }
++    return this.queue.shift();
++  }
++
++  /** True if no message arrives within `ms`. */
++  async quiet(ms: number): Promise<boolean> {
++    try {
++      const message = await this.next(ms);
++      if (message !== undefined) this.queue.unshift(message);
++      return message === undefined;
++    } catch {
++      return true;
++    }
++  }
++
++  close(): void {
++    this.res.destroy();
++  }
++
++  private parse(): void {
++    let match: RegExpExecArray | null;
++    while ((match = /\r?\n\r?\n/.exec(this.buffer))) {
++      const event = this.buffer.slice(0, match.index);
++      this.buffer = this.buffer.slice(match.index + match[0].length);
++      const data = event
++        .split(/\r?\n/)
++        .filter((line) => line.startsWith("data:"))
++        .map((line) => line.slice(5).replace(/^ /, ""))
++        .join("\n");
++      if (data) this.queue.push(JSON.parse(data));
++    }
++  }
++}
++
++/** Opens a subscriptions/listen stream. */
++export async function listen(server: RunningServer, notifications: Record<string, unknown>, id: string | number) {
++  const params = { notifications, _meta: requestMeta() };
++  const res = await post(
++    server,
++    { jsonrpc: "2.0", id, method: "subscriptions/listen", params },
++    standardHeaders("subscriptions/listen", params),
++  );
++  return { res, reader: new SseReader(res) };
++}
+diff --git a/test/server.test.ts b/test/server.test.ts
+new file mode 100644
+index 0000000..bf9389c
+--- /dev/null
++++ b/test/server.test.ts
+@@ -0,0 +1,635 @@
++// End-to-end tests: start the built server and exercise it over HTTP.
++
++import assert from "node:assert/strict";
++import { after, before, describe, test } from "node:test";
++import {
++  call,
++  http,
++  listen,
++  post,
++  readJson,
++  readText,
++  PROTOCOL_VERSION,
++  readResponse,
++  requestMeta,
++  SseReader,
++  standardHeaders,
++  startServer,
++  type RunningServer,
++} from "./helpers.ts";
++
++const FORM = { elicitation: { form: {} } };
++const SERVER_INFO = { name: "field-notes", version: "1.0.0" };
++
++let server: RunningServer;
++
++before(async () => {
++  server = await startServer();
++});
++
++after(async () => {
++  await server?.stop();
++});
++
++function text(result: any): string {
++  return result.content.map((c: any) => c.text).join("");
++}
++
++describe("transport and protocol envelope", () => {
++  test("server/discover advertises version, capabilities, identity and instructions", async () => {
++    const { status, body, headers } = await call(server, "server/discover");
++    assert.equal(status, 200);
++    assert.match(headers["content-type"]!, /^application\/json/);
++    const r = body.result;
++    assert.equal(r.resultType, "complete");
++    assert.deepEqual(r.supportedVersions, [PROTOCOL_VERSION]);
++    assert.deepEqual(r.capabilities, { tools: {}, resources: { subscribe: true }, prompts: {} });
++    assert.deepEqual(r._meta["io.modelcontextprotocol/serverInfo"], SERVER_INFO);
++    assert.equal(
++      r.instructions,
++      "Field Notes stores short notes grouped into notebooks. Use add_note to save a note, read notes://index to see what exists.",
++    );
++    assert.equal(r.ttlMs, 300000);
++    assert.equal(r.cacheScope, "public");
++  });
++
++  test("every result identifies the server", async () => {
++    const { body } = await call(server, "tools/list");
++    assert.deepEqual(body.result._meta["io.modelcontextprotocol/serverInfo"], SERVER_INFO);
++  });
++
++  test("missing _meta is invalid params with 400", async () => {
++    const res = await post(server, { jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }, standardHeaders("tools/list", {}));
++    const { status, body } = await readResponse(res);
++    assert.equal(status, 400);
++    assert.equal(body.id, 1);
++    assert.equal(body.error.code, -32602);
++  });
++
++  test("missing clientCapabilities is invalid params with 400", async () => {
++    const params = { _meta: { "io.modelcontextprotocol/protocolVersion": PROTOCOL_VERSION } };
++    const res = await post(server, { jsonrpc: "2.0", id: 2, method: "tools/list", params }, standardHeaders("tools/list", params));
++    const { status, body } = await readResponse(res);
++    assert.equal(status, 400);
++    assert.equal(body.error.code, -32602);
++  });
++
++  test("unsupported protocol version lists supported versions", async () => {
++    const params = { _meta: { ...requestMeta(), "io.modelcontextprotocol/protocolVersion": "2025-11-25" } };
++    const headers = { ...standardHeaders("tools/list", params), "MCP-Protocol-Version": "2025-11-25" };
++    const { status, body } = await readResponse(await post(server, { jsonrpc: "2.0", id: 3, method: "tools/list", params }, headers));
++    assert.equal(status, 400);
++    assert.equal(body.error.code, -32022);
++    assert.deepEqual(body.error.data, { supported: [PROTOCOL_VERSION], requested: "2025-11-25" });
++  });
++
++  test("legacy initialize is rejected naming the supported versions", async () => {
++    const res = await post(
++      server,
++      { jsonrpc: "2.0", id: 0, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "old", version: "1" } } },
++      { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
++    );
++    const { status, body } = await readResponse(res);
++    assert.equal(status, 400);
++    assert.equal(body.error.code, -32022);
++    assert.deepEqual(body.error.data.supported, [PROTOCOL_VERSION]);
++  });
++
++  test("missing MCP-Protocol-Version header is a header mismatch", async () => {
++    const { status, body } = await call(server, "tools/list", {}, { headers: { "MCP-Protocol-Version": null } });
++    assert.equal(status, 400);
++    assert.equal(body.error.code, -32020);
++  });
++
++  test("MCP-Protocol-Version header must match _meta", async () => {
++    const { status, body } = await call(server, "tools/list", {}, { headers: { "MCP-Protocol-Version": "2099-01-01" } });
++    assert.equal(status, 400);
++    assert.equal(body.error.code, -32020);
++  });
++
++  test("Mcp-Method header is required and must match", async () => {
++    let r = await call(server, "tools/list", {}, { headers: { "Mcp-Method": null } });
++    assert.equal(r.status, 400);
++    assert.equal(r.body.error.code, -32020);
++    r = await call(server, "tools/list", {}, { headers: { "Mcp-Method": "prompts/list" } });
++    assert.equal(r.status, 400);
++    assert.equal(r.body.error.code, -32020);
++  });
++
++  test("Mcp-Name header is required and must match, Base64 sentinel is decoded", async () => {
++    let r = await call(server, "resources/read", { uri: "notes://index" }, { headers: { "Mcp-Name": null } });
++    assert.equal(r.status, 400);
++    assert.equal(r.body.error.code, -32020);
++    r = await call(server, "resources/read", { uri: "notes://index" }, { headers: { "Mcp-Name": "notes://notes/n1" } });
++    assert.equal(r.status, 400);
++    assert.equal(r.body.error.code, -32020);
++    const encoded = `=?base64?${Buffer.from("notes://index").toString("base64")}?=`;
++    r = await call(server, "resources/read", { uri: "notes://index" }, { headers: { "Mcp-Name": encoded } });
++    assert.equal(r.status, 200);
++    assert.equal(r.body.result.resultType, "complete");
++    r = await call(server, "resources/read", { uri: "notes://index" }, { headers: { "Mcp-Name": "=?base64?!!!?=" } });
++    assert.equal(r.status, 400);
++    assert.equal(r.body.error.code, -32020);
++  });
++
++  test("unknown method is 404 with -32601", async () => {
++    const { status, body } = await call(server, "resources/subscribe", { uri: "notes://index" });
++    assert.equal(status, 404);
++    assert.equal(body.error.code, -32601);
++  });
++
++  test("invalid JSON is a parse error", async () => {
++    const res = await post(server, "{not json", standardHeaders("tools/list", {}));
++    const { status, body } = await readResponse(res);
++    assert.equal(status, 400);
++    assert.equal(body.error.code, -32700);
++  });
++
++  test("batches and responses are invalid requests", async () => {
++    let res = await post(server, [{ jsonrpc: "2.0", id: 1, method: "tools/list" }], standardHeaders("tools/list", {}));
++    assert.equal(res.statusCode, 400);
++    assert.equal((await readJson(res)).error.code, -32600);
++    res = await post(server, { jsonrpc: "2.0", id: 1, result: {} }, standardHeaders("tools/list", {}));
++    assert.equal(res.statusCode, 400);
++    assert.equal((await readJson(res)).error.code, -32600);
++  });
++
++  test("notifications are accepted with 202 and no body", async () => {
++    const res = await post(
++      server,
++      { jsonrpc: "2.0", method: "notifications/cancelled", params: { requestId: 99 } },
++      { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
++    );
++    assert.equal(res.statusCode, 202);
++    assert.equal(await readText(res), "");
++  });
++
++  test("GET and DELETE are 405, other paths 404", async () => {
++    assert.equal((await http(server, { method: "GET" })).statusCode, 405);
++    assert.equal((await http(server, { method: "DELETE" })).statusCode, 405);
++    const other = await http(server, { path: "/other", body: {}, headers: standardHeaders("tools/list", {}) });
++    assert.equal(other.statusCode, 404);
++  });
++
++  test("browser origins other than localhost:PORT are forbidden", async () => {
++    let r = await call(server, "tools/list", {}, { headers: { Origin: "http://evil.example" } });
++    assert.equal(r.status, 403);
++    r = await call(server, "tools/list", {}, { headers: { Origin: `http://localhost:${server.port + 1}` } });
++    assert.equal(r.status, 403);
++    r = await call(server, "tools/list", {}, { headers: { Origin: `http://localhost:${server.port}` } });
++    assert.equal(r.status, 200);
++    r = await call(server, "tools/list", {}, { headers: { Origin: `http://127.0.0.1:${server.port}` } });
++    assert.equal(r.status, 200);
++  });
++
++  test("Mcp-Session-Id is ignored and never minted", async () => {
++    const r = await call(server, "tools/list", {}, { headers: { "Mcp-Session-Id": "abc" } });
++    assert.equal(r.status, 200);
++    assert.equal(r.headers["mcp-session-id"], undefined);
++  });
++});
++
++describe("tools", () => {
++  test("tools/list returns the three tools alphabetically, cacheable", async () => {
++    const { body } = await call(server, "tools/list");
++    const r = body.result;
++    assert.deepEqual(r.tools.map((t: any) => t.name), ["add_note", "delete_note", "reindex"]);
++    assert.equal(r.ttlMs, 300000);
++    assert.equal(r.cacheScope, "public");
++    assert.equal(r.nextCursor, undefined);
++    const add = r.tools[0];
++    assert.equal(add.inputSchema.type, "object");
++    assert.equal(add.inputSchema.properties.notebook["x-mcp-header"], "Notebook");
++    assert.deepEqual([...add.inputSchema.required].sort(), ["body", "notebook", "title"]);
++    assert.equal(add.outputSchema.type, "object");
++    assert.deepEqual([...add.outputSchema.required].sort(), ["id", "notebook", "uri", "wordCount"]);
++  });
++
++  test("an unknown cursor is invalid params", async () => {
++    const { body } = await call(server, "tools/list", { cursor: "bogus" });
++    assert.equal(body.error.code, -32602);
++  });
++
++  test("unknown tool is a protocol error", async () => {
++    const { body } = await call(server, "tools/call", { name: "nope", arguments: {} });
++    assert.equal(body.error.code, -32602);
++  });
++
++  test("add_note returns structured output and a text copy", async () => {
++    const { status, body } = await call(server, "tools/call", {
++      name: "add_note",
++      arguments: { notebook: "work", title: "Plan", body: "  ship   it\tnow\n" },
++    });
++    assert.equal(status, 200);
++    const r = body.result;
++    assert.equal(r.resultType, "complete");
++    assert.notEqual(r.isError, true);
++    assert.match(r.structuredContent.id, /^n\d+$/);
++    assert.deepEqual(r.structuredContent, {
++      id: r.structuredContent.id,
++      uri: `notes://notes/${r.structuredContent.id}`,
++      notebook: "work",
++      wordCount: 3,
++    });
++    assert.deepEqual(JSON.parse(text(r)), r.structuredContent);
++
++    const read = await call(server, "resources/read", { uri: r.structuredContent.uri });
++    assert.equal(read.body.result.contents[0].text, "# Plan\n\n  ship   it\tnow\n\n");
++  });
++
++  test("add_note requires the Mcp-Param-Notebook header to match the body", async () => {
++    const params = { name: "add_note", arguments: { notebook: "work", title: "T", body: "" } };
++    let r = await call(server, "tools/call", params, { headers: { "Mcp-Param-Notebook": null } });
++    assert.equal(r.status, 400);
++    assert.equal(r.body.error.code, -32020);
++    r = await call(server, "tools/call", params, { headers: { "Mcp-Param-Notebook": "personal" } });
++    assert.equal(r.status, 400);
++    assert.equal(r.body.error.code, -32020);
++    const encoded = `=?base64?${Buffer.from("work").toString("base64")}?=`;
++    r = await call(server, "tools/call", params, { headers: { "mcp-param-notebook": encoded } });
++    assert.equal(r.status, 200);
++    assert.notEqual(r.body.result.isError, true);
++  });
++
++  test("add_note argument problems are tool execution errors", async () => {
++    const cases = [
++      { notebook: "work", body: "x" },
++      { notebook: "work", title: "", body: "x" },
++      { notebook: "bad name!", title: "t", body: "x" },
++      { notebook: "work", title: "x".repeat(201), body: "x" },
++      { notebook: "work", title: 5, body: "x" },
++      { notebook: "work", title: "t" },
++      { notebook: "x".repeat(65), title: "t", body: "" },
++    ];
++    for (const args of cases) {
++      const { status, body } = await call(server, "tools/call", { name: "add_note", arguments: args });
++      assert.equal(status, 200, JSON.stringify(args));
++      assert.equal(body.result.isError, true, JSON.stringify(args));
++      assert.ok(text(body.result).length > 0);
++    }
++    const ok = await call(server, "tools/call", {
++      name: "add_note",
++      arguments: { notebook: "x".repeat(64), title: "y".repeat(200), body: "" },
++    });
++    assert.notEqual(ok.body.result.isError, true);
++    assert.equal(ok.body.result.structuredContent.wordCount, 0);
++  });
++
++  test("reindex without a progress token returns plain JSON", async () => {
++    const { headers, body } = await call(server, "tools/call", { name: "reindex", arguments: { steps: 2, delayMs: 0 } });
++    assert.match(headers["content-type"]!, /^application\/json/);
++    assert.equal(text(body.result), "Reindex complete: 2 steps");
++  });
++
++  test("reindex streams progress over SSE when asked", async () => {
++    const { headers, body, notifications } = await call(
++      server,
++      "tools/call",
++      { name: "reindex", arguments: { steps: 3, delayMs: 10 } },
++      { meta: { progressToken: "tok-1" } },
++    );
++    assert.match(headers["content-type"]!, /^text\/event-stream/);
++    assert.deepEqual(
++      notifications.map((n) => [n.method, n.params.progressToken, n.params.progress, n.params.total, n.params.message]),
++      [
++        ["notifications/progress", "tok-1", 1, 3, "Indexed 1/3"],
++        ["notifications/progress", "tok-1", 2, 3, "Indexed 2/3"],
++        ["notifications/progress", "tok-1", 3, 3, "Indexed 3/3"],
++      ],
++    );
++    assert.equal(text(body.result), "Reindex complete: 3 steps");
++  });
++
++  test("reindex defaults to 5 steps", async () => {
++    const { notifications, body } = await call(
++      server,
++      "tools/call",
++      { name: "reindex", arguments: { delayMs: 0 } },
++      { meta: { progressToken: 7 } },
++    );
++    assert.equal(notifications.length, 5);
++    assert.equal(text(body.result), "Reindex complete: 5 steps");
++  });
++
++  test("reindex out-of-range arguments are tool errors", async () => {
++    for (const args of [{ steps: 0 }, { steps: 21 }, { steps: 2.5 }, { delayMs: -1 }, { delayMs: 1001 }, { steps: "3" }]) {
++      const { body } = await call(server, "tools/call", { name: "reindex", arguments: args });
++      assert.equal(body.result.isError, true, JSON.stringify(args));
++    }
++  });
++
++  test("reindex survives a client that goes away mid-stream", async () => {
++    const controller = new AbortController();
++    const params = { name: "reindex", arguments: { steps: 20, delayMs: 50 } };
++    const res = await post(
++      server,
++      { jsonrpc: "2.0", id: "cancel-me", method: "tools/call", params: { ...params, _meta: requestMeta({}, { progressToken: "c" }) } },
++      standardHeaders("tools/call", params),
++      controller.signal,
++    );
++    const reader = new SseReader(res);
++    const first = await reader.next();
++    assert.equal(first.params.progress, 1);
++    controller.abort();
++    reader.close();
++    // The server keeps serving other requests.
++    const { status } = await call(server, "tools/list");
++    assert.equal(status, 200);
++  });
++});
++
++describe("delete_note (multi round-trip confirmation)", () => {
++  async function newNote(title: string): Promise<string> {
++    const { body } = await call(server, "tools/call", { name: "add_note", arguments: { notebook: "tmp", title, body: "b" } });
++    return body.result.structuredContent.id;
++  }
++
++  async function exists(id: string): Promise<boolean> {
++    const { body } = await call(server, "resources/read", { uri: `notes://notes/${id}` });
++    return body.result !== undefined;
++  }
++
++  test("unknown note is a tool error", async () => {
++    const { body } = await call(server, "tools/call", { name: "delete_note", arguments: { id: "n9999" } }, { capabilities: FORM });
++    assert.equal(body.result.isError, true);
++    assert.equal(text(body.result), "Note n9999 not found");
++  });
++
++  test("clients without form elicitation get MissingRequiredClientCapability", async () => {
++    const id = await newNote("keep me");
++    for (const capabilities of [{}, { elicitation: { url: {} } }]) {
++      const { status, body } = await call(server, "tools/call", { name: "delete_note", arguments: { id } }, { capabilities });
++      assert.equal(status, 400);
++      assert.equal(body.error.code, -32021);
++      assert.ok(body.error.data.requiredCapabilities.elicitation);
++    }
++    assert.ok(await exists(id));
++  });
++
++  test("asks for confirmation, then deletes on confirm: true", async () => {
++    const id = await newNote("Doomed");
++    const first = await call(server, "tools/call", { name: "delete_note", arguments: { id } }, { capabilities: { elicitation: {} } });
++    const r = first.body.result;
++    assert.equal(r.resultType, "input_required");
++    assert.equal(typeof r.requestState, "string");
++    const [key, request] = Object.entries(r.inputRequests as Record<string, any>)[0]!;
++    assert.equal(request.method, "elicitation/create");
++    assert.equal(request.params.mode, "form");
++    assert.equal(request.params.message, 'Delete note "Doomed"?');
++    assert.deepEqual(request.params.requestedSchema.required, ["confirm"]);
++    assert.equal(request.params.requestedSchema.properties.confirm.type, "boolean");
++    assert.equal(r.ttlMs, undefined);
++    assert.ok(await exists(id));
++
++    const retry = await call(
++      server,
++      "tools/call",
++      {
++        name: "delete_note",
++        arguments: { id },
++        inputResponses: { [key]: { action: "accept", content: { confirm: true } } },
++        requestState: r.requestState,
++      },
++      { capabilities: FORM },
++    );
++    assert.equal(retry.body.result.resultType, "complete");
++    assert.equal(text(retry.body.result), `Deleted note ${id}`);
++    assert.equal(await exists(id), false);
++
++    // Replaying the same confirmation cannot delete anything else.
++    const replay = await call(
++      server,
++      "tools/call",
++      { name: "delete_note", arguments: { id }, inputResponses: { [key]: { action: "accept", content: { confirm: true } } }, requestState: r.requestState },
++      { capabilities: FORM },
++    );
++    assert.equal(text(replay.body.result), `Note ${id} not found`);
++  });
++
++  test("decline, cancel and confirm: false leave the note alone", async () => {
++    const id = await newNote("Survivor");
++    for (const answer of [{ action: "decline" }, { action: "cancel" }, { action: "accept", content: { confirm: false } }]) {
++      const first = await call(server, "tools/call", { name: "delete_note", arguments: { id } }, { capabilities: FORM });
++      const { inputRequests, requestState } = first.body.result;
++      const key = Object.keys(inputRequests)[0]!;
++      const retry = await call(
++        server,
++        "tools/call",
++        { name: "delete_note", arguments: { id }, inputResponses: { [key]: answer }, requestState },
++        { capabilities: FORM },
++      );
++      assert.notEqual(retry.body.result.isError, true);
++      assert.equal(text(retry.body.result), "Deletion cancelled", JSON.stringify(answer));
++    }
++    assert.ok(await exists(id));
++  });
++
++  test("confirmation for one note cannot delete another, nor be forged", async () => {
++    const a = await newNote("A");
++    const b = await newNote("B");
++    const first = await call(server, "tools/call", { name: "delete_note", arguments: { id: a } }, { capabilities: FORM });
++    const { inputRequests, requestState } = first.body.result;
++    const key = Object.keys(inputRequests)[0]!;
++    const yes = { [key]: { action: "accept", content: { confirm: true } } };
++
++    // Reusing A's confirmation for B.
++    let r = await call(server, "tools/call", { name: "delete_note", arguments: { id: b }, inputResponses: yes, requestState }, { capabilities: FORM });
++    assert.equal(r.body.error?.code, -32602);
++
++    // Tampered state.
++    const [payload, mac] = requestState.split(".");
++    const forged = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(payload, "base64url").toString()), noteId: b })).toString("base64url");
++    r = await call(server, "tools/call", { name: "delete_note", arguments: { id: b }, inputResponses: yes, requestState: `${forged}.${mac}` }, { capabilities: FORM });
++    assert.equal(r.body.error?.code, -32602);
++    r = await call(server, "tools/call", { name: "delete_note", arguments: { id: b }, inputResponses: yes, requestState: "garbage" }, { capabilities: FORM });
++    assert.equal(r.body.error?.code, -32602);
++
++    // Answers without any server-issued state just trigger a fresh confirmation.
++    r = await call(server, "tools/call", { name: "delete_note", arguments: { id: b }, inputResponses: yes }, { capabilities: FORM });
++    assert.equal(r.body.result.resultType, "input_required");
++
++    assert.ok(await exists(a));
++    assert.ok(await exists(b));
++  });
++
++  test("a retry without the answer asks again", async () => {
++    const id = await newNote("Again");
++    const first = await call(server, "tools/call", { name: "delete_note", arguments: { id } }, { capabilities: FORM });
++    const r = await call(
++      server,
++      "tools/call",
++      { name: "delete_note", arguments: { id }, inputResponses: {}, requestState: first.body.result.requestState },
++      { capabilities: FORM },
++    );
++    assert.equal(r.body.result.resultType, "input_required");
++    assert.ok(await exists(id));
++  });
++});
++
++describe("resources", () => {
++  test("resources/list has only the index", async () => {
++    const { body } = await call(server, "resources/list");
++    assert.deepEqual(body.result.resources, [
++      { uri: "notes://index", name: "index", title: "All notes", mimeType: "application/json" },
++    ]);
++    assert.equal(body.result.ttlMs, 300000);
++    assert.equal(body.result.cacheScope, "public");
++  });
++
++  test("resources/templates/list has the note template", async () => {
++    const { body } = await call(server, "resources/templates/list");
++    assert.deepEqual(body.result.resourceTemplates, [
++      { uriTemplate: "notes://notes/{id}", name: "note", title: "A single note", mimeType: "text/markdown" },
++    ]);
++    assert.equal(body.result.ttlMs, 300000);
++    assert.equal(body.result.cacheScope, "public");
++  });
++
++  test("reading n1 renders markdown, private and never fresh", async () => {
++    const { body } = await call(server, "resources/read", { uri: "notes://notes/n1" });
++    assert.deepEqual(body.result.contents, [
++      { uri: "notes://notes/n1", mimeType: "text/markdown", text: "# Standup\n\nDiscussed the release schedule and blockers.\n" },
++    ]);
++    assert.equal(body.result.ttlMs, 0);
++    assert.equal(body.result.cacheScope, "private");
++  });
++
++  test("the index lists notes in numeric id order", async () => {
++    const { body } = await call(server, "resources/read", { uri: "notes://index" });
++    const [content] = body.result.contents;
++    assert.equal(content.mimeType, "application/json");
++    const index = JSON.parse(content.text);
++    assert.deepEqual(index.slice(0, 3), [
++      { id: "n1", notebook: "work", title: "Standup" },
++      { id: "n2", notebook: "work", title: "Retro actions" },
++      { id: "n3", notebook: "personal", title: "Groceries" },
++    ]);
++    const numbers = index.map((n: any) => Number(n.id.slice(1)));
++    assert.deepEqual(numbers, [...numbers].sort((a, b) => a - b));
++    assert.ok(index.length >= 10, "enough notes were created by earlier tests to check n10 ordering");
++    assert.equal(body.result.cacheScope, "private");
++  });
++
++  test("missing resources are -32602", async () => {
++    for (const uri of ["notes://notes/n424242", "notes://nope", "file:///etc/passwd"]) {
++      const { body } = await call(server, "resources/read", { uri });
++      assert.equal(body.error.code, -32602, uri);
++      assert.equal(body.error.data.uri, uri);
++    }
++  });
++});
++
++describe("prompts", () => {
++  test("prompts/list", async () => {
++    const { body } = await call(server, "prompts/list");
++    assert.equal(body.result.prompts.length, 1);
++    const [p] = body.result.prompts;
++    assert.equal(p.name, "summarize_notebook");
++    assert.deepEqual(
++      p.arguments.map((a: any) => [a.name, a.required]),
++      [["notebook", true], ["style", false]],
++    );
++    assert.equal(body.result.ttlMs, 300000);
++    assert.equal(body.result.cacheScope, "public");
++  });
++
++  test("brief summary embeds the notebook's notes", async () => {
++    const { body } = await call(server, "prompts/get", { name: "summarize_notebook", arguments: { notebook: "personal" } });
++    assert.equal(body.result.resultType, "complete");
++    assert.deepEqual(body.result.messages, [
++      { role: "user", content: { type: "text", text: 'Summarize the notes in the "personal" notebook in two sentences.' } },
++      {
++        role: "user",
++        content: {
++          type: "resource",
++          resource: { uri: "notes://notes/n3", mimeType: "text/markdown", text: "# Groceries\n\nEggs, flour, coffee.\n" },
++        },
++      },
++    ]);
++  });
++
++  test("detailed style and empty notebooks", async () => {
++    let { body } = await call(server, "prompts/get", { name: "summarize_notebook", arguments: { notebook: "work", style: "detailed" } });
++    assert.equal(
++      body.result.messages[0].content.text,
++      'Summarize the notes in the "work" notebook in detail, one paragraph per note.',
++    );
++    assert.deepEqual(body.result.messages.slice(1, 3).map((m: any) => m.content.resource.uri), ["notes://notes/n1", "notes://notes/n2"]);
++    ({ body } = await call(server, "prompts/get", { name: "summarize_notebook", arguments: { notebook: "empty-one" } }));
++    assert.equal(body.result.messages.length, 1);
++  });
++
++  test("bad arguments are invalid params", async () => {
++    for (const args of [{}, { notebook: "work", style: "haiku" }, undefined]) {
++      const { body } = await call(server, "prompts/get", { name: "summarize_notebook", arguments: args });
++      assert.equal(body.error.code, -32602, JSON.stringify(args));
++    }
++    const { body } = await call(server, "prompts/get", { name: "nope", arguments: {} });
++    assert.equal(body.error.code, -32602);
++  });
++});
++
++describe("subscriptions/listen", () => {
++  test("acknowledges, then notifies only watchers of changed URIs", async () => {
++    const all = await listen(server, { resourceSubscriptions: ["notes://index", "notes://notes/n2", "https://elsewhere"], toolsListChanged: true }, "sub-all");
++    assert.equal(all.res.statusCode, 200);
++    assert.match(all.res.headers["content-type"]!, /^text\/event-stream/);
++    const ack = await all.reader.next();
++    assert.equal(ack.method, "notifications/subscriptions/acknowledged");
++    assert.equal(ack.params._meta["io.modelcontextprotocol/subscriptionId"], "sub-all");
++    assert.deepEqual(ack.params.notifications, { resourceSubscriptions: ["notes://index", "notes://notes/n2"] });
++
++    const other = await listen(server, { resourceSubscriptions: ["notes://notes/n1"] }, 42);
++    const ack2 = await other.reader.next();
++    assert.equal(ack2.params._meta["io.modelcontextprotocol/subscriptionId"], 42);
++
++    // Adding a note updates the index only.
++    await call(server, "tools/call", { name: "add_note", arguments: { notebook: "work", title: "New", body: "" } });
++    const added = await all.reader.next();
++    assert.equal(added.method, "notifications/resources/updated");
++    assert.equal(added.params.uri, "notes://index");
++    assert.equal(added.params._meta["io.modelcontextprotocol/subscriptionId"], "sub-all");
++    assert.ok(await other.reader.quiet(300), "watcher of n1 must not hear about the index");
++
++    // Deleting n2 updates the index and n2.
++    const ask = await call(server, "tools/call", { name: "delete_note", arguments: { id: "n2" } }, { capabilities: FORM });
++    const key = Object.keys(ask.body.result.inputRequests)[0]!;
++    const done = await call(
++      server,
++      "tools/call",
++      {
++        name: "delete_note",
++        arguments: { id: "n2" },
++        inputResponses: { [key]: { action: "accept", content: { confirm: true } } },
++        requestState: ask.body.result.requestState,
++      },
++      { capabilities: FORM },
++    );
++    assert.equal(text(done.body.result), "Deleted note n2");
++    const uris = [(await all.reader.next()).params.uri, (await all.reader.next()).params.uri].sort();
++    assert.deepEqual(uris, ["notes://index", "notes://notes/n2"]);
++    assert.ok(await other.reader.quiet(300));
++
++    all.reader.close();
++    other.reader.close();
++  });
++
++  test("a malformed filter is invalid params", async () => {
++    const { res } = await listen(server, { resourceSubscriptions: "notes://index" } as any, 5);
++    const { body } = await readResponse(res);
++    assert.equal(body.error.code, -32602);
++  });
++
++  test("server shutdown ends subscriptions gracefully", async () => {
++    const own = await startServer();
++    const sub = await listen(own, { resourceSubscriptions: ["notes://index"] }, "bye");
++    await sub.reader.next();
++    own.terminate();
++    const final = await sub.reader.next();
++    assert.equal(final.id, "bye");
++    assert.equal(final.result.resultType, "complete");
++    assert.equal(final.result._meta["io.modelcontextprotocol/subscriptionId"], "bye");
++    assert.equal(await sub.reader.next(), undefined);
++    await own.stop();
++  });
++});

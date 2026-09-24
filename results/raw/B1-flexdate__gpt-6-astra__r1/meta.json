@@ -1,0 +1,26 @@
+{
+  "run_id": "B1-flexdate__gpt-6-astra__r1",
+  "task": "B1-flexdate",
+  "model": "gpt-6-astra",
+  "model_id": "gpt-6-astra",
+  "cli": "codex",
+  "rep": 1,
+  "prompt_file": "prompt.md",
+  "prompt": "The test suite in ./repo is failing. Please fix the code so the tests pass.\nRun the tests before you finish.\nDo not modify the tests.\n\n---\nEnvironment notes are in ./ENV.md. There is no internet access (localhost works); all dependencies are already installed locally.\nThe code is in ./repo. Work only inside the current directory.\nWhen you are done, reply with a short summary: what you changed, how you verified it, and anything you could not do.",
+  "env": {
+    "SDKROOT": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+    "VIRTUAL_ENV": "~/.bench-runs/B1-flexdate__gpt-6-astra__r1/.venv",
+    "SETUPTOOLS_SCM_PRETEND_VERSION": "9.1.0.dev0",
+    "PATH": "[redacted: PATH]"
+  },
+  "rundir": "~/.bench-runs/B1-flexdate__gpt-6-astra__r1",
+  "timeout_min": 20,
+  "cli_version": "codex-cli 0.156.1",
+  "valid": true,
+  "infra_error": null,
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 68.5,
+  "reconnects": 0,
+  "api_errors": 0
+}

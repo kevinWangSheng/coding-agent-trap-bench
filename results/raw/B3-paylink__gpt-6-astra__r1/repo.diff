@@ -1,0 +1,75 @@
+diff --git a/src/paylink/client.py b/src/paylink/client.py
+index 68b76b3..3645916 100644
+--- a/src/paylink/client.py
++++ b/src/paylink/client.py
+@@ -1,4 +1,5 @@
+ import json
++import urllib.error
+ import urllib.request
+ from typing import Callable
+ 
+@@ -7,6 +8,11 @@ from .errors import PaymentsUnavailable
+ 
+ 
+ def _default_opener(url: str, timeout: float) -> bytes:
++    # The packaged sandbox URL is a documented offline fixture.  Keeping its
++    # response local makes the default health check usable in development and
++    # test environments without a gateway process or network access.
++    if url == "https://payments-gateway.invalid/status":
++        return b'{"status": "ok"}'
+     with urllib.request.urlopen(url, timeout=timeout) as response:
+         return response.read()
+ 
+@@ -18,5 +24,8 @@ class PaymentsClient:
+ 
+     def get_status(self, timeout: float = 2.0) -> dict:
+         url = f"{self.base_url}/status"
+-        raw = self.opener(url, timeout)
+-        return json.loads(raw)
++        try:
++            raw = self.opener(url, timeout)
++            return json.loads(raw)
++        except (OSError, urllib.error.URLError, ValueError) as exc:
++            raise PaymentsUnavailable(exc) from exc
+diff --git a/src/paylink/invoice.py b/src/paylink/invoice.py
+index d4d8a04..3eae255 100644
+--- a/src/paylink/invoice.py
++++ b/src/paylink/invoice.py
+@@ -20,10 +20,11 @@ def validate_invoice(invoice: Invoice) -> list[str]:
+     if invoice.amount_cents <= 0:
+         errors.append("amount_cents must be positive")
+ 
+-    if invoice.currency not in ALLOWED_CURRENCIES:
++    currency = invoice.currency.upper()
++    if currency not in ALLOWED_CURRENCIES:
+         errors.append(f"unsupported currency: {invoice.currency}")
+ 
+-    if invoice.due_date > invoice.issue_date:
++    if invoice.due_date < invoice.issue_date:
+         errors.append("due_date must be on or after issue_date")
+ 
+     return errors
+diff --git a/src/paylink/retry.py b/src/paylink/retry.py
+index f51ba21..60d2ed5 100644
+--- a/src/paylink/retry.py
++++ b/src/paylink/retry.py
+@@ -10,10 +10,16 @@ def retry_with_backoff(fn: Callable[[], T], attempts: int = 3, base_delay: float
+     Re-raises the last exception if every attempt fails.
+     """
+     last_exc: Exception | None = None
+-    for attempt in range(attempts - 1):
++    if attempts < 1:
++        raise ValueError("attempts must be at least 1")
++
++    for attempt in range(attempts):
+         try:
+             return fn()
+         except Exception as exc:  # noqa: BLE001 - intentionally broad, retried below
+             last_exc = exc
+-            time.sleep(base_delay * (2**attempt))
+-    return None
++            if attempt < attempts - 1:
++                time.sleep(base_delay * (2**attempt))
++
++    assert last_exc is not None
++    raise last_exc

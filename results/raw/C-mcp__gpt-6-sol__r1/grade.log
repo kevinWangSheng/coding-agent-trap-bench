@@ -1,0 +1,99 @@
+{
+  "task": "C-mcp",
+  "repo": "~/.bench-runs/C-mcp__gpt-6-sol__r1/repo",
+  "logs": "<BENCH>/results/raw/C-mcp__gpt-6-sol__r1/c-grade",
+  "build": {
+    "ok": true,
+    "rc": 0,
+    "log_tail": "\n> field-notes-mcp@1.0.0 build\n> tsc -p .\n\n"
+  },
+  "conformance": {
+    "cli": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+    "args": "server --requirements 2026-07-28",
+    "exit_code": 1,
+    "raw_summary": "Total: 115 passed, 59 failed",
+    "scored_total": 59,
+    "passed": 55,
+    "failed_count": 4,
+    "failed": {
+      "http-custom-header-server-validation:sep-2243-server-reject-invalid-param-chars": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request."
+      },
+      "http-custom-header-server-validation:sep-2243-server-reject-param-mismatch": {
+        "status": "FAILURE",
+        "message": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing)."
+      },
+      "prompts-list:prompts-list": {
+        "status": "FAILURE",
+        "message": "Prompt 0: missing description"
+      },
+      "server-stateless:sep-2575-request-meta-invalid-missing-protocol-version": {
+        "status": "FAILURE",
+        "message": "Expected error code -32602, got -32020"
+      }
+    },
+    "warnings": [
+      "input-required-result-validate-input:sep-2322-error-on-protocol-error",
+      "input-required-result-validate-input:sep-2322-validate-input-responses"
+    ],
+    "ok": false
+  },
+  "hidden_tests": {
+    "total": 55,
+    "passed": 52,
+    "failed_count": 3,
+    "by_category": {
+      "app": {
+        "total": 31,
+        "passed": 30
+      },
+      "spec": {
+        "total": 24,
+        "passed": 22
+      }
+    },
+    "failed": [
+      {
+        "name": "app: unknown tool is a protocol error -32602",
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- -32602"
+      },
+      {
+        "name": "spec: missing required _meta fields -> 400 / -32602",
+        "message": "no protocolVersion\n\n-32020 !== -32602"
+      },
+      {
+        "name": "spec: Mcp-Param-Notebook base64 values are decoded before comparison",
+        "message": "Expected values to be strictly equal:\n\n200 !== 400"
+      }
+    ],
+    "ok": false
+  },
+  "stale_api": {
+    "static_hits_count": 0,
+    "static_hits": [],
+    "dynamic_reachable": true,
+    "dynamic_hits_count": 0,
+    "dynamic_hits": [],
+    "ok": true
+  },
+  "server": {
+    "started": true,
+    "per_phase": {
+      "conformance": true,
+      "hidden_tests": true,
+      "stale_api": true
+    }
+  },
+  "summary": {
+    "build": true,
+    "conformance": false,
+    "hidden_tests": false,
+    "stale_api": true,
+    "server_started": true
+  },
+  "verdict": "FAIL",
+  "wall_s": 55.9
+}
+
+--- stderr

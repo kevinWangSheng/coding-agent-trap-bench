@@ -1,0 +1,13 @@
+Implemented fixes for:
+
+- Wrapping gateway/network and JSON errors in `PaymentsUnavailable`
+- Case-insensitive invoice currency validation
+- Correct due-date ordering validation
+- Retry logic to use all attempts, back off correctly, and re-raise the final error
+- Local sandbox status fallback for the default endpoint
+
+Verified with:
+
+```text
+11 passed
+```

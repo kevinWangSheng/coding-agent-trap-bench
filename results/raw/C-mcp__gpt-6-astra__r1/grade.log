@@ -1,0 +1,230 @@
+{
+  "task": "C-mcp",
+  "repo": "~/.bench-runs/C-mcp__gpt-6-astra__r1/repo",
+  "logs": "<BENCH>/results/raw/C-mcp__gpt-6-astra__r1/c-grade",
+  "build": {
+    "ok": true,
+    "rc": 0,
+    "log_tail": "\n> field-notes-mcp@1.0.0 build\n> tsc -p .\n\n"
+  },
+  "conformance": {
+    "cli": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+    "args": "server --requirements 2026-07-28",
+    "exit_code": 1,
+    "raw_summary": "Total: 93 passed, 75 failed",
+    "scored_total": 59,
+    "passed": 45,
+    "failed_count": 14,
+    "failed": {
+      "caching:sep-2549-resources-read-caching-hints": {
+        "status": "FAILURE",
+        "message": "resources/read response missing ttlMs; resources/read response missing cacheScope"
+      },
+      "caching:wire-schema-valid": {
+        "status": "FAILURE",
+        "message": "[implementation] response to 'resources/read' (spec 2026-07-28): ReadResourceResult: must have required property 'cacheScope' (result of 'resources/read'); ReadResourceResult: must have required property 'ttlMs' (result of 'resources/read') \u2014 message: {\"jsonrpc\":\"2.0\",\"id\":24,\"result\":{\"resultType\":"
+      },
+      "http-custom-header-server-validation:sep-2243-server-decode-base64": {
+        "status": "FAILURE",
+        "message": "Expected successful response, but body contains JSON-RPC error {\"code\":-32020,\"message\":\"HeaderMismatch\"}."
+      },
+      "http-custom-header-server-validation:sep-2243-server-reject-invalid-param-chars": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request."
+      },
+      "http-custom-header-server-validation:sep-2243-server-reject-param-mismatch": {
+        "status": "FAILURE",
+        "message": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing)."
+      },
+      "http-custom-header-server-validation:sep-2243-server-validate-param-match": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request."
+      },
+      "server-stateless:sep-2575-http-server-meta-invalid-400": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 400 Bad Request, got status code 200"
+      },
+      "server-stateless:sep-2575-request-meta-invalid-missing-client-capabilities": {
+        "status": "FAILURE",
+        "message": "Expected error code -32602, got undefined"
+      },
+      "server-stateless:sep-2575-request-meta-invalid-missing-meta": {
+        "status": "FAILURE",
+        "message": "Expected error code -32602, got -32020"
+      },
+      "server-stateless:sep-2575-request-meta-invalid-missing-protocol-version": {
+        "status": "FAILURE",
+        "message": "Expected error code -32602, got -32020"
+      },
+      "server-stateless:sep-2575-server-honors-notification-filter": {
+        "status": "FAILURE",
+        "message": "Not testable: server advertises listChanged/subscribe capabilities but answers subscriptions/listen with -32601 (Method not found)"
+      },
+      "server-stateless:sep-2575-server-sends-subscription-ack": {
+        "status": "FAILURE",
+        "message": "Not testable: server advertises listChanged/subscribe capabilities but answers subscriptions/listen with -32601 (Method not found)"
+      },
+      "server-stateless:sep-2575-server-tags-subscription-id": {
+        "status": "FAILURE",
+        "message": "Not testable: server advertises listChanged/subscribe capabilities but answers subscriptions/listen with -32601 (Method not found)"
+      },
+      "server-stateless:sep-2575-server-unsupported-version-error": {
+        "status": "FAILURE",
+        "message": "Returned supported versions data layout does not correlate to active server metrics: undefined"
+      }
+    },
+    "warnings": [
+      "http-header-validation:sep-2243-server-reject-error-code",
+      "sep-2164-resource-not-found:sep-2164-data-uri",
+      "sep-2164-resource-not-found:sep-2164-error-code"
+    ],
+    "ok": false
+  },
+  "hidden_tests": {
+    "total": 55,
+    "passed": 34,
+    "failed_count": 21,
+    "by_category": {
+      "app": {
+        "total": 31,
+        "passed": 17
+      },
+      "spec": {
+        "total": 24,
+        "passed": 17
+      }
+    },
+    "failed": [
+      {
+        "name": "app: add_note ids are sequential and never reused",
+        "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1007,&quot;error&quot;:{&quot;code&quot;:-32005,&quot;message&quot;:&quot;Missing required client capability: elicitation&quot;}}"
+      },
+      {
+        "name": "app: reindex reports progress on the request's stream",
+        "message": "progress needs an SSE response, got application/json"
+      },
+      {
+        "name": "app: reindex numeric progress token and defaults",
+        "message": "default steps is 5\n\n0 !== 5"
+      },
+      {
+        "name": "app: reading a missing note is -32602 (not the old -32002)",
+        "message": "notes://notes/n999999: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1039,&quot;error&quot;:{&quot;code&quot;:-32002,&quot;message&quot;:&quot;Resource not found&quot;}}\n\n-32002 !== -32602"
+      },
+      {
+        "name": "app: delete_note asks for confirmation with an input_required result",
+        "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1051,&quot;error&quot;:{&quot;code&quot;:-32005,&quot;message&quot;:&quot;Missing required client capability: elicitation&quot;}}"
+      },
+      {
+        "name": "app: delete_note deletes after the user accepts",
+        "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1053,&quot;error&quot;:{&quot;code&quot;:-32005,&quot;message&quot;:&quot;Missing required client capability: elicitation&quot;}}"
+      },
+      {
+        "name": "app: delete_note decline, cancel or confirm:false keeps the note",
+        "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1055,&quot;error&quot;:{&quot;code&quot;:-32005,&quot;message&quot;:&quot;Missing required client capability: elicitation&quot;}}"
+      },
+      {
+        "name": "app: delete_note without elicitation capability is -32021 (HTTP 400)",
+        "message": "Expected values to be strictly equal:\n\n200 !== 400"
+      },
+      {
+        "name": "app: a confirmation for one note cannot delete another",
+        "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1061,&quot;error&quot;:{&quot;code&quot;:-32005,&quot;message&quot;:&quot;Missing required client capability: elicitation&quot;}}"
+      },
+      {
+        "name": "app: a tampered or forged requestState is rejected",
+        "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1063,&quot;error&quot;:{&quot;code&quot;:-32005,&quot;message&quot;:&quot;Missing required client capability: elicitation&quot;}}"
+      },
+      {
+        "name": "app: subscriptions deliver resource updates for watched URIs",
+        "message": "Expected values to be strictly equal:\n\n404 !== 200"
+      },
+      {
+        "name": "app: subscriptions only notify watchers of the changed URI",
+        "message": "numeric id preserved\n+ actual - expected\n\n+ undefined\n- 4242"
+      },
+      {
+        "name": "app: acknowledgment omits list-change types the server does not offer",
+        "message": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ undefined\n- [\n-   'notes://index'\n- ]"
+      },
+      {
+        "name": "app: request-scoped progress never appears on a listen stream",
+        "message": "Expected values to be strictly equal:\n\n0 !== 3"
+      },
+      {
+        "name": "spec: cacheable results carry ttlMs/cacheScope per README policy",
+        "message": "notes://index ttlMs\n\nundefined !== 0"
+      },
+      {
+        "name": "spec: missing required _meta fields -> 400 / -32602",
+        "message": "no _meta\n\n-32020 !== -32602"
+      },
+      {
+        "name": "spec: unsupported protocol version -> 400 / -32022 with supported list",
+        "message": "2025-11-25\n\n-32020 !== -32022"
+      },
+      {
+        "name": "spec: base64-encoded Mcp-Name is decoded before comparison",
+        "message": "{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1031,&quot;error&quot;:{&quot;code&quot;:-32020,&quot;message&quot;:&quot;HeaderMismatch&quot;}}\n\n400 !== 200"
+      },
+      {
+        "name": "spec: Mcp-Param-Notebook must be present and match the body",
+        "message": "Expected values to be strictly equal:\n\n200 !== 400"
+      },
+      {
+        "name": "spec: Mcp-Param-Notebook base64 values are decoded before comparison",
+        "message": "The expression evaluated to a falsy value:\n\n  assert.ok(ok.response?.result && !ok.response.result.isError)"
+      },
+      {
+        "name": "spec: no GET/DELETE endpoint (405)",
+        "message": "GET\n\n404 !== 405"
+      }
+    ],
+    "ok": false
+  },
+  "stale_api": {
+    "static_hits_count": 1,
+    "static_hits": [
+      {
+        "rule": "resource-not-found-32002",
+        "file": "server.ts",
+        "line": 28,
+        "code": "case 'resources/read': {const uri=p.uri; if(uri==='notes://index'){out=result(id,{resultType:'complete',contents:[{uri,mimeType:'application/json',text:json(not",
+        "changelog": "Minor 6",
+        "why": "resource-not-found is -32602 now"
+      }
+    ],
+    "dynamic_reachable": true,
+    "dynamic_hits_count": 1,
+    "dynamic_hits": [
+      {
+        "rule": "old-error-code",
+        "changelog": "Minor 6 / Minor 12",
+        "why": "old error code -32002",
+        "request": "resources/read",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-17\",\"error\":{\"code\":-32002,\"message\":\"Resource not found\"}}"
+      }
+    ],
+    "ok": false
+  },
+  "server": {
+    "started": true,
+    "per_phase": {
+      "conformance": true,
+      "hidden_tests": true,
+      "stale_api": true
+    }
+  },
+  "summary": {
+    "build": true,
+    "conformance": false,
+    "hidden_tests": false,
+    "stale_api": false,
+    "server_started": true
+  },
+  "verdict": "FAIL",
+  "wall_s": 2.6
+}
+
+--- stderr

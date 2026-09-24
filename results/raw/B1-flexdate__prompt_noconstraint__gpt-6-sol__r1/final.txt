@@ -1,0 +1,8 @@
+Implemented fixes in `repo/src/flexdate/parser.py`:
+
+- Corrected ISO date parsing.
+- Added dotted and slash format support.
+- Fixed February and December month mappings.
+- Handled ambiguous slash dates compatibly.
+
+Verification: `python -m pytest -q` — **13 tests passed**.

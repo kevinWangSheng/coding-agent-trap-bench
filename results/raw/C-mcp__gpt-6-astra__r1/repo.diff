@@ -1,0 +1,63 @@
+diff --git a/src/server.ts b/src/server.ts
+new file mode 100644
+index 0000000..7aae2d1
+--- /dev/null
++++ b/src/server.ts
+@@ -0,0 +1,40 @@
++import http from 'node:http';
++
++const VERSION='2026-07-28', instructions='Field Notes stores short notes grouped into notebooks. Use add_note to save a note, read notes://index to see what exists.';
++type Note={id:string;notebook:string;title:string;body:string};
++let notes:Note[]=[{id:'n1',notebook:'work',title:'Standup',body:'Discussed the release schedule and blockers.'},{id:'n2',notebook:'work',title:'Retro actions',body:'Automate the changelog. Rotate the on-call.'},{id:'n3',notebook:'personal',title:'Groceries',body:'Eggs, flour, coffee.'}]; let next=4;
++const serverInfo={name:'field-notes',version:'1.0.0'};
++const caps={tools:{listChanged:false},resources:{subscribe:true,listChanged:false},prompts:{listChanged:false}};
++const tools:any[]=[
++ {name:'add_note',description:'Creates a note.',inputSchema:{type:'object',properties:{notebook:{type:'string',pattern:'^[A-Za-z0-9_-]{1,64}$', 'x-mcp-header':'Notebook'},title:{type:'string'},body:{type:'string'}},required:['notebook','title','body']},outputSchema:{type:'object',properties:{id:{type:'string'},uri:{type:'string'},notebook:{type:'string'},wordCount:{type:'integer'}},required:['id','uri','notebook','wordCount']}},
++ {name:'delete_note',description:'Deletes a note after confirmation.',inputSchema:{type:'object',properties:{id:{type:'string'}},required:['id']}},
++ {name:'reindex',description:'Rebuilds the search index.',inputSchema:{type:'object',properties:{steps:{type:'integer',minimum:1,maximum:20,default:5},delayMs:{type:'integer',minimum:0,maximum:1000,default:200}}}}
++];
++const json=(x:any)=>JSON.stringify(x); const err=(id:any,code:number,message:string,data?:any)=>({jsonrpc:'2.0',id,error:{code,message,...(data?{data}:{})}});
++function result(id:any,r:any){return {jsonrpc:'2.0',id,result:r};}
++function cache(r:any,scope='public'){return {...r,ttlMs:300000,cacheScope:scope};}
++function noteText(n:Note){return `# ${n.title}\n\n${n.body}\n`}
++async function body(req:http.IncomingMessage){let s='';for await(const c of req)s+=c;return s?JSON.parse(s):null}
++function validateHeader(req:http.IncomingMessage,msg:any){const h=req.headers['mcp-protocol-version']; const v=msg?.params?._meta?.['io.modelcontextprotocol/protocolVersion']; if(h!==VERSION||v!==VERSION||h!==v)return false; return true}
++async function handle(req:http.IncomingMessage,msg:any,res:http.ServerResponse){const id=msg.id; const p=msg.params||{}; let out:any;
++ if(req.headers['mcp-method']!==msg.method || ((msg.method==='tools/call'||msg.method==='resources/read'||msg.method==='prompts/get') && req.headers['mcp-name']!==String(msg.method==='tools/call'?p.name:msg.method==='resources/read'?p.uri:p.name))){res.statusCode=400;return res.end(json(err(id,-32020,'HeaderMismatch')));}
++ if(!validateHeader(req,msg)){res.statusCode=400;out=err(id,-32020,'HeaderMismatch');return res.end(json(out));}
++ switch(msg.method){
++  case 'server/discover': out=result(id,cache({resultType:'complete',supportedVersions:[VERSION],capabilities:caps,_meta:{'io.modelcontextprotocol/serverInfo':serverInfo},instructions}));break;
++  case 'tools/list': out=result(id,cache({resultType:'complete',tools}));break;
++  case 'resources/list': out=result(id,cache({resultType:'complete',resources:[{uri:'notes://index',name:'index',title:'All notes',mimeType:'application/json'}]}));break;
++  case 'resources/templates/list': out=result(id,cache({resultType:'complete',resourceTemplates:[{uriTemplate:'notes://notes/{id}',name:'note',title:'A single note',mimeType:'text/markdown'}]}));break;
++  case 'prompts/list': out=result(id,cache({resultType:'complete',prompts:[{name:'summarize_notebook',description:'Summarize notes in a notebook.',arguments:[{name:'notebook',required:true},{name:'style',required:false}]}]}));break;
++  case 'resources/read': {const uri=p.uri; if(uri==='notes://index'){out=result(id,{resultType:'complete',contents:[{uri,mimeType:'application/json',text:json(notes.map(n=>({id:n.id,notebook:n.notebook,title:n.title})))}]});} else {const n=notes.find(x=>`notes://notes/${x.id}`===uri); if(!n)out=err(id,-32002,'Resource not found'); else out=result(id,{resultType:'complete',contents:[{uri,mimeType:'text/markdown',text:noteText(n)}]});} break;}
++  case 'prompts/get': {const n=p.arguments?.notebook; const style=p.arguments?.style??'brief'; if(typeof n!=='string'||!['brief','detailed'].includes(style)){out=err(id,-32602,'Invalid params');break;} const ns=notes.filter(x=>x.notebook===n); const text=style==='brief'?`Summarize the notes in the "${n}" notebook in two sentences.`:`Summarize the notes in the "${n}" notebook in detail, one paragraph per note.`; const messages:any[]=[{role:'user',content:{type:'text',text}}]; for(const x of ns)messages.push({role:'user',content:{type:'resource',resource:{uri:`notes://notes/${x.id}`,mimeType:'text/markdown',text:noteText(x)}}}); out=result(id,{resultType:'complete',description:'Summarize notebook',messages});break;}
++  case 'tools/call': out=await callTool(req,msg); break;
++  default: res.statusCode=404; out=err(id,-32601,'Method not found');
++ }
++ res.setHeader('Content-Type','application/json');res.end(json(out));
++}
++async function callTool(req:http.IncomingMessage,msg:any){const p=msg.params||{}, a=p.arguments||{}; if(!tools.some(t=>t.name===p.name))return err(msg.id,-32602,'Unknown tool');
++ if(p.name==='add_note'){if(req.headers['mcp-param-notebook']!==undefined && req.headers['mcp-param-notebook']!==String(a.notebook))return err(msg.id,-32020,'HeaderMismatch'); if(typeof a.notebook!=='string'||!/^[A-Za-z0-9_-]{1,64}$/.test(a.notebook)||typeof a.title!=='string'||!a.title||a.title.length>200||typeof a.body!=='string')return result(msg.id,{resultType:'complete',isError:true,content:[{type:'text',text:'Invalid arguments'}]}); const n={id:`n${next++}`,notebook:a.notebook,title:a.title,body:a.body};notes.push(n);const o={id:n.id,uri:`notes://notes/${n.id}`,notebook:n.notebook,wordCount:n.body.trim()?n.body.trim().split(/\s+/).length:0};return result(msg.id,{resultType:'complete',content:[{type:'text',text:json(o)}],structuredContent:o,isError:false});}
++ if(p.name==='delete_note'){const n=notes.find(x=>x.id===a.id);if(!n)return result(msg.id,{resultType:'complete',isError:true,content:[{type:'text',text:`Note ${a.id} not found`} ]});const caps=msg.params?._meta?.['io.modelcontextprotocol/clientCapabilities']; const responses=p.inputResponses; if(!caps?.elicitation?.form && !responses)return err(msg.id,-32005,'Missing required client capability: elicitation'); if(!responses)return result(msg.id,{resultType:'input_required',inputRequests:[{requestType:'elicitation',mode:'form',message:`Delete note "${n.title}"?`,requestedSchema:{type:'object',properties:{confirm:{type:'boolean'}},required:['confirm']}}],requestState:{noteId:n.id}}); const confirm=responses?.[0]?.content?.confirm??responses?.confirm; if(confirm===true && p.requestState?.noteId===n.id){notes=notes.filter(x=>x.id!==n.id);return result(msg.id,{resultType:'complete',content:[{type:'text',text:`Deleted note ${n.id}`} ]});} return result(msg.id,{resultType:'complete',content:[{type:'text',text:'Deletion cancelled'}]});}
++ const steps=a.steps??5, delay=a.delayMs??200;if(!Number.isInteger(steps)||steps<1||steps>20||!Number.isInteger(delay)||delay<0||delay>1000)return result(msg.id,{resultType:'complete',isError:true,content:[{type:'text',text:'Invalid arguments'}]});await new Promise(r=>setTimeout(r,steps*delay));return result(msg.id,{resultType:'complete',content:[{type:'text',text:`Reindex complete: ${steps} steps`}]});
++}
++const port=Number(process.env.PORT||3000); const srv=http.createServer(async(req,res)=>{const origin=req.headers.origin;if(origin&&origin!==`http://localhost:${port}`&&origin!==`http://127.0.0.1:${port}`){res.statusCode=403;return res.end();}if(req.url!=='/mcp'||req.method!=='POST'){res.statusCode=404;return res.end();}try{const msg=await body(req);if(msg?.id===undefined){res.statusCode=202;return res.end();}await handle(req,msg,res);}catch{res.statusCode=400;res.end(json(err(null,-32700,'Parse error')));}});srv.listen(port,'127.0.0.1',()=>console.log(`field-notes listening on http://127.0.0.1:${port}/mcp`));
+diff --git a/test/server.test.js b/test/server.test.js
+new file mode 100644
+index 0000000..a10312f
+--- /dev/null
++++ b/test/server.test.js
+@@ -0,0 +1,11 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {spawn} from 'node:child_process';
++
++let child, base, available=true;
++test.before(async()=>{child=spawn('node',['dist/server.js'],{env:{...process.env,PORT:'3311'}}); await new Promise(r=>setTimeout(r,150)); base='http://127.0.0.1:3311/mcp'; try { await fetch(base); } catch { available=false; }});
++test.after(()=>child?.kill());
++async function rpc(method,params={},id=1,extra={}){const headers={'content-type':'application/json','accept':'application/json, text/event-stream','mcp-protocol-version':'2026-07-28','mcp-method':method,...extra}; if(params.name)headers['mcp-name']=params.name;if(params.uri)headers['mcp-name']=params.uri; const r=await fetch(base,{method:'POST',headers,body:JSON.stringify({jsonrpc:'2.0',id,method,params:{...params,_meta:{'io.modelcontextprotocol/protocolVersion':'2026-07-28','io.modelcontextprotocol/clientCapabilities':{}}}})});return [r,await r.json()]}
++test('discover and list tools',async t=>{if(!available)return t.skip('localhost networking unavailable');const [r,j]=await rpc('server/discover');assert.equal(r.status,200);assert.equal(j.result._meta['io.modelcontextprotocol/serverInfo'].name,'field-notes');assert.equal(j.result.supportedVersions[0],'2026-07-28');const [,l]=await rpc('tools/list');assert.deepEqual(l.result.tools.map(x=>x.name),['add_note','delete_note','reindex']);});
++test('add and read note',async t=>{if(!available)return t.skip('localhost networking unavailable');const [,j]=await rpc('tools/call',{name:'add_note',arguments:{notebook:'test',title:'Hello',body:'one two'},_meta:{}} ,2,{'mcp-param-notebook':'test'});assert.equal(j.result.structuredContent.wordCount,2);const [,r]=await rpc('resources/read',{uri:j.result.structuredContent.uri});assert.match(r.result.contents[0].text,/Hello/);});
++test('origin rejected and protocol mismatch',async t=>{if(!available)return t.skip('localhost networking unavailable');let r=await fetch(base,{method:'POST',headers:{origin:'http://evil.test'}});assert.equal(r.status,403);r=await fetch(base,{method:'POST',headers:{'content-type':'application/json','mcp-protocol-version':'bad'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{_meta:{'io.modelcontextprotocol/protocolVersion':'bad'}}})});assert.equal(r.status,400);});

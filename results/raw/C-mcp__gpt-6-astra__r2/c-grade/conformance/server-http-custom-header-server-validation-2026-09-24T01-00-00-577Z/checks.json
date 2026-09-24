@@ -1,0 +1,399 @@
+[
+  {
+    "id": "sep-2243-server-decode-base64",
+    "name": "ServerAcceptsValidBase64",
+    "description": "Server decodes valid Base64 header value and validates against body",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-24T01:00:00.579Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Value-Encoding",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#value-encoding"
+      }
+    ],
+    "details": {
+      "toolName": "add_note",
+      "paramName": "notebook",
+      "bodyValue": "Hello",
+      "headerSuffix": "Notebook",
+      "headerValue": "=?base64?SGVsbG8=?=",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 200,
+        "result": {
+          "resultType": "complete",
+          "structuredContent": {
+            "id": "n4",
+            "uri": "notes://notes/n4",
+            "notebook": "Hello",
+            "wordCount": 1
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"id\":\"n4\",\"uri\":\"notes://notes/n4\",\"notebook\":\"Hello\",\"wordCount\":1}"
+            }
+          ],
+          "isError": false,
+          "_meta": {
+            "io.modelcontextprotocol/serverInfo": {
+              "name": "field-notes",
+              "version": "1.0.0"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-invalid-param-chars",
+    "name": "ServerRejectsInvalidBase64Padding",
+    "description": "Server MUST reject Mcp-Param header with invalid Base64 padding (per SEP-2243 test-case table)",
+    "status": "FAILURE",
+    "timestamp": "2026-09-24T01:00:00.580Z",
+    "errorMessage": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request.",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Value-Encoding",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#value-encoding"
+      }
+    ],
+    "details": {
+      "toolName": "add_note",
+      "paramName": "notebook",
+      "bodyValue": "Hello",
+      "headerSuffix": "Notebook",
+      "headerValue": "=?base64?SGVsbG8?=",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 201,
+        "result": {
+          "resultType": "complete",
+          "structuredContent": {
+            "id": "n5",
+            "uri": "notes://notes/n5",
+            "notebook": "Hello",
+            "wordCount": 1
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"id\":\"n5\",\"uri\":\"notes://notes/n5\",\"notebook\":\"Hello\",\"wordCount\":1}"
+            }
+          ],
+          "isError": false,
+          "_meta": {
+            "io.modelcontextprotocol/serverInfo": {
+              "name": "field-notes",
+              "version": "1.0.0"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-param-mismatch",
+    "name": "ServerRejectsInvalidBase64PaddingErrorCode",
+    "description": "Server MUST reject Mcp-Param header with invalid Base64 padding (per SEP-2243 test-case table) — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "FAILURE",
+    "timestamp": "2026-09-24T01:00:00.580Z",
+    "errorMessage": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing).",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Value-Encoding",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#value-encoding"
+      }
+    ],
+    "details": {
+      "toolName": "add_note",
+      "paramName": "notebook",
+      "bodyValue": "Hello",
+      "headerSuffix": "Notebook",
+      "headerValue": "=?base64?SGVsbG8?=",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 201,
+        "result": {
+          "resultType": "complete",
+          "structuredContent": {
+            "id": "n5",
+            "uri": "notes://notes/n5",
+            "notebook": "Hello",
+            "wordCount": 1
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"id\":\"n5\",\"uri\":\"notes://notes/n5\",\"notebook\":\"Hello\",\"wordCount\":1}"
+            }
+          ],
+          "isError": false,
+          "_meta": {
+            "io.modelcontextprotocol/serverInfo": {
+              "name": "field-notes",
+              "version": "1.0.0"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-invalid-param-chars",
+    "name": "ServerRejectsInvalidBase64Chars",
+    "description": "Server MUST reject Mcp-Param header with non-alphabet Base64 characters (per SEP-2243 test-case table)",
+    "status": "FAILURE",
+    "timestamp": "2026-09-24T01:00:00.580Z",
+    "errorMessage": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request.",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Value-Encoding",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#value-encoding"
+      }
+    ],
+    "details": {
+      "toolName": "add_note",
+      "paramName": "notebook",
+      "bodyValue": "Hello",
+      "headerSuffix": "Notebook",
+      "headerValue": "=?base64?SGVs!!!bG8=?=",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 202,
+        "result": {
+          "resultType": "complete",
+          "structuredContent": {
+            "id": "n6",
+            "uri": "notes://notes/n6",
+            "notebook": "Hello",
+            "wordCount": 1
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"id\":\"n6\",\"uri\":\"notes://notes/n6\",\"notebook\":\"Hello\",\"wordCount\":1}"
+            }
+          ],
+          "isError": false,
+          "_meta": {
+            "io.modelcontextprotocol/serverInfo": {
+              "name": "field-notes",
+              "version": "1.0.0"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-param-mismatch",
+    "name": "ServerRejectsInvalidBase64CharsErrorCode",
+    "description": "Server MUST reject Mcp-Param header with non-alphabet Base64 characters (per SEP-2243 test-case table) — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "FAILURE",
+    "timestamp": "2026-09-24T01:00:00.580Z",
+    "errorMessage": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing).",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Value-Encoding",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#value-encoding"
+      }
+    ],
+    "details": {
+      "toolName": "add_note",
+      "paramName": "notebook",
+      "bodyValue": "Hello",
+      "headerSuffix": "Notebook",
+      "headerValue": "=?base64?SGVs!!!bG8=?=",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 202,
+        "result": {
+          "resultType": "complete",
+          "structuredContent": {
+            "id": "n6",
+            "uri": "notes://notes/n6",
+            "notebook": "Hello",
+            "wordCount": 1
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"id\":\"n6\",\"uri\":\"notes://notes/n6\",\"notebook\":\"Hello\",\"wordCount\":1}"
+            }
+          ],
+          "isError": false,
+          "_meta": {
+            "io.modelcontextprotocol/serverInfo": {
+              "name": "field-notes",
+              "version": "1.0.0"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-validate-param-match",
+    "name": "ServerLiteralMissingBase64Prefix",
+    "description": "Server treats value without =?base64? prefix as literal (not Base64)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-24T01:00:00.580Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Value-Encoding",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#value-encoding"
+      }
+    ],
+    "details": {
+      "toolName": "add_note",
+      "paramName": "notebook",
+      "bodyValue": "SGVsbG8=",
+      "headerSuffix": "Notebook",
+      "headerValue": "SGVsbG8=",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 203,
+        "result": {
+          "resultType": "complete",
+          "content": [
+            {
+              "type": "text",
+              "text": "Invalid notebook: use 1-64 letters, numbers, underscores, or hyphens"
+            }
+          ],
+          "isError": true,
+          "_meta": {
+            "io.modelcontextprotocol/serverInfo": {
+              "name": "field-notes",
+              "version": "1.0.0"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-validate-param-match",
+    "name": "ServerLiteralMissingBase64Suffix",
+    "description": "Server treats value without ?= suffix as literal (not Base64)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-24T01:00:00.580Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Value-Encoding",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#value-encoding"
+      }
+    ],
+    "details": {
+      "toolName": "add_note",
+      "paramName": "notebook",
+      "bodyValue": "=?base64?SGVsbG8=",
+      "headerSuffix": "Notebook",
+      "headerValue": "=?base64?SGVsbG8=",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 204,
+        "result": {
+          "resultType": "complete",
+          "content": [
+            {
+              "type": "text",
+              "text": "Invalid notebook: use 1-64 letters, numbers, underscores, or hyphens"
+            }
+          ],
+          "isError": true,
+          "_meta": {
+            "io.modelcontextprotocol/serverInfo": {
+              "name": "field-notes",
+              "version": "1.0.0"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-validate-param-match",
+    "name": "ServerRejectsMissingCustomHeader",
+    "description": "Server MUST reject request where custom header is omitted but value is present in body",
+    "status": "FAILURE",
+    "timestamp": "2026-09-24T01:00:00.581Z",
+    "errorMessage": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request.",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Custom-Headers",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-behavior-for-custom-headers"
+      }
+    ],
+    "details": {
+      "toolName": "add_note",
+      "paramName": "notebook",
+      "bodyValue": "test-value",
+      "expectedHeader": "Mcp-Param-Notebook",
+      "mcpParamHeader": "(missing)",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 205,
+        "error": {
+          "code": -32020,
+          "message": "Header mismatch: Mcp-Param-Notebook does not match body value"
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-param-mismatch",
+    "name": "ServerRejectsMissingCustomHeaderErrorCode",
+    "description": "Server MUST reject request where custom header is omitted but value is present in body — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-24T01:00:00.581Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Custom-Headers",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-behavior-for-custom-headers"
+      }
+    ],
+    "details": {
+      "toolName": "add_note",
+      "paramName": "notebook",
+      "bodyValue": "test-value",
+      "expectedHeader": "Mcp-Param-Notebook",
+      "mcpParamHeader": "(missing)",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 205,
+        "error": {
+          "code": -32020,
+          "message": "Header mismatch: Mcp-Param-Notebook does not match body value"
+        }
+      }
+    }
+  },
+  {
+    "id": "wire-schema-valid",
+    "name": "WireSchemaValid",
+    "description": "Every JSON-RPC message the implementation sent is valid per the spec JSON schema for the negotiated spec version",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-24T01:00:00.581Z",
+    "specReferences": [
+      {
+        "id": "MCP-Schema",
+        "url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/schema/draft/schema.json"
+      }
+    ],
+    "details": {
+      "messagesValidated": 2,
+      "violations": []
+    }
+  }
+]

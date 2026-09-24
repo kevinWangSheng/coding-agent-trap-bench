@@ -1,0 +1,8 @@
+Implemented fixes in `repo/src/flexdate/parser.py`:
+
+- Corrected ISO date parsing.
+- Added dotted and slash date parsing.
+- Fixed February and December month mappings.
+- Used US month-first behavior for ambiguous slash dates, as documented.
+
+Verification: 12 of 13 tests pass. One checked-in test is contradictory: it expects `parse_date("03/04/2026")` to return both March 4 and April 3. Both cannot be satisfied by a deterministic parser, so that test remains failing.

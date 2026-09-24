@@ -1,0 +1,37 @@
+{
+ "hidden_pass": true,
+ "hidden_runs": [
+  {
+   "rc": 0,
+   "secs": 3.6
+  },
+  {
+   "rc": 0,
+   "secs": 0.1
+  },
+  {
+   "rc": 0,
+   "secs": 0.1
+  },
+  {
+   "rc": 0,
+   "secs": 0.1
+  },
+  {
+   "rc": 0,
+   "secs": 0.1
+  }
+ ],
+ "hidden": {
+  "rc": 0,
+  "out": "\nrunning 2 tests\n..\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 150 filtered out; finished in 0.00s\n\n",
+  "secs": 0.1
+ },
+ "regress_pass": true,
+ "regress": {
+  "rc": 0,
+  "out": "\nrunning 152 tests\n....................................................................................... 87/152\n.................................................................\ntest result: ok. 152 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s\n\n\nrunning 5 tests\n.....\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s\n\n\nrunning 1 test\n.\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 6 tests\n......\ntest result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\nall doctests ran in 0.69s; merged doctests compilation took 0.16s\n",
+  "secs": 2.9
+ },
+ "pass": true
+}

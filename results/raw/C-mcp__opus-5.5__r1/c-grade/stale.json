@@ -1,0 +1,24 @@
+{
+  "static": {
+    "src": "/var/folders/nh/02mxl3td7rxcyj70_y5t1xqr0000gn/T/grade-work-gkvjlb0b/repo/src",
+    "files_scanned": 6,
+    "count": 1,
+    "hits": [
+      {
+        "rule": "initialize-handshake",
+        "file": "http.ts",
+        "line": 391,
+        "code": "if (method === \"initialize\") {",
+        "changelog": "Major 2",
+        "why": "initialize/notifications/initialized handshake removed"
+      }
+    ]
+  },
+  "dynamic": {
+    "url": "http://127.0.0.1:64866/mcp",
+    "reachable": true,
+    "probes": 21,
+    "count": 0,
+    "hits": []
+  }
+}

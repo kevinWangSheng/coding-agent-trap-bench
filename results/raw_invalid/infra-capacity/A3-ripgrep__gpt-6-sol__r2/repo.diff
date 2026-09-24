@@ -1,0 +1,93 @@
+diff --git a/crates/ignore/src/walk.rs b/crates/ignore/src/walk.rs
+index 93e6cf1..47076b8 100644
+--- a/crates/ignore/src/walk.rs
++++ b/crates/ignore/src/walk.rs
+@@ -4,8 +4,9 @@ use std::{
+     fs::{self, FileType, Metadata},
+     io,
+     path::{Path, PathBuf},
++    panic::{catch_unwind, resume_unwind, AssertUnwindSafe},
+     sync::atomic::{AtomicBool, AtomicUsize, Ordering as AtomicOrdering},
+-    sync::{Arc, OnceLock},
++    sync::{Arc, Mutex, OnceLock},
+ };
+ 
+ use {
+@@ -1444,28 +1445,50 @@ impl WalkParallel {
+         // Create the workers and then wait for them to finish.
+         let quit_now = Arc::new(AtomicBool::new(false));
+         let active_workers = Arc::new(AtomicUsize::new(threads));
++        let panic = Arc::new(Mutex::new(None));
+         let stacks = Stack::new_for_each_thread(threads, stack);
+         std::thread::scope(|s| {
+-            let handles: Vec<_> = stacks
+-                .into_iter()
+-                .map(|stack| Worker {
+-                    visitor: builder.build(),
+-                    stack,
+-                    quit_now: quit_now.clone(),
+-                    active_workers: active_workers.clone(),
+-                    max_depth: self.max_depth,
+-                    min_depth: self.min_depth,
+-                    max_filesize: self.max_filesize,
+-                    follow_links: self.follow_links,
+-                    skip: self.skip.clone(),
+-                    filter: self.filter.clone(),
+-                })
+-                .map(|worker| s.spawn(|| worker.run()))
+-                .collect();
++            let mut handles = vec![];
++            let build_result = catch_unwind(AssertUnwindSafe(|| {
++                for stack in stacks {
++                    let worker = Worker {
++                        visitor: builder.build(),
++                        stack,
++                        quit_now: quit_now.clone(),
++                        active_workers: active_workers.clone(),
++                        max_depth: self.max_depth,
++                        min_depth: self.min_depth,
++                        max_filesize: self.max_filesize,
++                        follow_links: self.follow_links,
++                        skip: self.skip.clone(),
++                        filter: self.filter.clone(),
++                    };
++                    let panic = panic.clone();
++                    let quit_now = quit_now.clone();
++                    handles.push(s.spawn(move || {
++                        if let Err(payload) =
++                            catch_unwind(AssertUnwindSafe(|| worker.run()))
++                        {
++                            *panic.lock().unwrap() = Some(payload);
++                            quit_now.store(true, AtomicOrdering::SeqCst);
++                        }
++                    }));
++                }
++            }));
++            if let Err(payload) = build_result {
++                *panic.lock().unwrap() = Some(payload);
++                quit_now.store(true, AtomicOrdering::SeqCst);
++            }
+             for handle in handles {
+-                handle.join().unwrap();
++                if let Err(payload) = handle.join() {
++                    *panic.lock().unwrap() = Some(payload);
++                    quit_now.store(true, AtomicOrdering::SeqCst);
++                }
+             }
+         });
++        if let Some(payload) = panic.lock().unwrap().take() {
++            resume_unwind(payload);
++        }
+     }
+ 
+     fn threads(&self) -> usize {
+@@ -1905,6 +1928,9 @@ impl<'s> Worker<'s> {
+                     }
+                     // Wait for next `Work` or `Quit` message.
+                     loop {
++                        if self.is_quit_now() {
++                            return None;
++                        }
+                         if let Some(v) = self.recv() {
+                             self.activate_worker();
+                             value = Some(v);

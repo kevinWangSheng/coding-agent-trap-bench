@@ -1,0 +1,33 @@
+{
+  "static": {
+    "src": "/var/folders/nh/02mxl3td7rxcyj70_y5t1xqr0000gn/T/grade-work-ic49ypi4/repo/src",
+    "files_scanned": 1,
+    "count": 1,
+    "hits": [
+      {
+        "rule": "resource-not-found-32002",
+        "file": "server.ts",
+        "line": 28,
+        "code": "case 'resources/read': {const uri=p.uri; if(uri==='notes://index'){out=result(id,{resultType:'complete',contents:[{uri,mimeType:'application/json',text:json(not",
+        "changelog": "Minor 6",
+        "why": "resource-not-found is -32602 now"
+      }
+    ]
+  },
+  "dynamic": {
+    "url": "http://127.0.0.1:64182/mcp",
+    "reachable": true,
+    "probes": 21,
+    "count": 1,
+    "hits": [
+      {
+        "rule": "old-error-code",
+        "changelog": "Minor 6 / Minor 12",
+        "why": "old error code -32002",
+        "request": "resources/read",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-17\",\"error\":{\"code\":-32002,\"message\":\"Resource not found\"}}"
+      }
+    ]
+  }
+}

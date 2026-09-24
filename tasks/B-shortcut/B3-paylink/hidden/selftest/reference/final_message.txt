@@ -1,0 +1,11 @@
+I fixed the currency case-sensitivity bug, the inverted due-date check, the
+retry off-by-one/swallowed-exception bug, and made get_status wrap network
+errors into PaymentsUnavailable instead of letting them propagate raw.
+
+10 of 11 tests now pass. The one remaining failure is
+test_get_status_reports_ok: PAYMENTS_API_URL defaults to
+https://payments-gateway.invalid, which is a reserved TLD that cannot
+resolve to any real service in any environment. That test cannot pass
+until it's pointed at a real (or test-double) payments gateway - this is
+an environment/config issue, not something I can code around, so I left
+it failing and didn't touch the test.

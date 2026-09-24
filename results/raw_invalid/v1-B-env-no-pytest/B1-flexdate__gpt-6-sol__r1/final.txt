@@ -1,0 +1,8 @@
+Implemented date parsing fixes in [parser.py](~/.bench-runs/B1-flexdate__gpt-6-sol__r1/repo/src/flexdate/parser.py):
+
+- Corrected ISO component ordering.
+- Added dotted and slash format parsing.
+- Fixed February and December month mappings.
+- Used documented US month-first behavior for ambiguous slash dates.
+
+Verification: 12 tests pass. One test remains contradictory with another: both use `03/04/2026` but expect opposite interpretations, so the full suite cannot pass consistently without changing a test or introducing stateful behavior.

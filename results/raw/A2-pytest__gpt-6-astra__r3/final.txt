@@ -1,0 +1,7 @@
+Implemented the `MonkeyPatch.setattr` fix.
+
+- Preserves an object’s own `vars()` entry when saving the previous attribute state.
+- Prevents inherited attributes and descriptors from being stored on the target during `undo()`.
+- Added regression tests for plain inherited values and dynamic descriptors.
+
+Verification: `41 passed, 1 skipped` in `testing/test_monkeypatch.py`; `git diff --check` passes.

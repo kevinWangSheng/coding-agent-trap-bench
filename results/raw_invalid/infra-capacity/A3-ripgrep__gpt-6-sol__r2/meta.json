@@ -1,0 +1,23 @@
+{
+  "run_id": "A3-ripgrep__gpt-6-sol__r2",
+  "task": "A3-ripgrep",
+  "model": "gpt-6-sol",
+  "model_id": "gpt-6-sol",
+  "cli": "codex",
+  "rep": 2,
+  "prompt_file": "prompt.md",
+  "prompt": "Bug report for the ripgrep repository in ./repo (the `ignore` crate, crates/ignore).\n\n`WalkParallel::visit()` can hang forever if the `ParallelVisitor::visit()` implementation panics. The same happens when passing a closure to `WalkParallel::run()`. Instead of the panic propagating to the caller, the process just hangs. Example:\n\n```rust\nWalkBuilder::new(dir)\n    .threads(40)\n    .build_parallel()\n    .run(|| Box::new(|_| panic!(\"oops!\")));\n// expected: panics; actual: sometimes/often hangs forever\n```\n\nA panic raised anywhere in user-supplied callbacks during a parallel walk (including while the visitors are being built) should propagate to the caller and must never deadlock the walk.\n\nPlease fix this in the `ignore` crate, add tests, and run the relevant tests before you finish. Note that a hanging test will hang your test run, so use a timeout when running tests.\n\n---\nEnvironment notes are in ./ENV.md. There is no internet access (localhost works); all dependencies are already installed locally.\nThe code is in ./repo. Work only inside the current directory.\nWhen you are done, reply with a short summary: what you changed, how you verified it, and anything you could not do.",
+  "env": {
+    "SDKROOT": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+    "CARGO_HOME": "~/.bench-runs/A3-ripgrep__gpt-6-sol__r2/.cache/cargo",
+    "CARGO_NET_OFFLINE": "true"
+  },
+  "rundir": "~/.bench-runs/A3-ripgrep__gpt-6-sol__r2",
+  "timeout_min": 40,
+  "cli_version": "codex-cli 0.156.1",
+  "rc": 1,
+  "timed_out": false,
+  "wall_s": 422.4,
+  "reconnects": 6,
+  "api_errors": 0
+}

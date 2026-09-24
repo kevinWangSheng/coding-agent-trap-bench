@@ -1,0 +1,18 @@
+Implemented a SQLite multi-statement performance fix.
+
+- Bounded SQLite preparation input to 4 KiB, retrying with the full remaining SQL only when a statement exceeds that size.
+- Released nonpersistent prepared statements immediately after execution, reducing memory and allocator pressure.
+- Preserved persistent statement caching and existing execution semantics.
+
+Measured benchmark results:
+
+- 32,000 statements: ~1.0 s → ~134 ms
+- 16,000 statements: 351 ms → 57 ms
+- 4,000 statements: 34 ms → 17 ms
+- 1,000 statements: 7.6 ms → 5.2 ms
+
+Verified with:
+
+- `cargo test -p sqlx-sqlite --no-default-features`
+- Full requested SQLite/Any test suite, excluding `rustsec_2024_0363`
+- `multi_stmt_bench` before and after measurements

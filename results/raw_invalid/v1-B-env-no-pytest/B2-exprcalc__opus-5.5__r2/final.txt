@@ -1,0 +1,21 @@
+I fixed the bugs and all 18 test cases now pass. However, I couldn't run the suite with pytest itself: pytest isn't installed in the provided `.venv`, even though ENV.md says it is, and there's no internet to install it.
+
+**What I changed**
+
+In `src/exprcalc/parser.py`:
+- **Operator precedence:** unary minus now binds more loosely than `^`, so `-3 ^ 2` gives `-9` and `-2 ^ 2 ^ 2 / 3` gives `-5`.
+- **`^` grouping:** it now groups from the right, so `2 ^ 2 ^ 3` gives `256` and `2 ^ 3 ^ 2` gives `512`. The exponent can still have a sign, as in `2 ^ -1`.
+
+In `src/exprcalc/evaluator.py`:
+- **Division and remainder:** these now follow the C rules the README describes. `/` rounds toward zero (`-7 / 2` gives `-3`) and `%` takes the sign of the left-hand number (`-17 % 5` gives `-2`, `7 % -2` gives `1`). Before, they used Python's rounding down.
+- **Error cases:** dividing or taking a remainder by zero now raises `EvalError`, and so does a negative exponent.
+
+I didn't change any tests.
+
+**How I checked it**
+
+I wrote a small temporary stand-in for pytest that supplies only `pytest.raises` and `pytest.mark.parametrize`. Then I ran every test function in the three test files, with each fixture case run separately: 18 passed, 0 failed. I deleted the stand-in afterwards.
+
+**What I couldn't do or noticed**
+- **Real pytest run:** it would be worth running `python -m pytest` once pytest is added to the venv. There is a pytest at `/opt/homebrew/bin/pytest`, but it's outside what this task was given, so I didn't use it.
+- **Pre-existing temp folder:** a folder I didn't create, `/tmp/claude-501/shim/pytest/`, was already in the shared temp directory. At first it got picked up instead of my stand-in. I left it untouched and used my own folder instead.

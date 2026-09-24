@@ -1,0 +1,125 @@
+diff --git a/crates/ignore/src/walk.rs b/crates/ignore/src/walk.rs
+index 93e6cf1..af8cfa2 100644
+--- a/crates/ignore/src/walk.rs
++++ b/crates/ignore/src/walk.rs
+@@ -1441,29 +1441,58 @@ impl WalkParallel {
+                 return;
+             }
+         }
+-        // Create the workers and then wait for them to finish.
++        // Create the workers and then wait for them to finish. Build all
++        // visitors before starting any worker, so a panic while building a
++        // visitor cannot leave already-running workers stranded.
+         let quit_now = Arc::new(AtomicBool::new(false));
+         let active_workers = Arc::new(AtomicUsize::new(threads));
+         let stacks = Stack::new_for_each_thread(threads, stack);
++        let workers: Vec<_> = stacks
++            .into_iter()
++            .map(|stack| Worker {
++                visitor: builder.build(),
++                stack,
++                quit_now: quit_now.clone(),
++                active_workers: active_workers.clone(),
++                max_depth: self.max_depth,
++                min_depth: self.min_depth,
++                max_filesize: self.max_filesize,
++                follow_links: self.follow_links,
++                skip: self.skip.clone(),
++                filter: self.filter.clone(),
++            })
++            .collect();
+         std::thread::scope(|s| {
+-            let handles: Vec<_> = stacks
++            let handles: Vec<_> = workers
+                 .into_iter()
+-                .map(|stack| Worker {
+-                    visitor: builder.build(),
+-                    stack,
+-                    quit_now: quit_now.clone(),
+-                    active_workers: active_workers.clone(),
+-                    max_depth: self.max_depth,
+-                    min_depth: self.min_depth,
+-                    max_filesize: self.max_filesize,
+-                    follow_links: self.follow_links,
+-                    skip: self.skip.clone(),
+-                    filter: self.filter.clone(),
++                .map(|worker| {
++                    let quit_now = quit_now.clone();
++                    s.spawn(move || {
++                        let result = std::panic::catch_unwind(
++                            std::panic::AssertUnwindSafe(|| worker.run()),
++                        );
++                        if let Err(payload) = result {
++                            quit_now.store(true, AtomicOrdering::SeqCst);
++                            Err(payload)
++                        } else {
++                            Ok(())
++                        }
++                    })
+                 })
+-                .map(|worker| s.spawn(|| worker.run()))
+                 .collect();
++            let mut panic = None;
+             for handle in handles {
+-                handle.join().unwrap();
++                match handle.join() {
++                    Ok(Ok(())) => {}
++                    Ok(Err(payload)) | Err(payload) => {
++                        if panic.is_none() {
++                            panic = Some(payload);
++                        }
++                    }
++                }
++            }
++            if let Some(payload) = panic {
++                std::panic::resume_unwind(payload);
+             }
+         });
+     }
+@@ -1905,6 +1934,9 @@ impl<'s> Worker<'s> {
+                     }
+                     // Wait for next `Work` or `Quit` message.
+                     loop {
++                        if self.is_quit_now() {
++                            return None;
++                        }
+                         if let Some(v) = self.recv() {
+                             self.activate_worker();
+                             value = Some(v);
+@@ -2129,6 +2161,36 @@ mod tests {
+         file.write_all(contents.as_bytes()).unwrap();
+     }
+ 
++    #[test]
++    fn parallel_visitor_panic_propagates() {
++        let td = tmpdir();
++        for i in 0..100 {
++            wfile(td.path().join(format!("file-{i}")), "");
++        }
++        let result = std::panic::catch_unwind(|| {
++            WalkBuilder::new(td.path())
++                .threads(4)
++                .build_parallel()
++                .run(|| Box::new(|_| panic!("visitor panic")));
++        });
++        assert!(result.is_err());
++    }
++
++    #[test]
++    fn parallel_visitor_builder_panic_propagates() {
++        let td = tmpdir();
++        wfile(td.path().join("file"), "");
++        let result = std::panic::catch_unwind(|| {
++            WalkBuilder::new(td.path())
++                .threads(4)
++                .build_parallel()
++                .run(|| -> Box<dyn FnMut(Result<DirEntry, super::Error>) -> WalkState + Send> {
++                    panic!("builder panic")
++                });
++        });
++        assert!(result.is_err());
++    }
++
+     fn wfile_size<P: AsRef<Path>>(path: P, size: u64) {
+         let file = File::create(path).unwrap();
+         file.set_len(size).unwrap();

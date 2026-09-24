@@ -1,0 +1,27 @@
+I fixed the hang: a panic in any user callback during a parallel walk now reaches the caller with its original message. The new tests pass, and so do the full `ignore` and workspace test suites.
+
+**What caused it** (`crates/ignore/src/walk.rs`):
+1. **A worker panicking mid-walk.** A worker thread that panicked was still counted as active. The other workers kept sleeping and polling for more work, waiting for it to finish, which never happened. The same hang applied to panics in `filter_entry` predicates and the other per-worker callbacks, not just the visitor.
+2. **The builder panicking partway through.** Each visitor was built right before its thread was started. If the builder panicked after some threads were already running, those threads waited forever for workers that never started.
+
+**Changes:**
+- Each worker thread now holds a small guard, `QuitOnPanic`. If the thread panics, the guard sets the shared "quit now" flag.
+- The idle wait loop in `get_work` now checks that flag, so waiting workers stop instead of sleeping forever.
+- `visit()` builds every visitor before starting any thread, so a builder panic happens before anything could get stuck.
+- `visit()` waits for all threads to finish, then re-raises the first panic with its original payload. Before, callers got a generic `unwrap` error instead of their own message.
+
+**Tests:** I added five tests in `walk.rs`. Each runs the walk on a separate thread with a 30-second timeout, so a hang fails the test instead of stalling the run. They cover:
+- the exact example from the report (a closure that always panics, 40 threads)
+- a panic on one specific file deep in the walk
+- a custom `ParallelVisitor` used through `visit()`
+- builder panics at several points, including the very first call
+- a panic in `filter_entry`
+
+All of them also check that the caller sees the original panic message.
+
+**Verification:**
+- With the flag-setting guard and the wait-loop check disabled, four of the five tests hang and fail at the timeout; with the full fix, all pass in about 0.1s.
+- The builder test still passed in that check, because the build-before-spawn change was left in. I didn't separately confirm that it fails against the untouched original code.
+- All commands ran under `timeout`, and `cargo fmt --check` is clean.
+
+Nothing was left undone.

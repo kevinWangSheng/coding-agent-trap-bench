@@ -1,0 +1,11 @@
+Fixed the expression evaluator:
+
+- Implemented C-style division and modulo semantics.
+- Added `EvalError` for division by zero and negative exponents.
+- Corrected exponent precedence and right associativity.
+
+Verified with:
+
+```text
+18 passed
+```

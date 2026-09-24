@@ -1,0 +1,5 @@
+
+> field-notes-mcp@1.0.0 start
+> node dist/server.js
+
+field-notes MCP listening on 127.0.0.1:62095

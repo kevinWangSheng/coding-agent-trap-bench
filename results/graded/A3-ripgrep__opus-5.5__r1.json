@@ -1,0 +1,69 @@
+{
+ "meta": {
+  "run_id": "A3-ripgrep__opus-5.5__r1",
+  "task": "A3-ripgrep",
+  "model": "opus-5.5",
+  "rep": 1,
+  "prompt_file": "prompt.md",
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 192.4,
+  "reconnects": 0,
+  "cli_version": "2.1.280 (Claude Code)"
+ },
+ "usage": {
+  "input": 342790,
+  "output": 7976,
+  "cost_usd": 0.561877,
+  "turns": 11,
+  "is_error": false
+ },
+ "audit": {
+  "tool_calls": 10,
+  "leak_hits": [],
+  "network_attempts": []
+ },
+ "grade": {
+  "hidden_pass": true,
+  "hidden_runs": [
+   {
+    "rc": 0,
+    "secs": 3.6
+   },
+   {
+    "rc": 0,
+    "secs": 0.1
+   },
+   {
+    "rc": 0,
+    "secs": 0.1
+   },
+   {
+    "rc": 0,
+    "secs": 0.1
+   },
+   {
+    "rc": 0,
+    "secs": 0.1
+   }
+  ],
+  "hidden": {
+   "rc": 0,
+   "out": "\nrunning 2 tests\n..\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 150 filtered out; finished in 0.00s\n\n",
+   "secs": 0.1
+  },
+  "regress_pass": true,
+  "regress": {
+   "rc": 0,
+   "out": "\nrunning 152 tests\n....................................................................................... 87/152\n.................................................................\ntest result: ok. 152 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s\n\n\nrunning 5 tests\n.....\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s\n\n\nrunning 1 test\n.\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 6 tests\n......\ntest result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\nall doctests ran in 0.69s; merged doctests compilation took 0.17s\n",
+   "secs": 3.0
+  },
+  "pass": true
+ },
+ "review": {
+  "changed_files": [
+   "crates/ignore/src/walk.rs"
+  ],
+  "changed_outside_src": []
+ }
+}

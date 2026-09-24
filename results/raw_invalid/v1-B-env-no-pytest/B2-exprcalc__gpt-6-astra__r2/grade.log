@@ -1,0 +1,3 @@
+
+--- stderr
+error: final_message_path not found: <BENCH>/results/raw/B2-exprcalc__gpt-6-astra__r2/final.txt

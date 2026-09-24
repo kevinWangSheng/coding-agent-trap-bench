@@ -1,0 +1,197 @@
+diff --git a/sqlx-sqlite/src/statement/virtual.rs b/sqlx-sqlite/src/statement/virtual.rs
+index b25aa69..ec32399 100644
+--- a/sqlx-sqlite/src/statement/virtual.rs
++++ b/sqlx-sqlite/src/statement/virtual.rs
+@@ -6,7 +6,8 @@ use std::ptr::{null, null_mut, NonNull};
+ use std::sync::Arc;
+ 
+ use libsqlite3_sys::{
+-    sqlite3, sqlite3_prepare_v3, sqlite3_stmt, SQLITE_OK, SQLITE_PREPARE_PERSISTENT,
++    sqlite3, sqlite3_limit, sqlite3_prepare_v3, sqlite3_stmt, SQLITE_LIMIT_SQL_LENGTH, SQLITE_OK,
++    SQLITE_PREPARE_PERSISTENT,
+ };
+ 
+ use sqlx_core::bytes::{Buf, Bytes};
+@@ -32,6 +33,9 @@ pub struct VirtualStatement {
+     index: Option<usize>,
+ 
+     /// tail of the most recently prepared SQL statement within this container
++    ///
++    /// This always ends with a NUL terminator which is *not* part of the SQL text; see [`prepare`]
++    /// for why.
+     tail: Bytes,
+ 
+     /// underlying sqlite handles for each inner statement
+@@ -63,9 +67,13 @@ impl VirtualStatement {
+             ));
+         }
+ 
++        let mut tail = String::with_capacity(query.len() + 1);
++        tail.push_str(query);
++        tail.push('\0');
++
+         Ok(Self {
+             persistent,
+-            tail: Bytes::from(String::from(query)),
++            tail: Bytes::from(tail),
+             handles: SmallVec::with_capacity(1),
+             index: None,
+             columns: SmallVec::with_capacity(1),
+@@ -84,7 +92,7 @@ impl VirtualStatement {
+             .or(Some(0));
+ 
+         while self.handles.len() <= self.index.unwrap_or(0) {
+-            if self.tail.is_empty() {
++            if sql_len(&self.tail) == 0 {
+                 return Ok(None);
+             }
+ 
+@@ -141,6 +149,18 @@ impl VirtualStatement {
+     }
+ }
+ 
++/// Length of the SQL text in `query`, excluding the trailing NUL terminator.
++fn sql_len(query: &Bytes) -> usize {
++    debug_assert_eq!(query.last(), Some(&0));
++    query.len().saturating_sub(1)
++}
++
++/// Prepare the next statement from `query` (SQL text followed by a NUL terminator),
++/// advancing `query` past the consumed SQL.
++///
++/// When `nByte` does not cover a NUL terminator, SQLite makes a private copy of the *entire*
++/// remaining input on every call to `sqlite3_prepare_v3()`, which made executing a string of
++/// N statements O(N^2). Passing the terminator lets SQLite parse the buffer in place.
+ fn prepare(
+     conn: *mut sqlite3,
+     query: &mut Bytes,
+@@ -159,19 +179,31 @@ fn prepare(
+         flags |= SQLITE_PREPARE_PERSISTENT as u32;
+     }
+ 
+-    while !query.is_empty() {
++    while sql_len(query) > 0 {
+         let mut statement_handle: *mut sqlite3_stmt = null_mut();
+         let mut tail: *const c_char = null();
+ 
++        let sql_len = sql_len(query);
+         let query_ptr = query.as_ptr() as *const c_char;
+-        let query_len = i32::try_from(query.len()).map_err(|_| {
++        let query_len = i32::try_from(sql_len).map_err(|_| {
+             err_protocol!(
+                 "query string too large for SQLite3 API ({} bytes); \
+                  try breaking it into smaller chunks (< 2 GiB), executed separately",
+-                query.len()
++                sql_len
+             )
+         })?;
+ 
++        // SQLite rejects input longer than `SQLITE_LIMIT_SQL_LENGTH` with "statement too long",
++        // but only checks this up front when the input is not NUL-terminated. In that case,
++        // omit the terminator so the resulting error is exactly the same as it always was.
++        let max_len = unsafe { sqlite3_limit(conn, SQLITE_LIMIT_SQL_LENGTH, -1) };
++        let query_len = if query_len > max_len {
++            query_len
++        } else {
++            // include the NUL terminator
++            query_len.checked_add(1).unwrap_or(query_len)
++        };
++
+         // <https://www.sqlite.org/c3ref/prepare.html>
+         let status = unsafe {
+             sqlite3_prepare_v3(
+@@ -190,9 +222,9 @@ fn prepare(
+ 
+         // tail should point to the first byte past the end of the first SQL
+         // statement in zSql. these routines only compile the first statement,
+-        // so tail is left pointing to what remains un-compiled.
+-
+-        let n = (tail as usize) - (query_ptr as usize);
++        // so tail is left pointing to what remains un-compiled
++        // (clamped so that we never advance past our NUL terminator).
++        let n = cmp::min((tail as usize) - (query_ptr as usize), sql_len);
+         query.advance(n);
+ 
+         if let Some(handle) = NonNull::new(statement_handle) {
+diff --git a/tests/sqlite/sqlite.rs b/tests/sqlite/sqlite.rs
+index 8791443..5d71106 100644
+--- a/tests/sqlite/sqlite.rs
++++ b/tests/sqlite/sqlite.rs
+@@ -377,6 +377,77 @@ SELECT id, other FROM users WHERE id = last_insert_rowid();
+     Ok(())
+ }
+ 
++#[sqlx_macros::test]
++async fn it_executes_large_multi_statement_script() -> anyhow::Result<()> {
++    let mut conn = new::<Sqlite>().await?;
++
++    const N: usize = 20_000;
++
++    let mut script = String::from(
++        "CREATE TEMPORARY TABLE script_test (id INTEGER PRIMARY KEY, n INTEGER NOT NULL);\n",
++    );
++    for i in 0..N {
++        script.push_str(&format!(
++            "-- row {i}\nINSERT INTO script_test (n) VALUES ({i});;\n/* c */ UPDATE script_test SET n = n + 1 WHERE id = {};\n",
++            i + 1
++        ));
++    }
++    script.push_str("SELECT 1; -- trailing comment\n  \n");
++
++    let done = sqlx::raw_sql(sqlx::AssertSqlSafe(script)).execute(&mut conn).await?;
++    assert_eq!(done.rows_affected(), 2 * N as u64);
++
++    let (count, sum): (i64, i64) = sqlx::query_as("SELECT count(*), sum(n) FROM script_test")
++        .fetch_one(&mut conn)
++        .await?;
++    assert_eq!(count, N as i64);
++    assert_eq!(sum, (1..=N as i64).sum::<i64>());
++
++    // an error in the middle of the script stops execution there
++    let err = sqlx::raw_sql(
++        "INSERT INTO script_test (n) VALUES (-1); SELECT * FROM does_not_exist; INSERT INTO script_test (n) VALUES (-2);",
++    )
++    .execute(&mut conn)
++    .await
++    .unwrap_err();
++    assert!(err.to_string().contains("no such table"), "{err}");
++
++    let ns: Vec<i64> = sqlx::query_scalar("SELECT n FROM script_test WHERE n < 0")
++        .fetch_all(&mut conn)
++        .await?;
++    assert_eq!(ns, [-1]);
++
++    Ok(())
++}
++
++#[sqlx_macros::test]
++async fn it_enforces_sql_length_limit_on_remaining_script() -> anyhow::Result<()> {
++    use libsqlite3_sys::{sqlite3_limit, SQLITE_LIMIT_SQL_LENGTH};
++
++    let mut conn = SqliteConnection::connect("sqlite::memory:").await?;
++    // load the schema first, as the (tiny) limit would also apply to that
++    sqlx::query("SELECT count(*) FROM sqlite_master").execute(&mut conn).await?;
++
++    {
++        let mut handle = conn.lock_handle().await?;
++        unsafe { sqlite3_limit(handle.as_raw_handle().as_ptr(), SQLITE_LIMIT_SQL_LENGTH, 59) };
++    }
++
++    // each statement is short, but SQLite checks the length of the whole remaining input
++    let script = "SELECT 1; SELECT 2; SELECT 3; SELECT 4; SELECT 5; SELECT 6; SELECT 7; SELECT 8;";
++    assert!(script.len() > 59);
++
++    let err = sqlx::raw_sql(script).execute(&mut conn).await.unwrap_err();
++    assert!(err.to_string().contains("statement too long"), "{err}");
++
++    // exactly at the limit is fine
++    let script = &script[..59];
++    assert!(script.ends_with("SELECT 6;"));
++    sqlx::raw_sql(sqlx::AssertSqlSafe(script)).execute(&mut conn).await?;
++
++    Ok(())
++}
++
+ #[sqlx_macros::test]
+ async fn it_interleaves_reads_and_writes() -> anyhow::Result<()> {
+     let mut conn = new::<Sqlite>().await?;

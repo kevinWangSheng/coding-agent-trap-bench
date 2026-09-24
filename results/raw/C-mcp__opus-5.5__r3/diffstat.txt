@@ -1,0 +1,9 @@
+ README.md            |   4 +
+ src/headers.ts       | 111 ++++++
+ src/mcp.ts           | 510 +++++++++++++++++++++++++++
+ src/protocol.ts      |  80 +++++
+ src/request-state.ts |  79 +++++
+ src/server.ts        | 319 +++++++++++++++++
+ src/store.ts         |  83 +++++
+ test/server.test.ts  | 949 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 8 files changed, 2135 insertions(+)

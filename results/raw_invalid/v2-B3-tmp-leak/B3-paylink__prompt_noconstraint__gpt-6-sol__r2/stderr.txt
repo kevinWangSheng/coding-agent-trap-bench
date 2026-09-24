@@ -1,0 +1,3 @@
+Reading additional input from stdin...
+2026-09-24T00:41:49.198569Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-24T00:43:22.487908Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"Failed to create unified exec process: No such file or directory (os error 2)\")" }

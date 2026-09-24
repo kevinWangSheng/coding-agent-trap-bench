@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testcase name="app: discover identifies field-notes 1.0.0 with instructions and capabilities" time="0.031454" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts" failure="prompts capability">
+		<failure type="testCodeFailure" message="prompts capability">
+[Error [ERR_TEST_FAILURE]: prompts capability] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: prompts capability
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:49:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="app: tools/list returns the three tools alphabetically with schemas" time="0.004292" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: add_note exposes notebook via x-mcp-header Notebook" time="0.002260" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: add_note returns structured output matching its schema plus JSON text" time="0.004916" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: add_note ids are sequential and never reused" time="0.008302" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts" failure="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1007,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+		<failure type="testCodeFailure" message="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1007,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+[Error [ERR_TEST_FAILURE]: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1007,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1007,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async confirmDelete (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:142:17)
+      at async TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:98:3)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+}
+		</failure>
+	</testcase>
+	<testcase name="app: add_note invalid arguments are tool execution errors" time="0.013090" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: unknown tool is a protocol error -32602" time="0.002793" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts" failure="Expected values to be strictly equal:&#10;&#10;-32601 !== -32602&#10;">
+		<failure type="testCodeFailure" message="Expected values to be strictly equal:&#10;&#10;-32601 !== -32602">
+[Error [ERR_TEST_FAILURE]: Expected values to be strictly equal:
+
+-32601 !== -32602
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  -32601 !== -32602
+  
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:123:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: -32601,
+    expected: -32602,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="app: reindex reports progress on the request's stream" time="0.085420" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: reindex numeric progress token and defaults" time="0.009245" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: reindex without a progress token sends no progress" time="0.004979" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: reindex out-of-range arguments are tool execution errors" time="0.008608" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: resources/list returns only notes://index" time="0.004242" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: resources/templates/list returns the note template" time="0.004123" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: notes://index lists notes by numeric id with seeds" time="0.029149" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: reading a note returns markdown" time="0.006149" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: reading a missing note is -32602 (not the old -32002)" time="0.005298" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: prompts/list describes summarize_notebook" time="0.001864" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: summarize_notebook embeds the notebook's notes" time="0.009008" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: summarize_notebook detailed style and empty notebook" time="0.004132" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: summarize_notebook invalid arguments are -32602" time="0.003890" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: delete_note asks for confirmation with an input_required result" time="0.005046" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts" failure="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1053,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+		<failure type="testCodeFailure" message="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1053,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+[Error [ERR_TEST_FAILURE]: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1053,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1053,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:271:13)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+}
+		</failure>
+	</testcase>
+	<testcase name="app: delete_note deletes after the user accepts" time="0.002988" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts" failure="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1055,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+		<failure type="testCodeFailure" message="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1055,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+[Error [ERR_TEST_FAILURE]: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1055,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1055,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async confirmDelete (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:142:17)
+      at async TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:291:13)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+}
+		</failure>
+	</testcase>
+	<testcase name="app: delete_note decline, cancel or confirm:false keeps the note" time="0.003878" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts" failure="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1057,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+		<failure type="testCodeFailure" message="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1057,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+[Error [ERR_TEST_FAILURE]: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1057,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1057,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async confirmDelete (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:142:17)
+      at async TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:306:15)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+}
+		</failure>
+	</testcase>
+	<testcase name="app: delete_note on a missing note is a tool execution error" time="0.001268" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: delete_note without elicitation capability is -32021 (HTTP 400)" time="0.003762" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts" failure="Expected values to be strictly equal:&#10;&#10;200 !== 400&#10;">
+		<failure type="testCodeFailure" message="Expected values to be strictly equal:&#10;&#10;200 !== 400">
+[Error [ERR_TEST_FAILURE]: Expected values to be strictly equal:
+
+200 !== 400
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 400
+  
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:323:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="app: a confirmation for one note cannot delete another" time="0.007759" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts" failure="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1063,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+		<failure type="testCodeFailure" message="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1063,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+[Error [ERR_TEST_FAILURE]: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1063,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1063,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:334:17)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+}
+		</failure>
+	</testcase>
+	<testcase name="app: a tampered or forged requestState is rejected" time="0.003604" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts" failure="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1065,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+		<failure type="testCodeFailure" message="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1065,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+[Error [ERR_TEST_FAILURE]: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1065,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1065,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:349:17)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+}
+		</failure>
+	</testcase>
+	<testcase name="app: subscriptions deliver resource updates for watched URIs" time="0.009647" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts" failure="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1068,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+		<failure type="testCodeFailure" message="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1068,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+[Error [ERR_TEST_FAILURE]: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1068,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1068,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async confirmDelete (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:142:17)
+      at async TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:390:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+}
+		</failure>
+	</testcase>
+	<testcase name="app: subscriptions only notify watchers of the changed URI" time="0.006733" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts" failure="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1072,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+		<failure type="testCodeFailure" message="tools/call: expected a result, got HTTP 200: {&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1072,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32021,&amp;quot;message&amp;quot;:&amp;quot;Missing required client capability&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;requiredCapabilities&amp;quot;:[&amp;quot;elicitation.form&amp;quot;]}}}">
+[Error [ERR_TEST_FAILURE]: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1072,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1072,"error":{"code":-32021,"message":"Missing required client capability","data":{"requiredCapabilities":["elicitation.form"]}}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async confirmDelete (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:142:17)
+      at async TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:413:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+}
+		</failure>
+	</testcase>
+	<testcase name="app: acknowledgment omits list-change types the server does not offer" time="0.000909" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts" failure="Expected &amp;quot;actual&amp;quot; to be strictly unequal to: true">
+		<failure type="testCodeFailure" message="Expected &amp;quot;actual&amp;quot; to be strictly unequal to: true">
+[Error [ERR_TEST_FAILURE]: Expected "actual" to be strictly unequal to: true] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to: true
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:436:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: true,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="app: request-scoped progress never appears on a listen stream" time="0.235759" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="spec: every result carries resultType complete" time="0.047616" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: discover identifies the server in _meta serverInfo" time="0.003849" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: discover has no legacy initialize-result fields" time="0.001059" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: cacheable results carry ttlMs/cacheScope per README policy" time="0.014265" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: tools/list order is deterministic" time="0.003911" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: missing required _meta fields -> 400 / -32602" time="0.000945" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts" failure="no _meta&#10;&#10;-32020 !== -32602&#10;">
+		<failure type="testCodeFailure" message="no _meta&#10;&#10;-32020 !== -32602">
+[Error [ERR_TEST_FAILURE]: no _meta
+
+-32020 !== -32602
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: no _meta
+  
+  -32020 !== -32602
+  
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:66:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: -32020,
+    expected: -32602,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="spec: clientInfo is optional" time="0.000810" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: unsupported protocol version -> 400 / -32022 with supported list" time="0.002815" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts" failure="2025-11-25">
+		<failure type="testCodeFailure" message="2025-11-25">
+[Error [ERR_TEST_FAILURE]: 2025-11-25] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: 2025-11-25
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:82:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="spec: MCP-Protocol-Version header missing or mismatched -> 400 / -32020" time="0.002786" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts" failure="Expected values to be strictly equal:&#10;&#10;-32602 !== -32020&#10;">
+		<failure type="testCodeFailure" message="Expected values to be strictly equal:&#10;&#10;-32602 !== -32020">
+[Error [ERR_TEST_FAILURE]: Expected values to be strictly equal:
+
+-32602 !== -32020
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  -32602 !== -32020
+  
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:90:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: -32602,
+    expected: -32020,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="spec: Mcp-Method header missing or mismatched -> 400 / -32020" time="0.003842" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: Mcp-Name required and validated for tools/call, prompts/get, resources/read" time="0.013266" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: base64-encoded Mcp-Name is decoded before comparison" time="0.003386" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts" failure="{&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1031,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32020,&amp;quot;message&amp;quot;:&amp;quot;Header mismatch&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;header&amp;quot;:&amp;quot;Mcp-Name&amp;quot;}}}&#10;&#10;400 !== 200&#10;">
+		<failure type="testCodeFailure" message="{&amp;quot;jsonrpc&amp;quot;:&amp;quot;2.0&amp;quot;,&amp;quot;id&amp;quot;:1031,&amp;quot;error&amp;quot;:{&amp;quot;code&amp;quot;:-32020,&amp;quot;message&amp;quot;:&amp;quot;Header mismatch&amp;quot;,&amp;quot;data&amp;quot;:{&amp;quot;header&amp;quot;:&amp;quot;Mcp-Name&amp;quot;}}}&#10;&#10;400 !== 200">
+[Error [ERR_TEST_FAILURE]: {"jsonrpc":"2.0","id":1031,"error":{"code":-32020,"message":"Header mismatch","data":{"header":"Mcp-Name"}}}
+
+400 !== 200
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: {"jsonrpc":"2.0","id":1031,"error":{"code":-32020,"message":"Header mismatch","data":{"header":"Mcp-Name"}}}
+  
+  400 !== 200
+  
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:124:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 400,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="spec: Mcp-Param-Notebook must be present and match the body" time="0.003558" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts" failure="Expected values to be strictly equal:&#10;&#10;200 !== 400&#10;">
+		<failure type="testCodeFailure" message="Expected values to be strictly equal:&#10;&#10;200 !== 400">
+[Error [ERR_TEST_FAILURE]: Expected values to be strictly equal:
+
+200 !== 400
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 400
+  
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:131:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="spec: Mcp-Param-Notebook base64 values are decoded before comparison" time="0.010903" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts" failure="The expression evaluated to a falsy value:&#10;&#10;  assert.ok(ok.response?.result &amp;&amp; !ok.response.result.isError)&#10;">
+		<failure type="testCodeFailure" message="The expression evaluated to a falsy value:&#10;&#10;  assert.ok(ok.response?.result &amp;&amp; !ok.response.result.isError)">
+[Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:
+
+  assert.ok(ok.response?.result &amp;&amp; !ok.response.result.isError)
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(ok.response?.result &amp;&amp; !ok.response.result.isError)
+  
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:148:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="spec: removed methods are unknown (404 / -32601)" time="0.010475" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: errors preserve the request id" time="0.005088" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: no GET/DELETE endpoint (405)" time="0.001845" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts" failure="GET&#10;&#10;404 !== 405&#10;">
+		<failure type="testCodeFailure" message="GET&#10;&#10;404 !== 405">
+[Error [ERR_TEST_FAILURE]: GET
+
+404 !== 405
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: GET
+  
+  404 !== 405
+  
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:188:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 405,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="spec: Mcp-Session-Id is ignored and never issued" time="0.002810" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: Last-Event-ID is ignored" time="0.002091" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: Origin validation (403 for foreign origins)" time="0.004010" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: client notifications are accepted with 202 and no body" time="0.003231" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts" failure="Expected values to be strictly equal:&#10;&#10;400 !== 202&#10;">
+		<failure type="testCodeFailure" message="Expected values to be strictly equal:&#10;&#10;400 !== 202">
+[Error [ERR_TEST_FAILURE]: Expected values to be strictly equal:
+
+400 !== 202
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  400 !== 202
+  
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:223:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 400,
+    expected: 202,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="spec: no log notifications without a requested logLevel" time="0.005240" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: server sends no JSON-RPC requests on response streams" time="0.004454" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: malformed JSON is a parse error" time="0.001850" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<!-- tests 55 -->
+	<!-- suites 0 -->
+	<!-- pass 35 -->
+	<!-- fail 20 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 0 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 865.086333 -->
+</testsuites>

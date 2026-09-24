@@ -1,0 +1,72 @@
+--- a/sqlx-sqlite/src/statement/virtual.rs
++++ b/sqlx-sqlite/src/statement/virtual.rs
+@@ -27,11 +27,13 @@
+ 
+     /// the current index of the actual statement that is executing
+     /// if `None`, no statement is executing and `prepare()` must be called;
+-    /// if `Some(self.handles.len())` and `self.tail.is_empty()`,
++    /// if `Some(self.handles.len())` and `is_exhausted(&self.tail)`,
+     /// there are no more statements to execute and `reset()` must be called
+     index: Option<usize>,
+ 
+     /// tail of the most recently prepared SQL statement within this container
++    ///
++    /// Always NUL-terminated so SQLite can parse it in place; see [`VirtualStatement::new`].
+     tail: Bytes,
+ 
+     /// underlying sqlite handles for each inner statement
+@@ -63,9 +65,16 @@
+             ));
+         }
+ 
++        // Keep the query NUL-terminated and pass the terminator to SQLite. Otherwise
++        // `sqlite3_prepare_v3()` copies the whole remaining input on every call,
++        // which is quadratic in the length of a multi-statement query.
++        let mut buf = Vec::with_capacity(query.len() + 1);
++        buf.extend_from_slice(query.as_bytes());
++        buf.push(0);
++
+         Ok(Self {
+             persistent,
+-            tail: Bytes::from(String::from(query)),
++            tail: Bytes::from(buf),
+             handles: SmallVec::with_capacity(1),
+             index: None,
+             columns: SmallVec::with_capacity(1),
+@@ -84,7 +93,7 @@
+             .or(Some(0));
+ 
+         while self.handles.len() <= self.index.unwrap_or(0) {
+-            if self.tail.is_empty() {
++            if is_exhausted(&self.tail) {
+                 return Ok(None);
+             }
+ 
+@@ -159,7 +168,7 @@
+         flags |= SQLITE_PREPARE_PERSISTENT as u32;
+     }
+ 
+-    while !query.is_empty() {
++    while !is_exhausted(query) {
+         let mut statement_handle: *mut sqlite3_stmt = null_mut();
+         let mut tail: *const c_char = null();
+ 
+@@ -198,7 +207,18 @@
+         if let Some(handle) = NonNull::new(statement_handle) {
+             return Ok(Some(StatementHandle::new(handle)));
+         }
++
++        // SQLite stops at the first NUL byte; if it consumed nothing, the remaining
++        // input starts with an embedded NUL and we would never make progress.
++        if n == 0 {
++            return Err(err_protocol!("query string must not contain NUL bytes"));
++        }
+     }
+ 
+     Ok(None)
+ }
++
++/// `true` if only the NUL terminator (or nothing) remains of the query.
++fn is_exhausted(query: &Bytes) -> bool {
++    query.len() <= 1
++}

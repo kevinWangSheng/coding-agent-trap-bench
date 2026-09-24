@@ -1,0 +1,39 @@
+Large multi-statement scripts no longer slow down quadratically. On the benchmark, 32,000 statements went from 1.9s to about 0.25s, and the full SQLite test suite passes.
+
+**Cause:** the driver compiles a script one statement at a time and hands SQLite the rest of the script each time, with a length that doesn't include a closing NUL byte. When the length is given that way, SQLite copies everything left in the script before it parses the next statement. So each statement cost time proportional to the rest of the script: tens of megabytes of copying per 1,000 statements in a 3 MB script. Splitting the script made it fast only because each piece was short.
+
+**Fix** (all in `sqlx-sqlite/src/statement/virtual.rs`):
+- The query buffer gets a trailing NUL byte, and the length passed to SQLite includes it, as SQLite's documentation recommends. SQLite now reads the text in place instead of copying it.
+- There is a fallback for the one query size (exactly 2 GiB) where the extra byte wouldn't fit the length field: it passes the old length, so SQLite copies as before. That case is still correct, just not faster.
+- Statements, results, rows-affected counts and errors are unchanged.
+
+**One behaviour change:** a query containing a NUL byte after a statement (e.g. `"SELECT 1;\0SELECT 2"`) used to hang the connection forever, spinning the CPU. I confirmed this on the original code. It now runs everything up to the NUL and stops, since SQLite never reads past one. I made it stop rather than keep the hang.
+
+**Measurements** (release build, `multi_stmt_bench`):
+
+| statements | before | after |
+|---|---|---|
+| 1,000 | 8.7 ms (8.7 µs/stmt) | 5.4 ms (5.4 µs) |
+| 4,000 | 47.8 ms (12.0 µs) | 33 ms (8.4 µs) |
+| 16,000 | 488 ms (30.5 µs) | 84 ms (5.2 µs) |
+| 32,000 | 1.9 s (58.5 µs) | 236 ms (7.4 µs) |
+| 64,000 | 28–96 s (under load) | 675 ms (10.6 µs) |
+
+The machine was heavily loaded partway through, so I also ran the old and new binaries alternately, three times each. The new one was 7–60× faster at the larger sizes in every round.
+
+The small rise that remains at 64,000 comes from the benchmark's own SQL: its `DELETE FROM tags WHERE post_id = …` scans a growing table with no index. Running the same script in 1,000-statement chunks takes the same time as the single call (78ms / 242ms / 669ms at 16k / 32k / 64k), so the driver no longer adds cost for script size.
+
+**Verification:**
+- The full SQLite test command you gave passes, including the new tests.
+- `cargo test -p sqlx-sqlite` passes and `cargo clippy -p sqlx-sqlite` is clean.
+
+**New tests** in `tests/sqlite/sqlite.rs`:
+- `it_executes_large_multi_statement_script` runs 20,000+ statements and checks the total rows affected, each statement's own result and insert rowid, the result order, and the final `SELECT` row.
+- `it_reports_error_late_in_large_multi_statement_script` checks that an error near the end of a long script is reported and that the statements before it were applied.
+- `it_stops_multi_statement_script_at_nul` covers the NUL-byte cases above.
+
+**Not done:**
+- I skipped `rustsec_2024_0363` locally, as you said. It hits the size check before any of the changed code runs, so it shouldn't be affected.
+- I couldn't profile, because the sandbox blocks attaching to processes. I found the cause by reading the code and confirmed it with the timings.
+
+Changes are uncommitted.

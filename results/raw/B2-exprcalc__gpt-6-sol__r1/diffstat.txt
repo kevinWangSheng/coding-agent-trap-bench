@@ -1,0 +1,3 @@
+ src/exprcalc/evaluator.py | 13 +++++++++----
+ src/exprcalc/parser.py    | 10 +++++-----
+ 2 files changed, 14 insertions(+), 9 deletions(-)

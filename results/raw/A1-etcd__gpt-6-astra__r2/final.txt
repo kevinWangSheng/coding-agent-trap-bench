@@ -1,0 +1,10 @@
+Implemented nested transaction quota accounting.
+
+- Recursively counts `Put` operations inside nested `Txn` branches.
+- Added tests covering nested success/failure branches and branch cost selection.
+- Verified with:
+  - `go test ./storage/`
+  - `go test ./etcdserver/apply/...`
+  - `git diff --check`
+
+Nothing remains unresolved.

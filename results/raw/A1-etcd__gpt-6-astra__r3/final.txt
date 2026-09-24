@@ -1,0 +1,10 @@
+Implemented recursive quota accounting for nested transactions in both success and failure branches.
+
+Added unit tests covering nested puts and branch selection in [quota_test.go](~/.bench-runs/A1-etcd__gpt-6-astra__r3/repo/server/storage/quota_test.go).
+
+Verified with:
+
+- `go test ./storage/ ./etcdserver/apply/`
+- `go test ./etcdserver/txn/`
+
+A broader `go test ./etcdserver/...` run was blocked by sandbox restrictions preventing test HTTP listeners from binding.

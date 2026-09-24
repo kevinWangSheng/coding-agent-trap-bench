@@ -1,0 +1,66 @@
+diff --git a/src/exprcalc/evaluator.py b/src/exprcalc/evaluator.py
+index 3b927eb..61bc7f4 100644
+--- a/src/exprcalc/evaluator.py
++++ b/src/exprcalc/evaluator.py
+@@ -10,10 +10,23 @@ def _apply(op: str, a: int, b: int) -> int:
+     if op == "*":
+         return a * b
+     if op == "/":
+-        return a // b
++        if b == 0:
++            raise EvalError("division by zero")
++        # Python's // rounds toward negative infinity.  Integer expression
++        # languages conventionally truncate division toward zero.
++        quotient = abs(a) // abs(b)
++        return -quotient if (a < 0) != (b < 0) else quotient
+     if op == "%":
+-        return a % b
++        if b == 0:
++            raise EvalError("modulo by zero")
++        # Keep the remainder's sign aligned with the dividend.
++        quotient = abs(a) // abs(b)
++        if (a < 0) != (b < 0):
++            quotient = -quotient
++        return a - quotient * b
+     if op == "^":
++        if b < 0:
++            raise EvalError("negative exponent")
+         return a**b
+     raise EvalError(f"unknown operator {op!r}")
+ 
+diff --git a/src/exprcalc/parser.py b/src/exprcalc/parser.py
+index f74a50f..02d90dd 100644
+--- a/src/exprcalc/parser.py
++++ b/src/exprcalc/parser.py
+@@ -49,14 +49,18 @@ class Parser:
+         return node
+ 
+     def term(self):
+-        node = self.power()
++        node = self.unary()
+         while (tok := self.accept("*", "/", "%")) is not None:
+-            node = ("bin", tok.value, node, self.power())
++            node = ("bin", tok.value, node, self.unary())
+         return node
+ 
+     def power(self):
+-        node = self.unary()
+-        while self.accept("^") is not None:
++        # Exponentiation binds more tightly than a leading sign and is
++        # right-associative.  Parsing the right operand as ``unary`` gives
++        # expressions such as ``2 ^ -1`` their natural meaning while the
++        # recursive power call handles chains such as ``2 ^ 2 ^ 3``.
++        node = self.atom()
++        if self.accept("^") is not None:
+             node = ("bin", "^", node, self.unary())
+         return node
+ 
+@@ -65,7 +69,7 @@ class Parser:
+             return ("neg", self.unary())
+         if self.accept("+") is not None:
+             return self.unary()
+-        return self.atom()
++        return self.power()
+ 
+     def atom(self):
+         tok = self.peek()

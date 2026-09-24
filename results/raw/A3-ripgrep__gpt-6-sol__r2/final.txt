@@ -1,0 +1,12 @@
+Implemented the `ignore` crate fix in [walk.rs](~/.bench-runs/A3-ripgrep__gpt-6-sol__r2/repo/crates/ignore/src/walk.rs):
+
+- Captures panics from visitor callbacks and visitor builders across worker threads.
+- Signals all workers to stop, including those waiting for work.
+- Re-raises the original panic after workers exit.
+- Added regression tests for `run()`, `visit()`, and visitor-builder panics.
+
+Verified with a 60-second timeout:
+
+- Focused panic tests: passed.
+- Full `cargo test -p ignore`: 148 unit tests, integration tests, and doctests passed.
+- `cargo fmt` and `git diff --check` passed.

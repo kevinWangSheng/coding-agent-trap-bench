@@ -1,0 +1,2 @@
+ sqlx-sqlite/src/statement/virtual.rs | 147 +++++++++++++++++++++++++++++++----
+ 1 file changed, 134 insertions(+), 13 deletions(-)

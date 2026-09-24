@@ -1,0 +1,9 @@
+Implemented fixes in `repo`:
+
+- Corrected right-associative exponentiation and unary precedence.
+- Added C-style integer division and modulo semantics.
+- Converted division by zero and negative exponents to `EvalError`.
+
+Verification: `python -m pytest -q` — **18 passed**.
+
+Nothing remains unresolved.

@@ -1,0 +1,12 @@
+ README.md                 |   4 +
+ package.json              |   3 +-
+ src/http.ts               | 481 +++++++++++++++++++++++++++++++++++
+ src/mcp.ts                | 452 +++++++++++++++++++++++++++++++++
+ src/notes.ts              |  79 ++++++
+ src/protocol.ts           |  99 ++++++++
+ src/request-state.ts      |  46 ++++
+ src/server.ts             |  27 ++
+ test/cancellation.test.ts |  46 ++++
+ test/helpers.ts           | 312 +++++++++++++++++++++++
+ test/server.test.ts       | 635 ++++++++++++++++++++++++++++++++++++++++++++++
+ 11 files changed, 2183 insertions(+), 1 deletion(-)

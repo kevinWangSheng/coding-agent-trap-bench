@@ -1,0 +1,11 @@
+Implemented panic-safe parallel walking in `crates/ignore`:
+
+- Captures panics from visitor callbacks and visitor builders.
+- Signals all workers to stop, including sleeping workers.
+- Re-propagates the original panic after workers shut down.
+- Added regression tests for panics in both `run()` visitors and visitor builders.
+
+Verification:
+
+- `timeout 60 cargo test -p ignore`
+- All 159 tests passed, including doctests and integration tests.

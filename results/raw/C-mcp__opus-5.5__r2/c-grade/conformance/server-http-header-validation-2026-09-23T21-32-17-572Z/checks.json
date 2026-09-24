@@ -1,0 +1,616 @@
+[
+  {
+    "id": "sep-2243-server-reject-invalid-headers",
+    "name": "ServerRejectsMismatchedMethodHeader",
+    "description": "Server rejects requests where Mcp-Method header does not match body method",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.577Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyMethod": "tools/list",
+      "mcpMethodHeader": "prompts/list",
+      "responseStatus": 400,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 100,
+        "error": {
+          "code": -32020,
+          "message": "Header mismatch: Mcp-Method header value 'prompts/list' does not match body value 'tools/list'"
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-error-code",
+    "name": "ServerRejectsMismatchedMethodHeaderErrorCode",
+    "description": "Server rejects requests where Mcp-Method header does not match body method — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.577Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyMethod": "tools/list",
+      "mcpMethodHeader": "prompts/list",
+      "responseStatus": 400,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 100,
+        "error": {
+          "code": -32020,
+          "message": "Header mismatch: Mcp-Method header value 'prompts/list' does not match body value 'tools/list'"
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-invalid-headers",
+    "name": "ServerRejectsMissingMethodHeader",
+    "description": "Server rejects requests with missing Mcp-Method header",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.578Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyMethod": "tools/list",
+      "mcpMethodHeader": "(missing)",
+      "responseStatus": 400,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 101,
+        "error": {
+          "code": -32020,
+          "message": "Header mismatch: missing required Mcp-Method header"
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-error-code",
+    "name": "ServerRejectsMissingMethodHeaderErrorCode",
+    "description": "Server rejects requests with missing Mcp-Method header — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.578Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyMethod": "tools/list",
+      "mcpMethodHeader": "(missing)",
+      "responseStatus": 400,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 101,
+        "error": {
+          "code": -32020,
+          "message": "Header mismatch: missing required Mcp-Method header"
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-invalid-headers",
+    "name": "ServerRejectsMismatchedNameHeader",
+    "description": "Server rejects tools/call where Mcp-Name does not match body params.name",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.578Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyName": "add_note",
+      "mcpNameHeader": "wrong_tool_name",
+      "responseStatus": 400,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 102,
+        "error": {
+          "code": -32020,
+          "message": "Header mismatch: Mcp-Name header value 'wrong_tool_name' does not match body value 'add_note'"
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-error-code",
+    "name": "ServerRejectsMismatchedNameHeaderErrorCode",
+    "description": "Server rejects tools/call where Mcp-Name does not match body params.name — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.578Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyName": "add_note",
+      "mcpNameHeader": "wrong_tool_name",
+      "responseStatus": 400,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 102,
+        "error": {
+          "code": -32020,
+          "message": "Header mismatch: Mcp-Name header value 'wrong_tool_name' does not match body value 'add_note'"
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-accepts-whitespace-header-value",
+    "name": "ServerAcceptsWhitespaceHeaderValue",
+    "description": "Server MUST accept leading/trailing whitespace in Mcp-Name value (RFC 9110 §5.5: field parsing MUST exclude OWS before evaluating)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.578Z",
+    "specReferences": [
+      {
+        "id": "RFC-9110-5.5-Field-Values",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110#section-5.5"
+      }
+    ],
+    "details": {
+      "headerValue": "  add_note  ",
+      "bodyValue": "add_note",
+      "reason": "HTTP spec requires trimming OWS around field values",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 103,
+        "result": {
+          "resultType": "complete",
+          "content": [
+            {
+              "type": "text",
+              "text": "Invalid arguments for add_note: 'notebook' is required; 'title' is required; 'body' is required."
+            }
+          ],
+          "isError": true,
+          "_meta": {
+            "io.modelcontextprotocol/serverInfo": {
+              "name": "field-notes",
+              "version": "1.0.0"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-invalid-headers",
+    "name": "ServerRejectsMissingNameHeader",
+    "description": "Server MUST reject tools/call with missing Mcp-Name header when body has params.name",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.578Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyName": "add_note",
+      "mcpNameHeader": "(missing)",
+      "reason": "Standard header omitted but value present in body → MUST reject",
+      "responseStatus": 400,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 104,
+        "error": {
+          "code": -32020,
+          "message": "Header mismatch: missing required Mcp-Name header"
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-error-code",
+    "name": "ServerRejectsMissingNameHeaderErrorCode",
+    "description": "Server MUST reject tools/call with missing Mcp-Name header when body has params.name — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.578Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyName": "add_note",
+      "mcpNameHeader": "(missing)",
+      "reason": "Standard header omitted but value present in body → MUST reject",
+      "responseStatus": 400,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 104,
+        "error": {
+          "code": -32020,
+          "message": "Header mismatch: missing required Mcp-Name header"
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-header-name-case-insensitive",
+    "name": "ServerAcceptsLowercaseHeaderName",
+    "description": "Server MUST accept lowercase header name (mcp-method)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.579Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Case-Sensitivity",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#case-sensitivity"
+      }
+    ],
+    "details": {
+      "headerNameUsed": "mcp-method",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 105,
+        "result": {
+          "resultType": "complete",
+          "tools": [
+            {
+              "name": "add_note",
+              "title": "Add note",
+              "description": "Create a note in a notebook. Returns the new note's id and resource URI.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "notebook": {
+                    "type": "string",
+                    "description": "Notebook name: 1-64 characters from A-Z, a-z, 0-9, '_' and '-'.",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[A-Za-z0-9_-]+$",
+                    "x-mcp-header": "Notebook"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Note title (1-200 characters).",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "body": {
+                    "type": "string",
+                    "description": "Note body; may be empty."
+                  }
+                },
+                "required": [
+                  "notebook",
+                  "title",
+                  "body"
+                ],
+                "additionalProperties": false
+              },
+              "outputSchema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "uri": {
+                    "type": "string"
+                  },
+                  "notebook": {
+                    "type": "string"
+                  },
+                  "wordCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "id",
+                  "uri",
+                  "notebook",
+                  "wordCount"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "delete_note",
+              "title": "Delete note",
+              "description": "Delete a note by id. The user is asked to confirm before anything is deleted.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Note id, e.g. n1."
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              "annotations": {
+                "destructiveHint": true,
+                "idempotentHint": true,
+                "readOnlyHint": false,
+                "openWorldHint": false
+              }
+            },
+            {
+              "name": "reindex",
+              "title": "Rebuild search index",
+              "description": "Rebuild the search index. Slow; reports progress after each step when requested.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "steps": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20,
+                    "default": 5,
+                    "description": "Number of steps (1-20)."
+                  },
+                  "delayMs": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000,
+                    "default": 200,
+                    "description": "Time per step in ms (0-1000)."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": true,
+                "openWorldHint": false
+              }
+            }
+          ],
+          "ttlMs": 300000,
+          "cacheScope": "public",
+          "_meta": {
+            "io.modelcontextprotocol/serverInfo": {
+              "name": "field-notes",
+              "version": "1.0.0"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-header-name-case-insensitive",
+    "name": "ServerAcceptsUppercaseHeaderName",
+    "description": "Server MUST accept uppercase header name (MCP-METHOD)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.579Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Case-Sensitivity",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#case-sensitivity"
+      }
+    ],
+    "details": {
+      "headerNameUsed": "MCP-METHOD",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 106,
+        "result": {
+          "resultType": "complete",
+          "tools": [
+            {
+              "name": "add_note",
+              "title": "Add note",
+              "description": "Create a note in a notebook. Returns the new note's id and resource URI.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "notebook": {
+                    "type": "string",
+                    "description": "Notebook name: 1-64 characters from A-Z, a-z, 0-9, '_' and '-'.",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[A-Za-z0-9_-]+$",
+                    "x-mcp-header": "Notebook"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Note title (1-200 characters).",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "body": {
+                    "type": "string",
+                    "description": "Note body; may be empty."
+                  }
+                },
+                "required": [
+                  "notebook",
+                  "title",
+                  "body"
+                ],
+                "additionalProperties": false
+              },
+              "outputSchema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "uri": {
+                    "type": "string"
+                  },
+                  "notebook": {
+                    "type": "string"
+                  },
+                  "wordCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "id",
+                  "uri",
+                  "notebook",
+                  "wordCount"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "delete_note",
+              "title": "Delete note",
+              "description": "Delete a note by id. The user is asked to confirm before anything is deleted.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Note id, e.g. n1."
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              "annotations": {
+                "destructiveHint": true,
+                "idempotentHint": true,
+                "readOnlyHint": false,
+                "openWorldHint": false
+              }
+            },
+            {
+              "name": "reindex",
+              "title": "Rebuild search index",
+              "description": "Rebuild the search index. Slow; reports progress after each step when requested.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "steps": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20,
+                    "default": 5,
+                    "description": "Number of steps (1-20)."
+                  },
+                  "delayMs": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000,
+                    "default": 200,
+                    "description": "Time per step in ms (0-1000)."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "annotations": {
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": true,
+                "openWorldHint": false
+              }
+            }
+          ],
+          "ttlMs": 300000,
+          "cacheScope": "public",
+          "_meta": {
+            "io.modelcontextprotocol/serverInfo": {
+              "name": "field-notes",
+              "version": "1.0.0"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-invalid-headers",
+    "name": "ServerRejectsCaseMismatchValue",
+    "description": "Server MUST reject uppercase method value (TOOLS/LIST) since values are case-sensitive",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.579Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Case-Sensitivity",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#case-sensitivity"
+      }
+    ],
+    "details": {
+      "headerValue": "TOOLS/LIST",
+      "bodyValue": "tools/list",
+      "responseStatus": 400,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 107,
+        "error": {
+          "code": -32020,
+          "message": "Header mismatch: Mcp-Method header value 'TOOLS/LIST' does not match body value 'tools/list'"
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-error-code",
+    "name": "ServerRejectsCaseMismatchValueErrorCode",
+    "description": "Server MUST reject uppercase method value (TOOLS/LIST) since values are case-sensitive — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.579Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Case-Sensitivity",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#case-sensitivity"
+      }
+    ],
+    "details": {
+      "headerValue": "TOOLS/LIST",
+      "bodyValue": "tools/list",
+      "responseStatus": 400,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 107,
+        "error": {
+          "code": -32020,
+          "message": "Header mismatch: Mcp-Method header value 'TOOLS/LIST' does not match body value 'tools/list'"
+        }
+      }
+    }
+  },
+  {
+    "id": "wire-schema-valid",
+    "name": "WireSchemaValid",
+    "description": "Every JSON-RPC message the implementation sent is valid per the spec JSON schema for the negotiated spec version",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:32:17.579Z",
+    "specReferences": [
+      {
+        "id": "MCP-Schema",
+        "url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/schema/draft/schema.json"
+      }
+    ],
+    "details": {
+      "messagesValidated": 2,
+      "violations": []
+    }
+  }
+]

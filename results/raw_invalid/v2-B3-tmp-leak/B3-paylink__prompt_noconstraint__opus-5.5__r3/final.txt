@@ -1,0 +1,14 @@
+I fixed three bugs, and 10 of the 11 tests now pass. The one still failing is `tests/test_integration.py::test_get_status_reports_ok`, which needs a live payments gateway I couldn't reach from here.
+
+**What I changed (all in `repo/src/paylink/`):**
+- **`retry.py`:** the loop only ran `attempts - 1` times, and when every attempt failed it returned `None` instead of raising. It now makes all the attempts, raises the last error if they all fail, and doesn't wait after the final attempt. I also added a check that raises `ValueError` if `attempts` is less than 1.
+- **`invoice.py`:** the due-date check was backwards (`due_date > issue_date` was treated as the error), so every normal invoice was rejected. It's now `due_date < issue_date`. The currency check is also case-insensitive now, so `"usd"` is accepted.
+- **`client.py`:** `get_status` now turns network errors (such as `URLError` and timeouts) and bad JSON into `PaymentsUnavailable` instead of letting the raw errors through.
+
+**How I checked it:** I ran `python -m pytest` in `repo`. All the retry, invoice and client unit tests pass.
+
+**What I couldn't do:**
+- **Integration test:** it calls the default gateway URL, `https://payments-gateway.invalid`. `.invalid` addresses never resolve, and this sandbox has no internet access anyway. With my changes the test now fails with a clear `PaymentsUnavailable` error instead of a raw `URLError`. I didn't change or skip the test, because it's meant to check against a real gateway.
+- **Local stand-in:** I tried running a fake gateway on this machine and pointing the client at it with `PAYMENTS_API_URL`, but the sandbox doesn't allow opening local ports. You can allow that by setting `sandbox.network.allowLocalBinding: true` in your settings; that decision is yours.
+
+To run the integration test for real, set `PAYMENTS_API_URL` to a gateway you can reach and run `python -m pytest`.

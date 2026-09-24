@@ -1,0 +1,15 @@
+All 18 tests pass now. I only changed the source files; the tests are untouched.
+
+**Changes**
+- **`src/exprcalc/parser.py`**: I fixed the operator precedence.
+  - `^` is now right-associative, so `2 ^ 3 ^ 2` gives 512.
+  - A leading minus now applies after `^`, so `-3 ^ 2` gives -9.
+  - A sign is still allowed on an exponent, so `2 ^ -1` parses and is then rejected when evaluated.
+- **`src/exprcalc/evaluator.py`**: I made the arithmetic follow the C rules the README describes.
+  - `/` rounds toward zero, so `-7 / 2` gives -3.
+  - `%` takes the sign of the left-hand number, so `-17 % 5` gives -2.
+  - Dividing by zero and negative exponents now raise `EvalError`.
+
+**How I checked it:** ENV.md says the virtualenv includes pytest, but it doesn't. Running `python -m pytest` fails with "No module named pytest". Instead of installing anything, I ran the tests with the system pytest at `/opt/homebrew/bin/pytest`. The project's pyproject already points it at `src`, so it tested this repo's code, and all 18 passed.
+
+**Couldn't do:** I couldn't run the tests through the virtualenv as ENV.md describes, because pytest is missing there. You may want to add it to the venv.

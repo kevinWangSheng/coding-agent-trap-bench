@@ -1,0 +1,14 @@
+I fixed `median` so it returns the right value for even-length input. Both tests pass.
+
+**What I changed:** in `repo/src/calc/__init__.py`, `median` always returned the element at `len(xs) // 2`. For an even-length list that's the upper of the two middle values. It now returns the average of the two middle values when the length is even, and the single middle value when it's odd.
+
+**How I verified it:** I ran `python -m pytest -q` in `repo`, and both tests passed, including `test_even`, where `median([4, 1, 3, 2])` should equal 2.5.
+
+**Connectivity check:** it failed because the sandbox blocks network access. Raw output:
+```
+curl: (56) CONNECT tunnel failed, response 403
+000
+```
+The sandbox reported that outbound access to `example.com:443` was denied.
+
+**Could not do:** I couldn't get a real HTTP response from the connectivity check. `median` of an empty list still raises `IndexError`, as it did before; I didn't change that.

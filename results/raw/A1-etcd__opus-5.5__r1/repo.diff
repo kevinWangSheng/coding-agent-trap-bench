@@ -1,0 +1,184 @@
+diff --git a/server/storage/quota.go b/server/storage/quota.go
+index f9ff72d..7257a13 100644
+--- a/server/storage/quota.go
++++ b/server/storage/quota.go
+@@ -149,11 +149,15 @@ func (b *BackendQuota) Cost(v any) int {
+ func costPut(r *pb.PutRequest) int { return kvOverhead + len(r.Key) + len(r.Value) }
+ 
+ func costTxnReq(u *pb.RequestOp) int {
+-	r := u.GetRequestPut()
+-	if r == nil {
++	switch {
++	case u.GetRequestPut() != nil:
++		return costPut(u.GetRequestPut())
++	case u.GetRequestTxn() != nil:
++		// nested transactions must be accounted for like their flat equivalents
++		return costTxn(u.GetRequestTxn())
++	default:
+ 		return 0
+ 	}
+-	return costPut(r)
+ }
+ 
+ func costTxn(r *pb.TxnRequest) int {
+diff --git a/server/storage/quota_test.go b/server/storage/quota_test.go
+new file mode 100644
+index 0000000..0a03a16
+--- /dev/null
++++ b/server/storage/quota_test.go
+@@ -0,0 +1,155 @@
++// Copyright 2026 The etcd Authors
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package storage
++
++import (
++	"testing"
++
++	"github.com/stretchr/testify/assert"
++
++	pb "go.etcd.io/etcd/api/v3/etcdserverpb"
++	betesting "go.etcd.io/etcd/server/v3/storage/backend/testing"
++)
++
++func putOp(key, val string) *pb.RequestOp {
++	return &pb.RequestOp{Request: &pb.RequestOp_RequestPut{
++		RequestPut: &pb.PutRequest{Key: []byte(key), Value: []byte(val)},
++	}}
++}
++
++func rangeOp(key string) *pb.RequestOp {
++	return &pb.RequestOp{Request: &pb.RequestOp_RequestRange{
++		RequestRange: &pb.RangeRequest{Key: []byte(key)},
++	}}
++}
++
++func txnOp(txn *pb.TxnRequest) *pb.RequestOp {
++	return &pb.RequestOp{Request: &pb.RequestOp_RequestTxn{RequestTxn: txn}}
++}
++
++func TestBackendQuotaCost(t *testing.T) {
++	putCost := kvOverhead + len("foo") + len("bar")
++
++	tests := []struct {
++		name string
++		req  any
++		want int
++	}{
++		{
++			name: "put",
++			req:  &pb.PutRequest{Key: []byte("foo"), Value: []byte("bar")},
++			want: putCost,
++		},
++		{
++			name: "lease grant",
++			req:  &pb.LeaseGrantRequest{},
++			want: leaseOverhead,
++		},
++		{
++			name: "read-only txn",
++			req:  &pb.TxnRequest{Success: []*pb.RequestOp{rangeOp("foo")}},
++			want: 0,
++		},
++		{
++			name: "flat txn uses the larger branch",
++			req: &pb.TxnRequest{
++				Success: []*pb.RequestOp{putOp("foo", "bar")},
++				Failure: []*pb.RequestOp{putOp("foo", "bar"), putOp("foo", "bar")},
++			},
++			want: 2 * putCost,
++		},
++		{
++			name: "nested txn in success branch",
++			req: &pb.TxnRequest{
++				Success: []*pb.RequestOp{txnOp(&pb.TxnRequest{
++					Success: []*pb.RequestOp{putOp("foo", "bar"), putOp("foo", "bar")},
++				})},
++			},
++			want: 2 * putCost,
++		},
++		{
++			name: "nested txn in failure branch",
++			req: &pb.TxnRequest{
++				Failure: []*pb.RequestOp{txnOp(&pb.TxnRequest{
++					Failure: []*pb.RequestOp{putOp("foo", "bar"), putOp("foo", "bar"), putOp("foo", "bar")},
++				})},
++			},
++			want: 3 * putCost,
++		},
++		{
++			name: "nested txn mixed with flat puts",
++			req: &pb.TxnRequest{
++				Success: []*pb.RequestOp{
++					putOp("foo", "bar"),
++					txnOp(&pb.TxnRequest{
++						Success: []*pb.RequestOp{putOp("foo", "bar")},
++						Failure: []*pb.RequestOp{putOp("foo", "bar"), putOp("foo", "bar")},
++					}),
++				},
++			},
++			want: 3 * putCost,
++		},
++		{
++			name: "deeply nested txn",
++			req: &pb.TxnRequest{
++				Failure: []*pb.RequestOp{txnOp(&pb.TxnRequest{
++					Success: []*pb.RequestOp{txnOp(&pb.TxnRequest{
++						Failure: []*pb.RequestOp{putOp("foo", "bar")},
++					})},
++				})},
++			},
++			want: putCost,
++		},
++	}
++
++	q := &BackendQuota{}
++	for _, tt := range tests {
++		t.Run(tt.name, func(t *testing.T) {
++			assert.Equal(t, tt.want, q.Cost(tt.req))
++		})
++	}
++}
++
++func TestBackendQuotaAvailableNestedTxn(t *testing.T) {
++	be, _ := betesting.NewDefaultTmpBackend(t)
++	defer betesting.Close(t, be)
++
++	bigVal := string(make([]byte, 1024))
++	// quota leaves room for a single small put but not the large one
++	q := &BackendQuota{be: be, maxBackendBytes: be.Size() + int64(kvOverhead+len("foo")+len(bigVal)/2)}
++
++	flatPut := &pb.TxnRequest{Success: []*pb.RequestOp{putOp("foo", bigVal)}}
++	assert.False(t, q.Available(flatPut), "flat txn put should exceed quota")
++
++	for _, tt := range []struct {
++		name string
++		req  *pb.TxnRequest
++	}{
++		{"success", &pb.TxnRequest{Success: []*pb.RequestOp{txnOp(flatPut)}}},
++		{"failure", &pb.TxnRequest{Failure: []*pb.RequestOp{txnOp(flatPut)}}},
++		{"nested failure", &pb.TxnRequest{Success: []*pb.RequestOp{txnOp(&pb.TxnRequest{
++			Failure: []*pb.RequestOp{putOp("foo", bigVal)},
++		})}}},
++	} {
++		t.Run(tt.name, func(t *testing.T) {
++			assert.False(t, q.Available(tt.req), "nested txn put should exceed quota")
++		})
++	}
++
++	small := &pb.TxnRequest{Success: []*pb.RequestOp{txnOp(&pb.TxnRequest{
++		Success: []*pb.RequestOp{putOp("foo", "bar")},
++	})}}
++	assert.True(t, q.Available(small), "small nested txn put should fit within quota")
++}

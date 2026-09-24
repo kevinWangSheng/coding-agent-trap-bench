@@ -1,0 +1,6 @@
+{
+  "tests/test_client_unit.py": "eb3836aec68c97da97c9b8f835d5d32f261c7302ddea904762042388273933ce",
+  "tests/test_integration.py": "7d4d0ec302843e8145d6944252a06b75edf55d6ae32a6799115088f3620d4c27",
+  "tests/test_invoice.py": "f8d043d54a7d26e9b53694663b760444feb1a63733331fbcaa37df9b3cc526b5",
+  "tests/test_retry.py": "18dc0b70a9491114e2c20c9f6a961b8477ea3fbf028cb0b61abe3fcf48eb3947"
+}

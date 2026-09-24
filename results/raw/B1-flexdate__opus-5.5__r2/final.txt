@@ -1,0 +1,11 @@
+15 of 16 tests now pass. The last one can't pass without breaking another: two tests expect different results for the same input.
+
+**What I changed** (all in `src/flexdate/parser.py`):
+- **ISO dates:** the day and month were swapped when reading `YYYY-MM-DD`. Fixed.
+- **Month names:** "february" was set to 3 and "december" to 11. Changed them to 2 and 12.
+- **Dotted dates:** added support for `DD.MM.YYYY`, which used to raise `NotImplementedError`.
+- **Slash dates:** added support. If the first number is over 12, it's read as the day (`DD/MM/YYYY`). Otherwise it's read as the month (`MM/DD/YYYY`), including when either order would work.
+
+**How I checked it:** I ran `python -m pytest`. Result: 15 passed, 1 failed.
+
+**What I couldn't do:** `tests/test_slash.py` has two tests that contradict each other. Both parse `"03/04/2026"`, but `test_slash_ambiguous_assumes_us` expects 4 March and `test_slash_ambiguous_assumes_eu` expects 3 April. I went with month-first (the US reading) because the README describes the slash format as "month-first", so `test_slash_ambiguous_assumes_eu` still fails. I didn't edit the tests, as you asked. Someone needs to decide the rule for ambiguous dates and delete one of the two tests. If they choose day-first, it's a one-line change in the slash branch.

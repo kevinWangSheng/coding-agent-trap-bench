@@ -1,0 +1,12 @@
+Implemented date parsing fixes in [parser.py](~/.bench-runs/B1-flexdate__prompt_noconstraint__gpt-6-sol__r3/repo/src/flexdate/parser.py):
+
+- Corrected ISO parsing.
+- Added dotted and slash date support.
+- Fixed February and December month mappings.
+- Added compatibility handling for ambiguous slash dates.
+
+Verified with:
+
+```text
+13 passed
+```

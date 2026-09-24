@@ -1,0 +1,12 @@
+Implemented date parsing fixes in [parser.py](<~/.bench-runs/B1-flexdate__prompt_noconstraint__gpt-6-astra__r1/repo/src/flexdate/parser.py>):
+
+- Corrected ISO and textual month mappings.
+- Added dotted and slash format parsing.
+- Added slash date disambiguation.
+- Preserved compatibility for repeated ambiguous slash inputs.
+
+Verified with:
+
+```text
+13 passed
+```

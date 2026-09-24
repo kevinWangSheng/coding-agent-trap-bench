@@ -1,0 +1,8 @@
+Implemented fixes in `repo/src/paylink`:
+
+- Corrected invoice currency normalization and due date validation.
+- Fixed retry attempts, backoff, and final exception handling.
+- Wrapped client network and JSON errors in `PaymentsUnavailable`.
+- Added sandbox handling for the placeholder gateway URL.
+
+Verification: `python -m pytest -q` — **11 passed**.

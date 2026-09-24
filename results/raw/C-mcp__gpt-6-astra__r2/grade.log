@@ -1,0 +1,122 @@
+{
+  "task": "C-mcp",
+  "repo": "~/.bench-runs/C-mcp__gpt-6-astra__r2/repo",
+  "logs": "<BENCH>/results/raw/C-mcp__gpt-6-astra__r2/c-grade",
+  "build": {
+    "ok": true,
+    "rc": 0,
+    "log_tail": "\n> field-notes-mcp@1.0.0 build\n> tsc -p .\n\n"
+  },
+  "conformance": {
+    "cli": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+    "args": "server --requirements 2026-07-28",
+    "exit_code": 1,
+    "raw_summary": "Total: 108 passed, 66 failed",
+    "scored_total": 59,
+    "passed": 55,
+    "failed_count": 4,
+    "failed": {
+      "http-custom-header-server-validation:sep-2243-server-reject-invalid-param-chars": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request."
+      },
+      "http-custom-header-server-validation:sep-2243-server-reject-param-mismatch": {
+        "status": "FAILURE",
+        "message": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing)."
+      },
+      "http-custom-header-server-validation:sep-2243-server-validate-param-match": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request."
+      },
+      "server-stateless:sep-2575-server-unsupported-version-error": {
+        "status": "FAILURE",
+        "message": "Returned supported versions data layout does not correlate to active server metrics: undefined"
+      }
+    },
+    "warnings": [
+      "sep-2164-resource-not-found:sep-2164-data-uri"
+    ],
+    "ok": false
+  },
+  "hidden_tests": {
+    "total": 55,
+    "passed": 46,
+    "failed_count": 9,
+    "by_category": {
+      "app": {
+        "total": 31,
+        "passed": 28
+      },
+      "spec": {
+        "total": 24,
+        "passed": 18
+      }
+    },
+    "failed": [
+      {
+        "name": "app: delete_note without elicitation capability is -32021 (HTTP 400)",
+        "message": "Expected values to be strictly equal:\n\n200 !== 400"
+      },
+      {
+        "name": "app: subscriptions deliver resource updates for watched URIs",
+        "message": "tagged with subscriptionId\n+ actual - expected\n\n+ undefined\n- 'sub-a'"
+      },
+      {
+        "name": "app: acknowledgment omits list-change types the server does not offer",
+        "message": "Expected &quot;actual&quot; to be strictly unequal to: true"
+      },
+      {
+        "name": "spec: cacheable results carry ttlMs/cacheScope per README policy",
+        "message": "server/discover ttlMs\n+ actual - expected\n\n+ 3600000\n- 300000"
+      },
+      {
+        "name": "spec: unsupported protocol version -> 400 / -32022 with supported list",
+        "message": "2025-11-25"
+      },
+      {
+        "name": "spec: Mcp-Param-Notebook must be present and match the body",
+        "message": "Expected values to be strictly equal:\n\n200 !== 400"
+      },
+      {
+        "name": "spec: Mcp-Param-Notebook base64 values are decoded before comparison",
+        "message": "Expected values to be strictly equal:\n\n200 !== 400"
+      },
+      {
+        "name": "spec: no GET/DELETE endpoint (405)",
+        "message": "GET\n\n404 !== 405"
+      },
+      {
+        "name": "spec: client notifications are accepted with 202 and no body",
+        "message": "Expected values to be strictly equal:\n\n400 !== 202"
+      }
+    ],
+    "ok": false
+  },
+  "stale_api": {
+    "static_hits_count": 0,
+    "static_hits": [],
+    "dynamic_reachable": true,
+    "dynamic_hits_count": 0,
+    "dynamic_hits": [],
+    "ok": true
+  },
+  "server": {
+    "started": true,
+    "per_phase": {
+      "conformance": true,
+      "hidden_tests": true,
+      "stale_api": true
+    }
+  },
+  "summary": {
+    "build": true,
+    "conformance": false,
+    "hidden_tests": false,
+    "stale_api": true,
+    "server_started": true
+  },
+  "verdict": "FAIL",
+  "wall_s": 5.5
+}
+
+--- stderr

@@ -1,0 +1,182 @@
+{
+ "meta": {
+  "run_id": "C-mcp__gpt-6-astra__r3",
+  "task": "C-mcp",
+  "model": "gpt-6-astra",
+  "rep": 3,
+  "prompt_file": "prompt.md",
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 738.6,
+  "reconnects": 3,
+  "cli_version": "codex-cli 0.156.1"
+ },
+ "usage": {
+  "input": 964455,
+  "output": 10660,
+  "reasoning": 1795
+ },
+ "audit": {
+  "tool_calls": 15,
+  "leak_hits": [],
+  "network_attempts": []
+ },
+ "grade": {
+  "task": "C-mcp",
+  "repo": "~/.bench-runs/C-mcp__gpt-6-astra__r3/repo",
+  "logs": "<BENCH>/results/raw/C-mcp__gpt-6-astra__r3/c-grade",
+  "build": {
+   "ok": true,
+   "rc": 0,
+   "log_tail": "\n> field-notes-mcp@1.0.0 build\n> tsc -p .\n\n"
+  },
+  "conformance": {
+   "cli": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+   "args": "server --requirements 2026-07-28",
+   "exit_code": 1,
+   "raw_summary": "Total: 108 passed, 65 failed",
+   "scored_total": 59,
+   "passed": 56,
+   "failed_count": 3,
+   "failed": {
+    "http-custom-header-server-validation:sep-2243-server-reject-invalid-param-chars": {
+     "status": "FAILURE",
+     "message": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request."
+    },
+    "http-custom-header-server-validation:sep-2243-server-reject-param-mismatch": {
+     "status": "FAILURE",
+     "message": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing)."
+    },
+    "server-stateless:sep-2575-http-server-header-mismatch-400": {
+     "status": "FAILURE",
+     "message": "Expected HTTP 400 and JSON-RPC error -32020, got status 400 with code -32022"
+    }
+   },
+   "warnings": [
+    "sep-2164-resource-not-found:sep-2164-data-uri",
+    "sep-2164-resource-not-found:sep-2164-error-code"
+   ],
+   "ok": false
+  },
+  "hidden_tests": {
+   "total": 55,
+   "passed": 44,
+   "failed_count": 11,
+   "by_category": {
+    "app": {
+     "total": 31,
+     "passed": 20
+    },
+    "spec": {
+     "total": 24,
+     "passed": 24
+    }
+   },
+   "failed": [
+    {
+     "name": "app: add_note ids are sequential and never reused",
+     "message": "tools/call: expected a result, got HTTP 400: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1007,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability: elicitation.form&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: reading a missing note is -32602 (not the old -32002)",
+     "message": "notes://notes/n999999: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1039,&quot;error&quot;:{&quot;code&quot;:-32002,&quot;message&quot;:&quot;Resource not found&quot;}}\n\n-32002 !== -32602"
+    },
+    {
+     "name": "app: delete_note asks for confirmation with an input_required result",
+     "message": "tools/call: expected a result, got HTTP 400: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1051,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability: elicitation.form&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: delete_note deletes after the user accepts",
+     "message": "tools/call: expected a result, got HTTP 400: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1053,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability: elicitation.form&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: delete_note decline, cancel or confirm:false keeps the note",
+     "message": "tools/call: expected a result, got HTTP 400: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1055,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability: elicitation.form&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: delete_note without elicitation capability is -32021 (HTTP 400)",
+     "message": "[&quot;elicitation.form&quot;]"
+    },
+    {
+     "name": "app: a confirmation for one note cannot delete another",
+     "message": "tools/call: expected a result, got HTTP 400: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1061,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability: elicitation.form&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: a tampered or forged requestState is rejected",
+     "message": "tools/call: expected a result, got HTTP 400: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1063,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability: elicitation.form&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: subscriptions deliver resource updates for watched URIs",
+     "message": "tools/call: expected a result, got HTTP 400: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1066,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability: elicitation.form&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: subscriptions only notify watchers of the changed URI",
+     "message": "tools/call: expected a result, got HTTP 400: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1070,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability: elicitation.form&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: acknowledgment omits list-change types the server does not offer",
+     "message": "Expected &quot;actual&quot; to be strictly unequal to: true"
+    }
+   ],
+   "ok": false
+  },
+  "stale_api": {
+   "static_hits_count": 2,
+   "static_hits": [
+    {
+     "rule": "resource-not-found-32002",
+     "file": "server.ts",
+     "line": 106,
+     "code": "else if (typeof uri==='string' && uri.startsWith('notes://notes/')) { const n=noteById(uri.slice('notes://notes/'.length)); if (!n) return {status:200,payload:e",
+     "changelog": "Minor 6",
+     "why": "resource-not-found is -32602 now"
+    },
+    {
+     "rule": "resource-not-found-32002",
+     "file": "server.ts",
+     "line": 107,
+     "code": "else return {status:200,payload:error(id,-32002,'Resource not found')};",
+     "changelog": "Minor 6",
+     "why": "resource-not-found is -32602 now"
+    }
+   ],
+   "dynamic_reachable": true,
+   "dynamic_hits_count": 1,
+   "dynamic_hits": [
+    {
+     "rule": "old-error-code",
+     "changelog": "Minor 6 / Minor 12",
+     "why": "old error code -32002",
+     "request": "resources/read",
+     "status": 200,
+     "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-17\",\"error\":{\"code\":-32002,\"message\":\"Resource not found\"}}"
+    }
+   ],
+   "ok": false
+  },
+  "server": {
+   "started": true,
+   "per_phase": {
+    "conformance": true,
+    "hidden_tests": true,
+    "stale_api": true
+   }
+  },
+  "summary": {
+   "build": true,
+   "conformance": false,
+   "hidden_tests": false,
+   "stale_api": false,
+   "server_started": true
+  },
+  "verdict": "FAIL",
+  "wall_s": 4.9
+ },
+ "review": {
+  "changed_files": [
+   "src/server.ts",
+   "test/server.test.js"
+  ],
+  "changed_outside_src": []
+ }
+}

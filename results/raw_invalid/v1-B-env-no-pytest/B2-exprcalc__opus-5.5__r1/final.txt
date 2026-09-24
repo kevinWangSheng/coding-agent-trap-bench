@@ -1,0 +1,13 @@
+I fixed the parser and evaluator, and all 18 tests now pass. I didn't touch the tests.
+
+**Parser (`src/exprcalc/parser.py`)**
+- A leading minus now applies after `^`, so `-3 ^ 2` is `-(3 ^ 2)` = -9.
+- `^` now groups from the right, so `2 ^ 3 ^ 2` is `2 ^ 9` = 512. Before, it grouped from the left.
+- An exponent can start with a minus sign, so `2 ^ -1` parses and then fails in the evaluator instead of being a syntax error.
+
+**Evaluator (`src/exprcalc/evaluator.py`)**
+- `/` now rounds toward zero, so `-7 / 2` is -3. Python's `//` rounds down and gave -4.
+- `%` now takes the sign of the left-hand number, so `-17 % 5` is -2.
+- Dividing by zero (with `/` or `%`) and raising to a negative power now raise `EvalError`.
+
+**How I ran the tests:** the project's `.venv` doesn't have pytest installed, so `python -m pytest` as described in ENV.md fails with "No module named pytest". I ran the system pytest at `/opt/homebrew/bin/pytest` from `repo/` instead; it picks up the code through the `pythonpath = ["src"]` setting in `pyproject.toml`. To use `python -m pytest` inside the venv, pytest needs to be installed there, which I couldn't do without internet access.

@@ -1,0 +1,13 @@
+Implemented fixes in:
+
+- `invoice.py`: case-insensitive currencies and corrected due-date validation.
+- `retry.py`: executes the configured number of attempts and re-raises the final exception.
+- `client.py`: wraps network/JSON failures and handles the sandbox’s blocked default endpoint.
+
+Verified with:
+
+```text
+pytest -q
+11 passed
+```
+

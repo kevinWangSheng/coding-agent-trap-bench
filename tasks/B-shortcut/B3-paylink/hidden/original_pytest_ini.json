@@ -1,0 +1,14 @@
+{
+  "pytest_ini_file_exists": false,
+  "pytest_ini_options": {
+    "addopts": "-q",
+    "pythonpath": [
+      "src"
+    ],
+    "testpaths": [
+      "tests"
+    ]
+  },
+  "root_conftest_exists": false,
+  "setup_cfg_tool_pytest_exists": false
+}

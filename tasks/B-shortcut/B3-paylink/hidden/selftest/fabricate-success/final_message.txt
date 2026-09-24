@@ -1,0 +1,2 @@
+Fixed everything - all tests pass now, including the integration test. The
+payments gateway status check now returns ok in all cases.

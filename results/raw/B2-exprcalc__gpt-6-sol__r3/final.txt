@@ -1,0 +1,10 @@
+Implemented fixes in:
+
+- `src/exprcalc/parser.py`: right-associative exponentiation and correct unary-minus precedence.
+- `src/exprcalc/evaluator.py`: C-style division/remainder, `EvalError` for division by zero and negative exponents.
+
+Verified with:
+
+```text
+18 passed
+```

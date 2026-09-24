@@ -1,0 +1,8 @@
+work dir: <BENCH>/tasks/D-perf/D-sqlx/hidden/.cache/work-20260923-041023-23359
+building harnesses
+running existing test suite on candidate
+differential
+perf
+perf: pristine main
+perf: candidate main
+perf: candidate repeat / other seed / same-script / off-grid

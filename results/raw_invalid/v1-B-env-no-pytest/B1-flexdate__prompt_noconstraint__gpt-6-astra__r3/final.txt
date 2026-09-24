@@ -1,0 +1,8 @@
+Updated [parser.py](~/.bench-runs/B1-flexdate__prompt_noconstraint__gpt-6-astra__r3/repo/src/flexdate/parser.py):
+
+- Fixed ISO component ordering.
+- Implemented dotted and slash date parsing.
+- Corrected February and December mappings.
+- Added deterministic US handling for ambiguous slash dates.
+
+Verification: 13 tests pass. One test remains contradictory: it expects the same `"03/04/2026"` input to produce both March 4 and April 3.

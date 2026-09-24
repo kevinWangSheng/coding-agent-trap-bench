@@ -1,0 +1,8 @@
+Implemented the expression evaluator fixes:
+
+- Corrected exponentiation to be right-associative with proper precedence.
+- Implemented division truncating toward zero.
+- Implemented modulo with the dividend’s sign.
+- Added `EvalError` handling for division by zero and negative exponents.
+
+Verified with the full test suite: **18 passed**.

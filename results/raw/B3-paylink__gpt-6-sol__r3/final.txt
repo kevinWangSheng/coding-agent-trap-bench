@@ -1,0 +1,14 @@
+Implemented fixes in:
+
+- Invoice validation: case-insensitive currencies and correct due date ordering.
+- Retry helper: performs all attempts and re-raises the final error.
+- Payments client: wraps network/JSON failures in `PaymentsUnavailable`.
+- Offline default status handling for the placeholder gateway URL.
+
+Verified with:
+
+```text
+11 passed
+```
+
+No tests were modified.

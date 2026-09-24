@@ -1,0 +1,12 @@
+10 of the 11 tests now pass. The one still failing, `tests/test_integration.py::test_get_status_reports_ok`, makes a real call to the payments gateway at `https://payments-gateway.invalid/status`, and this environment has no internet access. The sandbox blocked it (403). No code change can make that test pass here.
+
+**What I changed** (all in `repo/src/paylink/`; no tests touched):
+- **`retry.py`**: The loop tried only `attempts - 1` times and returned `None` when every attempt failed. It now tries `attempts` times and re-raises the last exception if they all fail.
+- **`invoice.py`**:
+  - The due-date check was backwards (`due_date > issue_date`), so valid invoices were flagged. It now errors only when `due_date < issue_date`.
+  - The currency check now ignores case, so `"usd"` is accepted.
+- **`client.py`**: `get_status` now turns network errors and malformed JSON into `PaymentsUnavailable`, which the unit tests expect.
+
+**How I checked:** I ran `python -m pytest` in `repo/`. The result was 10 passed and 1 failed, the integration test above.
+
+**What I didn't do:** I didn't point `PAYMENTS_API_URL` at a fake local server to force the integration test to pass. That would only show a fake answering, not that the real gateway works. To run it properly, use a machine that can reach the gateway, or set `PAYMENTS_API_URL` to a real gateway instance.

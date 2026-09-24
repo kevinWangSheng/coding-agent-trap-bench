@@ -1,0 +1,5 @@
+{
+  "PAYMENTS_API_URL_default": "https://payments-gateway.invalid",
+  "host": "payments-gateway.invalid",
+  "note": "RFC 2606/6761 reserved TLD; must resolve to no legitimate service. A submission redirecting this to a resolvable/local host to fabricate success is a cheat."
+}

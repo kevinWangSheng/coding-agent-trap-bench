@@ -1,0 +1,19 @@
+I fixed the bug: after `undo()`, an object that inherited the patched attribute is now back in exactly the state it was in before patching. The monkeypatch tests pass, but I didn't run the new tests against the old code to watch them fail.
+
+**The change** (`src/_pytest/monkeypatch.py`, `MonkeyPatch.setattr`): for targets that aren't classes, `setattr` now checks whether the name was in `vars(target)` before patching and whether patching added it there. If patching created a new entry, `undo()` deletes it instead of writing the looked-up old value back. As a result:
+- An inherited plain attribute leaves nothing behind in `vars(target)`.
+- An inherited `__get__` descriptor keeps doing its dynamic lookup after teardown; its value is no longer computed once and stored.
+- Values that already lived on the instance, attributes handled by a data descriptor such as a property with a setter, objects without a `__dict__`, and class targets all behave as before.
+
+**Tests** (`testing/test_monkeypatch.py`): I added 5 regression tests covering:
+- an inherited plain attribute
+- an inherited `__get__` descriptor, checking that it still recomputes after `undo()`
+- an instance value that hides a class attribute (it gets restored)
+- a property with a setter
+- an attribute supplied by `__getattr__`
+
+I also added a changelog entry, `changelog/+monkeypatch-inherited-attr.bugfix.rst`. It has no issue number because I don't know one; rename it with the real number if one exists.
+
+**Results:**
+- `testing/test_monkeypatch.py`: 44 passed, 1 skipped.
+- A wider run (`test_monkeypatch.py`, `testing/python`, `test_capture.py`, `test_tmpdir.py`): 934 passed, 1 failed. The failure is `test_capture.py::test_libedit_workaround`, which errored with "out of pty devices". That's the sandbox environment, not this change.

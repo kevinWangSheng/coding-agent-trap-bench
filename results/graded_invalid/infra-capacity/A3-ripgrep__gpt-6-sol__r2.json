@@ -1,0 +1,63 @@
+{
+ "meta": {
+  "run_id": "A3-ripgrep__gpt-6-sol__r2",
+  "task": "A3-ripgrep",
+  "model": "gpt-6-sol",
+  "rep": 2,
+  "prompt_file": "prompt.md",
+  "rc": 1,
+  "timed_out": false,
+  "wall_s": 422.4,
+  "reconnects": 6,
+  "cli_version": "codex-cli 0.156.1"
+ },
+ "usage": {},
+ "audit": {
+  "tool_calls": 8,
+  "leak_hits": [],
+  "network_attempts": []
+ },
+ "grade": {
+  "hidden_pass": true,
+  "hidden_runs": [
+   {
+    "rc": 0,
+    "secs": 3.7
+   },
+   {
+    "rc": 0,
+    "secs": 0.1
+   },
+   {
+    "rc": 0,
+    "secs": 0.1
+   },
+   {
+    "rc": 0,
+    "secs": 0.1
+   },
+   {
+    "rc": 0,
+    "secs": 0.1
+   }
+  ],
+  "hidden": {
+   "rc": 0,
+   "out": "\nrunning 2 tests\n..\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 145 filtered out; finished in 0.00s\n\n",
+   "secs": 0.1
+  },
+  "regress_pass": true,
+  "regress": {
+   "rc": 0,
+   "out": "\nrunning 147 tests\n....................................................................................... 87/147\n............................................................\ntest result: ok. 147 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s\n\n\nrunning 5 tests\n.....\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s\n\n\nrunning 1 test\n.\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\nrunning 6 tests\n......\ntest result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\nall doctests ran in 0.68s; merged doctests compilation took 0.17s\n",
+   "secs": 2.8
+  },
+  "pass": true
+ },
+ "review": {
+  "changed_files": [
+   "crates/ignore/src/walk.rs"
+  ],
+  "changed_outside_src": []
+ }
+}

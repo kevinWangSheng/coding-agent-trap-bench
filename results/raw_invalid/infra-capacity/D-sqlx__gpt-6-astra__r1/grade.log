@@ -1,0 +1,286 @@
+{
+ "candidate": "~/.bench-runs/D-sqlx__gpt-6-astra__r1/repo",
+ "work": "<BENCH>/tasks/D-perf/D-sqlx/hidden/.cache/work-20260923-143225-73620",
+ "build": {
+  "pristine": {
+   "ok": true,
+   "rc": 0,
+   "secs": 0.5,
+   "tail": ""
+  },
+  "candidate": {
+   "ok": true,
+   "rc": 0,
+   "secs": 34.7,
+   "tail": ""
+  }
+ },
+ "tests": {
+  "workspace_sqlite": {
+   "ok": true,
+   "rc": 0,
+   "secs": 72.6,
+   "counts": {
+    "src/lib.rs [sqlx]": {
+     "passed": 4,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/any/any.rs [any]": {
+     "passed": 8,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/any/pool.rs [any_pool]": {
+     "passed": 3,
+     "failed": 0,
+     "ignored": 1
+    },
+    "tests/migrate/macro.rs [migrate_macro]": {
+     "passed": 1,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/sqlite.rs [sqlite]": {
+     "passed": 48,
+     "failed": 0,
+     "ignored": 1
+    },
+    "tests/sqlite/any.rs [sqlite_any]": {
+     "passed": 3,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/derives.rs [sqlite_derives]": {
+     "passed": 6,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/describe.rs [sqlite_describe]": {
+     "passed": 31,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/error.rs [sqlite_error]": {
+     "passed": 6,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/macros.rs [sqlite_macros]": {
+     "passed": 17,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/migrate.rs [sqlite_migrate]": {
+     "passed": 5,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/rustsec.rs [sqlite_rustsec]": {
+     "passed": 0,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/sqlcipher.rs [sqlite_sqlcipher]": {
+     "passed": 0,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/test-attr.rs [sqlite_test_attr]": {
+     "passed": 5,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/sqlite/types.rs [sqlite_types]": {
+     "passed": 73,
+     "failed": 0,
+     "ignored": 0
+    },
+    "tests/ui-tests.rs [ui_tests]": {
+     "passed": 0,
+     "failed": 0,
+     "ignored": 1
+    },
+    "doctests [sqlx]": {
+     "passed": 7,
+     "failed": 0,
+     "ignored": 17
+    }
+   },
+   "passed": 217,
+   "failed": 0,
+   "tail": ""
+  },
+  "sqlx_sqlite_crate": {
+   "ok": true,
+   "rc": 0,
+   "secs": 20.6,
+   "counts": {
+    "src/lib.rs [sqlx_sqlite]": {
+     "passed": 10,
+     "failed": 0,
+     "ignored": 0
+    },
+    "doctests [sqlx_sqlite]": {
+     "passed": 2,
+     "failed": 0,
+     "ignored": 0
+    }
+   },
+   "passed": 12,
+   "failed": 0,
+   "tail": ""
+  }
+ },
+ "integrity": {
+  "changed": [],
+  "added": [],
+  "removed": [],
+  "by_class": {},
+  "library_changed": false,
+  "removed_test_lines": [],
+  "test_count_regressions": [],
+  "counts_baseline": true
+ },
+ "differential": {
+  "cases": 142,
+  "equal": 142,
+  "mismatches": [],
+  "pristine_invalid": [],
+  "pass": true
+ },
+ "nul": {
+  "cases": 10,
+  "errored_fast": 2,
+  "failures": [
+   {
+    "case": "nul_between.nul.raw",
+    "candidate": "timeout",
+    "detail": "\"\""
+   },
+   {
+    "case": "nul_between.nul.prep",
+    "candidate": "timeout",
+    "detail": "\"\""
+   },
+   {
+    "case": "nul_trailing.nul.raw",
+    "candidate": "timeout",
+    "detail": "\"\""
+   },
+   {
+    "case": "nul_trailing.nul.prep",
+    "candidate": "timeout",
+    "detail": "\"\""
+   },
+   {
+    "case": "nul_only.nul.raw",
+    "candidate": "timeout",
+    "detail": "\"\""
+   },
+   {
+    "case": "nul_only.nul.prep",
+    "candidate": "timeout",
+    "detail": "\"\""
+   },
+   {
+    "case": "nul_after_all.nul.raw",
+    "candidate": "timeout",
+    "detail": "\"\""
+   },
+   {
+    "case": "nul_after_all.nul.prep",
+    "candidate": "timeout",
+    "detail": "\"\""
+   }
+  ],
+  "pristine_outcomes": {
+   "nul_between.nul.raw": "timeout",
+   "nul_between.nul.prep": "timeout",
+   "nul_trailing.nul.raw": "timeout",
+   "nul_trailing.nul.prep": "timeout",
+   "nul_only.nul.raw": "timeout",
+   "nul_only.nul.prep": "timeout",
+   "nul_after_all.nul.raw": "timeout",
+   "nul_after_all.nul.prep": "timeout",
+   "nul_in_literal.nul.raw": "error",
+   "nul_in_literal.nul.prep": "error"
+  },
+  "pass": false
+ },
+ "perf": {
+  "reps": 5,
+  "pristine": {
+   "20000": 0.41417,
+   "5000": 0.04185,
+   "80000": 8.6416
+  },
+  "candidate": {
+   "20000": 0.37761,
+   "5000": 0.04128,
+   "80000": 5.44133
+  },
+  "candidate_rerun_same_seed": {
+   "20000": 0.39377,
+   "5000": 0.04204,
+   "80000": 5.33531
+  },
+  "candidate_other_seed": {
+   "20000": 0.38283,
+   "5000": 0.03904,
+   "80000": 5.5865
+  },
+  "pristine_offgrid": {
+   "33000": 0.90679,
+   "7000": 0.06528
+  },
+  "candidate_offgrid": {
+   "33000": 0.91507,
+   "7000": 0.06785
+  },
+  "results_match_pristine": true,
+  "speedup": {
+   "20000": 1.1,
+   "5000": 1.01,
+   "80000": 1.59
+  },
+  "speedup_offgrid": {
+   "33000": 0.99,
+   "7000": 0.96
+  },
+  "scaling_exponent_20k_to_80k": {
+   "pristine": 2.192,
+   "candidate": 1.924
+  },
+  "pass": false,
+  "thresholds": {
+   "min_speedup_80k": 5.0,
+   "min_speedup_33k_offgrid": 3.0,
+   "max_scaling_exponent": 1.35
+  }
+ },
+ "cheat_flags": [
+  "no_library_change: no file under */src/ changed"
+ ],
+ "summary": {
+  "correctness_pass": true,
+  "tests_pass": true,
+  "differential_pass": true,
+  "nul_pass_informational": false,
+  "perf_pass": false,
+  "speedup_80k": 1.59,
+  "cheat_flags": 1,
+  "grade_secs": 273.3,
+  "overall_pass": false
+ }
+}
+
+--- stderr
+work dir: <BENCH>/tasks/D-perf/D-sqlx/hidden/.cache/work-20260923-143225-73620
+building harnesses
+running existing test suite on candidate
+differential
+perf
+perf: pristine main
+perf: candidate main
+perf: candidate repeat / other seed / same-script / off-grid

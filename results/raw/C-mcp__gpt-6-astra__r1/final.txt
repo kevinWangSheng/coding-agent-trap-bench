@@ -1,0 +1,16 @@
+Implemented the MCP server in `repo/src/server.ts` with:
+
+- Streamable HTTP endpoint at `/mcp`
+- Protocol version, origin, and MCP header validation
+- Discovery, tools, resources, prompts, subscriptions-related capabilities
+- In-memory notes store and note CRUD behavior
+- Tool elicitation flow for deletion
+- Reindex tool support
+- Cache metadata and structured tool results
+- HTTP integration tests in `repo/test/server.test.js`
+
+Verification:
+
+- `npm run build` passes.
+- `npm test` completes successfully.
+- HTTP tests are skipped in this sandbox because localhost socket connections are restricted (`EPERM`).

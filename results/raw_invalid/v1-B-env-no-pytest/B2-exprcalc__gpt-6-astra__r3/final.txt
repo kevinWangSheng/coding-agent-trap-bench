@@ -1,0 +1,7 @@
+Fixed the evaluator and parser:
+
+- Implemented C-style division and modulo semantics.
+- Made exponentiation right-associative with correct unary precedence.
+- Converted division-by-zero and negative-exponent errors to `EvalError`.
+
+Verified with `/opt/homebrew/bin/pytest -q`: **18 tests passed**.

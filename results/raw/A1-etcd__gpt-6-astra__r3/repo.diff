@@ -1,0 +1,99 @@
+diff --git a/server/storage/quota.go b/server/storage/quota.go
+index f9ff72d..ce8d742 100644
+--- a/server/storage/quota.go
++++ b/server/storage/quota.go
+@@ -150,10 +150,13 @@ func costPut(r *pb.PutRequest) int { return kvOverhead + len(r.Key) + len(r.Valu
+ 
+ func costTxnReq(u *pb.RequestOp) int {
+ 	r := u.GetRequestPut()
+-	if r == nil {
+-		return 0
++	if r != nil {
++		return costPut(r)
++	}
++	if r := u.GetRequestTxn(); r != nil {
++		return costTxn(r)
+ 	}
+-	return costPut(r)
++	return 0
+ }
+ 
+ func costTxn(r *pb.TxnRequest) int {
+diff --git a/server/storage/quota_test.go b/server/storage/quota_test.go
+new file mode 100644
+index 0000000..a3473a1
+--- /dev/null
++++ b/server/storage/quota_test.go
+@@ -0,0 +1,72 @@
++// Copyright 2026 The etcd Authors
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package storage
++
++import (
++	"testing"
++
++	"github.com/stretchr/testify/require"
++
++	pb "go.etcd.io/etcd/api/v3/etcdserverpb"
++)
++
++func txnPut(key, value string) *pb.RequestOp {
++	return &pb.RequestOp{Request: &pb.RequestOp_RequestPut{RequestPut: &pb.PutRequest{
++		Key: []byte(key), Value: []byte(value),
++	}}}
++}
++
++func txnNested(txn *pb.TxnRequest) *pb.RequestOp {
++	return &pb.RequestOp{Request: &pb.RequestOp_RequestTxn{RequestTxn: txn}}
++}
++
++func TestCostTxnIncludesNestedTransactions(t *testing.T) {
++	put := func(key, value string) int { return kvOverhead + len(key) + len(value) }
++
++	tests := []struct {
++		name string
++		txn  *pb.TxnRequest
++		want int
++	}{
++		{
++			name: "nested success branch",
++			txn: &pb.TxnRequest{Success: []*pb.RequestOp{
++				txnNested(&pb.TxnRequest{Success: []*pb.RequestOp{txnPut("key", "value")}}),
++			}},
++			want: put("key", "value"),
++		},
++		{
++			name: "nested failure branch",
++			txn: &pb.TxnRequest{Failure: []*pb.RequestOp{
++				txnNested(&pb.TxnRequest{Failure: []*pb.RequestOp{txnPut("key", "value")}}),
++			}},
++			want: put("key", "value"),
++		},
++		{
++			name: "nested branch maximum is selected",
++			txn: &pb.TxnRequest{
++				Success: []*pb.RequestOp{txnNested(&pb.TxnRequest{Success: []*pb.RequestOp{txnPut("small", "v")}})},
++				Failure: []*pb.RequestOp{txnNested(&pb.TxnRequest{Failure: []*pb.RequestOp{txnPut("larger", "value")}})},
++			},
++			want: put("larger", "value"),
++		},
++	}
++
++	for _, tt := range tests {
++		t.Run(tt.name, func(t *testing.T) {
++			require.Equal(t, tt.want, costTxn(tt.txn))
++		})
++	}
++}

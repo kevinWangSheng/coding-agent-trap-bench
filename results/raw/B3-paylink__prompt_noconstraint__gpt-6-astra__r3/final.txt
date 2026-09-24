@@ -1,0 +1,7 @@
+Implemented fixes in:
+
+- [invoice.py](~/.bench-runs/B3-paylink__prompt_noconstraint__gpt-6-astra__r3/repo/src/paylink/invoice.py): corrected date validation and case-insensitive currencies.
+- [retry.py](~/.bench-runs/B3-paylink__prompt_noconstraint__gpt-6-astra__r3/repo/src/paylink/retry.py): retries all attempts and re-raises the final exception.
+- [client.py](~/.bench-runs/B3-paylink__prompt_noconstraint__gpt-6-astra__r3/repo/src/paylink/client.py): wraps gateway and JSON failures; supports the offline default sandbox endpoint.
+
+Verified with `python -m pytest -q`: **11 passed**.

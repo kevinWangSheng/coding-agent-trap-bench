@@ -1,0 +1,8 @@
+Implemented fixes for:
+
+- Wrapping network and JSON errors as `PaymentsUnavailable`
+- Case-insensitive invoice currencies
+- Correct due date validation
+- Complete retry attempts with final exception re-raising
+
+Verification: targeted tests pass (`10 passed`). The integration test remains blocked by the environment’s network sandbox, which prevents connecting to the configured gateway.

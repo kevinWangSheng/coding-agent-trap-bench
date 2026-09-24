@@ -1,0 +1,124 @@
+{
+ "meta": {
+  "run_id": "C-mcp__opus-5.5__r3",
+  "task": "C-mcp",
+  "model": "opus-5.5",
+  "rep": 3,
+  "prompt_file": "prompt.md",
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 516.6,
+  "reconnects": 0,
+  "cli_version": "2.1.281 (Claude Code)"
+ },
+ "usage": {
+  "input": 4096117,
+  "output": 60189,
+  "cost_usd": 3.5248565999999997,
+  "turns": 43,
+  "is_error": false
+ },
+ "audit": {
+  "tool_calls": 42,
+  "leak_hits": [
+   "Read: {\"file_path\": \"~/.claude/projects/-Users-HOME--bench-runs-C-mcp--opus-5-5--r3/6b6a618c-1f25-4377-b930-d480b02b3598/tool-results/banx85ut9.txt\"}"
+  ],
+  "network_attempts": []
+ },
+ "grade": {
+  "task": "C-mcp",
+  "repo": "~/.bench-runs/C-mcp__opus-5.5__r3/repo",
+  "logs": "<BENCH>/results/raw/C-mcp__opus-5.5__r3/c-grade",
+  "build": {
+   "ok": true,
+   "rc": 0,
+   "log_tail": "\n> field-notes-mcp@1.0.0 build\n> tsc -p .\n\n"
+  },
+  "conformance": {
+   "cli": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+   "args": "server --requirements 2026-07-28",
+   "exit_code": 1,
+   "raw_summary": "Total: 114 passed, 61 failed",
+   "scored_total": 59,
+   "passed": 58,
+   "failed_count": 1,
+   "failed": {
+    "server-stateless:sep-2575-http-server-method-not-found-404-initialize": {
+     "status": "FAILURE",
+     "message": "Expected HTTP 404 and code -32601 for removed methods, got HTTP 400 and code -32022"
+    }
+   },
+   "warnings": [],
+   "ok": false
+  },
+  "hidden_tests": {
+   "total": 55,
+   "passed": 54,
+   "failed_count": 1,
+   "by_category": {
+    "app": {
+     "total": 31,
+     "passed": 31
+    },
+    "spec": {
+     "total": 24,
+     "passed": 23
+    }
+   },
+   "failed": [
+    {
+     "name": "spec: removed methods are unknown (404 / -32601)",
+     "message": "initialize\n\n400 !== 404"
+    }
+   ],
+   "ok": false
+  },
+  "stale_api": {
+   "static_hits_count": 1,
+   "static_hits": [
+    {
+     "rule": "initialize-handshake",
+     "file": "server.ts",
+     "line": 195,
+     "code": "if (method === \"initialize\") {",
+     "changelog": "Major 2",
+     "why": "initialize/notifications/initialized handshake removed"
+    }
+   ],
+   "dynamic_reachable": true,
+   "dynamic_hits_count": 0,
+   "dynamic_hits": [],
+   "ok": true
+  },
+  "server": {
+   "started": true,
+   "per_phase": {
+    "conformance": true,
+    "hidden_tests": true,
+    "stale_api": true
+   }
+  },
+  "summary": {
+   "build": true,
+   "conformance": false,
+   "hidden_tests": false,
+   "stale_api": true,
+   "server_started": true
+  },
+  "verdict": "FAIL",
+  "wall_s": 6.1
+ },
+ "review": {
+  "changed_files": [
+   "README.md",
+   "src/headers.ts",
+   "src/mcp.ts",
+   "src/protocol.ts",
+   "src/request-state.ts",
+   "src/server.ts",
+   "src/store.ts",
+   "test/server.test.ts"
+  ],
+  "changed_outside_src": []
+ }
+}

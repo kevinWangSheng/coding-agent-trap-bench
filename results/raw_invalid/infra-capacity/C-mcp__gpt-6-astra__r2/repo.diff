@@ -1,0 +1,70 @@
+diff --git a/src/server.ts b/src/server.ts
+new file mode 100644
+index 0000000..2af9b1e
+--- /dev/null
++++ b/src/server.ts
+@@ -0,0 +1,64 @@
++import http from 'node:http';
++import crypto from 'node:crypto';
++
++const VERSION = '2026-07-28';
++const INSTRUCTIONS = 'Field Notes stores short notes grouped into notebooks. Use add_note to save a note, read notes://index to see what exists.';
++type Note = { id: string; notebook: string; title: string; body: string };
++type Json = Record<string, any>;
++const notes: Note[] = [
++  { id: 'n1', notebook: 'work', title: 'Standup', body: 'Discussed the release schedule and blockers.' },
++  { id: 'n2', notebook: 'work', title: 'Retro actions', body: 'Automate the changelog. Rotate the on-call.' },
++  { id: 'n3', notebook: 'personal', title: 'Groceries', body: 'Eggs, flour, coffee.' },
++];
++let nextId = 4;
++const subscriptions = new Set<{ res: http.ServerResponse; id: string | number; filter: Json }>();
++const secret = process.env.FIELD_NOTES_SECRET ?? 'field-notes-local-secret';
++
++const rpcError = (id: any, code: number, message: string, data?: any) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message, ...(data === undefined ? {} : { data }) } });
++const ok = (id: any, result: Json) => ({ jsonrpc: '2.0', id, result: { ...result, _meta: { ...(result._meta ?? {}), 'io.modelcontextprotocol/serverInfo': { name: 'field-notes', version: '1.0.0' } } } });
++function cache(result: Json, scope: 'public' | 'private' = 'public') { return { ...result, ttlMs: 300000, cacheScope: scope }; }
++function noteUri(id: string) { return `notes://notes/${id}`; }
++function noteText(n: Note) { return `# ${n.title}\n\n${n.body}\n`; }
++function find(id: string) { return notes.find(n => n.id === id); }
++function jsonContent(text: string) { return [{ type: 'text', text }]; }
++function signState(payload: Json) { const raw = Buffer.from(JSON.stringify(payload)).toString('base64url'); const sig = crypto.createHmac('sha256', secret).update(raw).digest('base64url'); return `${raw}.${sig}`; }
++function verifyState(state: unknown, method: string): Json | null { if (typeof state !== 'string') return null; const [raw, sig] = state.split('.'); if (!raw || !sig) return null; const expected = crypto.createHmac('sha256', secret).update(raw).digest('base64url'); if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null; try { const p = JSON.parse(Buffer.from(raw, 'base64url').toString()); return p.method === method && p.exp > Date.now() ? p : null; } catch { return null; } }
++function decodeHeader(v: string | undefined) { if (!v) return undefined; if (v.startsWith('=?base64?') && v.endsWith('?=')) { try { return Buffer.from(v.slice(9, -2), 'base64').toString('utf8'); } catch { return undefined; } } return v; }
++function headerMismatch(id: any, message: string) { return rpcError(id, -32020, message); }
++function sendJson(res: http.ServerResponse, status: number, body: any, headers: Record<string,string> = {}) { res.writeHead(status, { 'content-type': 'application/json', ...headers }); res.end(JSON.stringify(body)); }
++function notify(uri: string) { for (const s of subscriptions) if ((s.filter.resourceSubscriptions ?? []).includes(uri)) { s.res.write(`data: ${JSON.stringify({ jsonrpc:'2.0', method:'notifications/resources/updated', params:{ _meta:{'io.modelcontextprotocol/subscriptionId':s.id}, uri } })}\n\n`); } }
++
++async function body(req: http.IncomingMessage) { let b = ''; for await (const c of req) b += c; try { return JSON.parse(b); } catch { return null; } }
++function schemaAdd() { return { type:'object', properties:{ notebook:{type:'string', pattern:'^[A-Za-z0-9_-]{1,64}$','x-mcp-header':'Notebook'}, title:{type:'string', minLength:1, maxLength:200}, body:{type:'string'} }, required:['notebook','title','body'], additionalProperties:false }; }
++function tools() { return [
++  { name:'add_note', description:'Create a note.', inputSchema:schemaAdd(), outputSchema:{type:'object',properties:{id:{type:'string'},uri:{type:'string'},notebook:{type:'string'},wordCount:{type:'integer'}},required:['id','uri','notebook','wordCount'] } },
++  { name:'delete_note', description:'Delete a note after user confirmation.', inputSchema:{type:'object',properties:{id:{type:'string'}},required:['id'],additionalProperties:false} },
++  { name:'reindex', description:'Rebuild the search index.', inputSchema:{type:'object',properties:{steps:{type:'integer',minimum:1,maximum:20,default:5},delayMs:{type:'integer',minimum:0,maximum:1000,default:200}},additionalProperties:false} },
++]; }
++function resources() { return [{ uri:'notes://index', name:'index', title:'All notes', mimeType:'application/json', description:'All notes' }]; }
++function templates() { return [{ uriTemplate:'notes://notes/{id}', name:'note', title:'A single note', mimeType:'text/markdown' }]; }
++function prompts() { return [{ name:'summarize_notebook', description:'Summarize notes in a notebook.', arguments:[{name:'notebook',required:true},{name:'style',required:false,description:'brief or detailed'}] }]; }
++
++async function dispatch(req: Json, res: http.ServerResponse) {
++  const id = req.id; const method = req.method; const p = req.params ?? {}; const meta = p._meta ?? {};
++  if (meta['io.modelcontextprotocol/protocolVersion'] !== VERSION) return sendJson(res,400,rpcError(id,-32022,'Unsupported protocol version',{supported:[VERSION],requested:meta['io.modelcontextprotocol/protocolVersion']}));
++  if (!meta['io.modelcontextprotocol/clientCapabilities'] || typeof meta['io.modelcontextprotocol/clientCapabilities'] !== 'object') return sendJson(res,400,rpcError(id,-32602,'Missing client capabilities'));
++  if (method === 'tools/list') return sendJson(res,200,ok(id,cache({tools:tools(),instructions:INSTRUCTIONS})));
++  if (method === 'resources/list') return sendJson(res,200,ok(id,cache({resources:resources(),instructions:INSTRUCTIONS})));
++  if (method === 'resources/templates/list') return sendJson(res,200,ok(id,cache({resourceTemplates:templates(),instructions:INSTRUCTIONS})));
++  if (method === 'prompts/list') return sendJson(res,200,ok(id,cache({prompts:prompts(),instructions:INSTRUCTIONS})));
++  if (method === 'resources/read') { const uri = p.uri; let contents: Json[] = []; if (uri === 'notes://index') contents=[{uri,mimeType:'application/json',text:JSON.stringify(notes.map(n=>({id:n.id,notebook:n.notebook,title:n.title})))}]; else { const m = /^notes:\/\/notes\/(n\d+)$/.exec(uri ?? ''); const n=m&&find(m[1]); if (!n) return sendJson(res,200,rpcError(id,-32002,`Resource ${uri} not found`)); contents=[{uri,mimeType:'text/markdown',text:noteText(n)}]; } return sendJson(res,200,ok(id,cache({contents},'private'))); }
++  if (method === 'prompts/get') { const notebook=p.arguments?.notebook; const style=p.arguments?.style??'brief'; if(typeof notebook!=='string'||!['brief','detailed'].includes(style)) return sendJson(res,200,rpcError(id,-32602,'Invalid notebook or style')); const ns=notes.filter(n=>n.notebook===notebook); const text=style==='brief'?`Summarize the notes in the "${notebook}" notebook in two sentences.`:`Summarize the notes in the "${notebook}" notebook in detail, one paragraph per note.`; const messages:any[]=[{role:'user',content:{type:'text',text}}]; for(const n of ns) messages.push({role:'user',content:{type:'resource',resource:{uri:noteUri(n.id),mimeType:'text/markdown',text:noteText(n)}}}); return sendJson(res,200,ok(id,{description:`Summary of ${notebook}`,messages,instructions:INSTRUCTIONS})); }
++  if (method === 'tools/call') return callTool(req,res);
++  if (method === 'subscriptions/listen') return listen(req,res);
++  return sendJson(res,404,rpcError(id,-32601,'Method not found'));
++}
++
++async function callTool(req: Json, res: http.ServerResponse) { const id=req.id,p=req.params??{},name=p.name,args=p.arguments??{},meta=p._meta??{}; if(name==='add_note'){ const {notebook,title,body}=args; if(typeof notebook!=='string'||!/^[A-Za-z0-9_-]{1,64}$/.test(notebook)) return sendJson(res,200,ok(id,{isError:true,content:jsonContent('Invalid notebook')})); if(typeof title!=='string'||!title.length||title.length>200) return sendJson(res,200,ok(id,{isError:true,content:jsonContent('Invalid title')})); if(typeof body!=='string') return sendJson(res,200,ok(id,{isError:true,content:jsonContent('Invalid body')})); const n={id:`n${nextId++}`,notebook,title,body}; notes.push(n); const out={id:n.id,uri:noteUri(n.id),notebook,wordCount:body.trim()?body.trim().split(/\s+/).length:0}; notify('notes://index'); const result={structuredContent:out,content:jsonContent(JSON.stringify(out))}; return sendJson(res,200,ok(id,result)); }
++ if(name==='delete_note'){ const n=find(args.id); if(!n) return sendJson(res,200,ok(id,{isError:true,content:jsonContent(`Note ${args.id} not found`)})); const caps=meta['io.modelcontextprotocol/clientCapabilities']; const state=verifyState(p.requestState,'delete_note'); if(!p.inputResponses){ if(!caps?.elicitation?.form) return sendJson(res,200,rpcError(id,-32005,'Missing required client capability: elicitation.form')); const requestState=signState({method:'delete_note',id:n.id,exp:Date.now()+300000}); return sendJson(res,200,ok(id,{resultType:'input_required',inputRequests:{confirm:{method:'elicitation/create',params:{mode:'form',message:`Delete note "${n.title}"?`,requestedSchema:{type:'object',properties:{confirm:{type:'boolean'}},required:['confirm']}}}},requestState})); } if(!state||state.id!==n.id) return sendJson(res,200,rpcError(id,-32602,'Invalid request state')); const response=p.inputResponses.confirm; if(response?.action==='accept'&&response.content?.confirm===true){ notes.splice(notes.indexOf(n),1); notify('notes://index'); notify(noteUri(n.id)); return sendJson(res,200,ok(id,{content:jsonContent(`Deleted note ${n.id}`)})); } return sendJson(res,200,ok(id,{content:jsonContent('Deletion cancelled')})); }
++ if(name==='reindex'){ let steps=args.steps??5, delay=args.delayMs??200; if(!Number.isInteger(steps)||steps<1||steps>20||!Number.isInteger(delay)||delay<0||delay>1000) return sendJson(res,200,ok(id,{isError:true,content:jsonContent('Invalid steps or delayMs')})); const token=meta.progressToken; res.writeHead(200,{'content-type':'text/event-stream','cache-control':'no-cache','x-accel-buffering':'no'}); for(let k=1;k<=steps;k++){ await new Promise(r=>setTimeout(r,delay)); if(res.destroyed)return; if(token!==undefined)res.write(`data: ${JSON.stringify({jsonrpc:'2.0',method:'notifications/progress',params:{progressToken:token,progress:k,total:steps,message:`Indexed ${k}/${steps}`}})}\n\n`); } res.end(`data: ${JSON.stringify(ok(id,{content:jsonContent(`Reindex complete: ${steps} steps`)}))}\n\n`); return; }
++ return sendJson(res,200,rpcError(id,-32601,'Method not found')); }
++function listen(req: Json,res:http.ServerResponse){ const id=req.id,p=req.params??{}, f=p.notifications??{}; res.writeHead(200,{'content-type':'text/event-stream','cache-control':'no-cache','x-accel-buffering':'no'}); const sub={res,id,filter:{toolsListChanged:!!f.toolsListChanged,promptsListChanged:!!f.promptsListChanged,resourcesListChanged:!!f.resourcesListChanged,resourceSubscriptions:Array.isArray(f.resourceSubscriptions)?f.resourceSubscriptions:[]}}; subscriptions.add(sub); res.write(`data: ${JSON.stringify({jsonrpc:'2.0',method:'notifications/subscriptions/acknowledged',params:{_meta:{'io.modelcontextprotocol/subscriptionId':id},notifications:sub.filter}})}\n\n`); const timer=setInterval(()=>{if(!res.destroyed)res.write(': keep-alive\n\n');},15000); res.on('close',()=>{clearInterval(timer);subscriptions.delete(sub);}); }
++
++const port=Number(process.env.PORT??3000); const server=http.createServer(async (req,res)=>{ const origin=req.headers.origin; if(origin && origin!==`http://localhost:${port}`&&origin!==`http://127.0.0.1:${port}`) return sendJson(res,403,rpcError(null,-32600,'Forbidden origin')); if(req.method!=='POST'||req.url!=='/mcp') return sendJson(res,404,rpcError(null,-32601,'Not found')); const msg=await body(req); if(!msg||msg.jsonrpc!=='2.0'||typeof msg.method!=='string') return sendJson(res,400,rpcError(msg?.id,-32600,'Invalid Request')); const version=req.headers['mcp-protocol-version']; const meta=msg.params?._meta??{}; if(version!==meta['io.modelcontextprotocol/protocolVersion']) return sendJson(res,400,headerMismatch(msg.id,'MCP-Protocol-Version header does not match request metadata')); if(req.headers['mcp-method']!==msg.method) return sendJson(res,400,headerMismatch(msg.id,'Mcp-Method header does not match request method')); if(['tools/call','resources/read','prompts/get'].includes(msg.method)){ const source=msg.method==='tools/call'?msg.params?.name:msg.method==='resources/read'?msg.params?.uri:msg.params?.name; if(decodeHeader(req.headers['mcp-name'])!==source)return sendJson(res,400,headerMismatch(msg.id,'Mcp-Name header does not match request')); } if(msg.id===undefined){ res.writeHead(202); return res.end(); } await dispatch(msg,res); });
++server.listen(port,'127.0.0.1',()=>console.log(`field-notes MCP listening on 127.0.0.1:${port}`));

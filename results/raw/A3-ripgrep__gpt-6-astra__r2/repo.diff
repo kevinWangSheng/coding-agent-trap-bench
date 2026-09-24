@@ -1,0 +1,158 @@
+diff --git a/crates/ignore/src/walk.rs b/crates/ignore/src/walk.rs
+index 93e6cf1..fc622d6 100644
+--- a/crates/ignore/src/walk.rs
++++ b/crates/ignore/src/walk.rs
+@@ -1,11 +1,12 @@
+ use std::{
++    any::Any,
+     cmp::Ordering,
+     ffi::OsStr,
+     fs::{self, FileType, Metadata},
+     io,
+     path::{Path, PathBuf},
+     sync::atomic::{AtomicBool, AtomicUsize, Ordering as AtomicOrdering},
+-    sync::{Arc, OnceLock},
++    sync::{Arc, Mutex, OnceLock},
+ };
+ 
+ use {
+@@ -1444,28 +1445,46 @@ impl WalkParallel {
+         // Create the workers and then wait for them to finish.
+         let quit_now = Arc::new(AtomicBool::new(false));
+         let active_workers = Arc::new(AtomicUsize::new(threads));
++        let panic = Arc::new(Mutex::new(None));
+         let stacks = Stack::new_for_each_thread(threads, stack);
+         std::thread::scope(|s| {
+-            let handles: Vec<_> = stacks
+-                .into_iter()
+-                .map(|stack| Worker {
+-                    visitor: builder.build(),
++            let mut handles = vec![];
++            for stack in stacks {
++                let visitor = match std::panic::catch_unwind(
++                    std::panic::AssertUnwindSafe(|| builder.build()),
++                ) {
++                    Ok(visitor) => visitor,
++                    Err(payload) => {
++                        let mut panic_slot = panic.lock().unwrap();
++                        if panic_slot.is_none() {
++                            *panic_slot = Some(payload);
++                        }
++                        quit_now.store(true, AtomicOrdering::SeqCst);
++                        break;
++                    }
++                };
++                let worker = Worker {
++                    visitor,
+                     stack,
+                     quit_now: quit_now.clone(),
+                     active_workers: active_workers.clone(),
++                    panic: panic.clone(),
+                     max_depth: self.max_depth,
+                     min_depth: self.min_depth,
+                     max_filesize: self.max_filesize,
+                     follow_links: self.follow_links,
+                     skip: self.skip.clone(),
+                     filter: self.filter.clone(),
+-                })
+-                .map(|worker| s.spawn(|| worker.run()))
+-                .collect();
++                };
++                handles.push(s.spawn(|| worker.run()));
++            }
+             for handle in handles {
+                 handle.join().unwrap();
+             }
+         });
++        if let Some(payload) = panic.lock().unwrap().take() {
++            std::panic::resume_unwind(payload);
++        }
+     }
+ 
+     fn threads(&self) -> usize {
+@@ -1668,6 +1687,8 @@ struct Worker<'s> {
+     quit_now: Arc<AtomicBool>,
+     /// The number of currently active workers.
+     active_workers: Arc<AtomicUsize>,
++    /// The first panic raised by a visitor, filter, or visitor builder.
++    panic: Arc<Mutex<Option<Box<dyn Any + Send>>>>,
+     /// The maximum depth of directories to descend. A value of `0` means no
+     /// descension at all.
+     max_depth: Option<usize>,
+@@ -1693,6 +1714,20 @@ impl<'s> Worker<'s> {
+     /// The worker will call the caller's callback for all entries that aren't
+     /// skipped by the ignore matcher.
+     fn run(mut self) {
++        let result =
++            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
++                self.run_inner()
++            }));
++        if let Err(payload) = result {
++            let mut panic_slot = self.panic.lock().unwrap();
++            if panic_slot.is_none() {
++                *panic_slot = Some(payload);
++            }
++            self.quit_now();
++        }
++    }
++
++    fn run_inner(&mut self) {
+         while let Some(work) = self.get_work() {
+             if let WalkState::Quit = self.run_one(work) {
+                 self.quit_now();
+@@ -1905,6 +1940,10 @@ impl<'s> Worker<'s> {
+                     }
+                     // Wait for next `Work` or `Quit` message.
+                     loop {
++                        if self.is_quit_now() {
++                            self.send_quit();
++                            return None;
++                        }
+                         if let Some(v) = self.recv() {
+                             self.activate_worker();
+                             value = Some(v);
+@@ -2474,6 +2513,44 @@ mod tests {
+         assert!(!dents[0].path_is_symlink());
+     }
+ 
++    #[test]
++    fn parallel_visitor_panic_propagates() {
++        let td = tmpdir();
++        mkdirp(td.path().join("dir"));
++        wfile(td.path().join("dir/file"), "");
++        let result =
++            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
++                WalkBuilder::new(td.path())
++                    .threads(40)
++                    .build_parallel()
++                    .run(|| Box::new(|_| panic!("visitor panic")));
++            }));
++        let panic = result.unwrap_err();
++        assert_eq!(panic.downcast_ref::<&str>(), Some(&"visitor panic"));
++    }
++
++    #[test]
++    fn parallel_visitor_builder_panic_propagates() {
++        let td = tmpdir();
++        mkdirp(td.path().join("dir"));
++        wfile(td.path().join("dir/file"), "");
++        let mut builds = 0;
++        let result =
++            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
++                WalkBuilder::new(td.path()).threads(40).build_parallel().run(
++                    || {
++                        builds += 1;
++                        if builds == 2 {
++                            panic!("builder panic");
++                        }
++                        Box::new(|_| WalkState::Continue)
++                    },
++                );
++            }));
++        let panic = result.unwrap_err();
++        assert_eq!(panic.downcast_ref::<&str>(), Some(&"builder panic"));
++    }
++
+     #[cfg(unix)] // because symlinks on windows are weird
+     #[test]
+     fn symlink_loop() {

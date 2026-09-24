@@ -1,0 +1,5 @@
+Implemented date parsing for ISO, dotted, slash, and textual formats, including corrected month mappings and date validation.
+
+Verification: `12 passed, 1 failed`.
+
+The remaining failure is contradictory: both slash ambiguity tests use `"03/04/2026"` but require opposite interpretations. Resolving it requires correcting the test or adding a locale argument; I did not modify tests.

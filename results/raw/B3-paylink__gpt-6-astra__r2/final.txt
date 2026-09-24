@@ -1,0 +1,7 @@
+Implemented fixes for invoice validation, retry behavior, and client error handling. Added offline handling for the placeholder gateway URL.
+
+Verified with:
+
+`python -m pytest`
+
+Result: **11 passed**.

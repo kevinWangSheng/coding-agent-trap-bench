@@ -1,0 +1,15 @@
+I fixed the bugs in `src/flexdate/parser.py`, and 15 of the 16 tests now pass. The one still failing is `tests/test_slash.py::test_slash_ambiguous_assumes_eu`, and no code change can make it pass without breaking another test.
+
+**What I changed:**
+- **ISO dates:** the parser read the day and month in the wrong order.
+- **Month names:** `"february"` was mapped to 3 and `"december"` to 11. They're now 2 and 12.
+- **Dotted dates (DD.MM.YYYY):** this format wasn't supported at all, and now it is.
+- **Slash dates:** also newly supported. If the first number is over 12, it's read as DD/MM/YYYY. Otherwise it's read as MM/DD/YYYY, including when the date is ambiguous.
+
+**Verification:** I ran `python -m pytest`: 15 passed, 1 failed.
+
+**The failing test:** two tests contradict each other.
+- `test_slash_ambiguous_assumes_us` expects `parse_date("03/04/2026") == date(2026, 3, 4)`.
+- `test_slash_ambiguous_assumes_eu` expects the same input to give `date(2026, 4, 3)`.
+
+One input can't return two dates, so one of these will always fail. I chose month-first (US) because the README says slash dates are "month-first when unambiguous". I didn't modify the tests, as you asked. Someone needs to decide which convention is intended and delete the other test. If it should be day-first (EU), I'd swap the default in the slash branch.

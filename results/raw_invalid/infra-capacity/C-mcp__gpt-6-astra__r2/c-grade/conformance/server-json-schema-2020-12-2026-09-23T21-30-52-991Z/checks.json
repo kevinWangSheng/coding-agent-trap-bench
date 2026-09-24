@@ -1,0 +1,157 @@
+[
+  {
+    "id": "json-schema-2020-12-tool-found",
+    "name": "JsonSchema2020_12ToolFound",
+    "description": "Server advertises tool 'json_schema_2020_12_tool'",
+    "status": "FAILURE",
+    "timestamp": "2026-09-23T21:30:52.993Z",
+    "errorMessage": "Tool 'json_schema_2020_12_tool' not found. Available tools: add_note, delete_note, reindex",
+    "specReferences": [
+      {
+        "id": "SEP-1613",
+        "url": "https://github.com/modelcontextprotocol/specification/pull/655"
+      }
+    ],
+    "details": {
+      "toolFound": false,
+      "availableTools": [
+        "add_note",
+        "delete_note",
+        "reindex"
+      ]
+    }
+  },
+  {
+    "id": "wire-schema-valid",
+    "name": "WireSchemaValid",
+    "description": "Every JSON-RPC message the implementation sent is valid per the spec JSON schema for the negotiated spec version",
+    "status": "FAILURE",
+    "timestamp": "2026-09-23T21:30:52.993Z",
+    "specReferences": [
+      {
+        "id": "MCP-Schema",
+        "url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/schema/draft/schema.json"
+      }
+    ],
+    "details": {
+      "messagesValidated": 2,
+      "violations": [
+        {
+          "origin": "implementation",
+          "specVersion": "2026-07-28",
+          "context": "response to 'tools/list'",
+          "errors": [
+            "ListToolsResult: must have required property 'resultType' (result of 'tools/list')"
+          ],
+          "message": {
+            "jsonrpc": "2.0",
+            "id": 67,
+            "result": {
+              "tools": [
+                {
+                  "name": "add_note",
+                  "description": "Create a note.",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "notebook": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                        "x-mcp-header": "Notebook"
+                      },
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "body": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "notebook",
+                      "title",
+                      "body"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "uri": {
+                        "type": "string"
+                      },
+                      "notebook": {
+                        "type": "string"
+                      },
+                      "wordCount": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "uri",
+                      "notebook",
+                      "wordCount"
+                    ]
+                  }
+                },
+                {
+                  "name": "delete_note",
+                  "description": "Delete a note after user confirmation.",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "name": "reindex",
+                  "description": "Rebuild the search index.",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "steps": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 20,
+                        "default": 5
+                      },
+                      "delayMs": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000,
+                        "default": 200
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "instructions": "Field Notes stores short notes grouped into notebooks. Use add_note to save a note, read notes://index to see what exists.",
+              "ttlMs": 300000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "field-notes",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "errorMessage": "[implementation] response to 'tools/list' (spec 2026-07-28): ListToolsResult: must have required property 'resultType' (result of 'tools/list') — message: {\"jsonrpc\":\"2.0\",\"id\":67,\"result\":{\"tools\":[{\"name\":\"add_note\",\"description\":\"Create a note.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"notebook\":{\"type\":\"string\",\"pattern\":\"^[A-Za-z0-9_-]{1,64}$\",\"x-mcp-header\":\"Notebook\"},\"title\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":200},\"body\":{\"type\":\"string\"}},\"required\":[\"notebook\",\"title\",\"body\"],\"additionalProperties\":false},\"outputSchema\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"uri\":{\"type\":\"string\"},\"notebook\":{\"type\":\"string\"},\"wordCount\":{\"type\":\"integer\"}},\"required\":[\"id\",\"uri\",\"notebook\",\"wordCount\"]}},{\"name\":\"delete_note\",\"description\":\"Delete a note after user confirmation.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"}},\"required\":[\"id\"],\"additionalProperties\":false}},{\"name\":\"reindex\",\"description\":\"Rebuild the search index.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"steps\":{\"type\":\"integer\",\"minimum\":1,\"maximum\":20,\"default\":5},\"delayMs\":{\"type\":\"integer\",\"minimum\":0,\"maximum\":1000,\"default\":200}},\"additionalProperties\":false}}],\"instructions\":\"Field Notes stores short notes grouped into notebooks. Use add_note to save a note, read notes://index to see what exists.\",\"ttlMs\":300000,\"cacheScope\":\"public\",\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"}}}}"
+  }
+]

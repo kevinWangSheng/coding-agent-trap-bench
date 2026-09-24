@@ -1,0 +1,69 @@
+diff --git a/src/_pytest/monkeypatch.py b/src/_pytest/monkeypatch.py
+index 9ae9e2b..f6264c0 100644
+--- a/src/_pytest/monkeypatch.py
++++ b/src/_pytest/monkeypatch.py
+@@ -244,6 +244,15 @@ class MonkeyPatch:
+         # avoid class descriptors like staticmethod/classmethod
+         if inspect.isclass(target):
+             oldval = target.__dict__.get(name, NOTSET)
++        else:
++            # For objects with an instance dictionary, preserve the value as
++            # stored there.  ``getattr`` may resolve an inherited descriptor
++            # (or another inherited attribute), and writing that resolved
++            # value back during undo would create a new instance attribute.
++            try:
++                oldval = vars(target).get(name, NOTSET)
++            except TypeError:
++                pass
+         setattr(target, name, value)
+         self._setattr.append((target, name, oldval))
+ 
+diff --git a/testing/test_monkeypatch.py b/testing/test_monkeypatch.py
+index 63e145c..90043ee 100644
+--- a/testing/test_monkeypatch.py
++++ b/testing/test_monkeypatch.py
+@@ -52,6 +52,44 @@ def test_setattr() -> None:
+         monkeypatch.setattr(A, "y")  # type: ignore[call-overload]
+ 
+ 
++def test_setattr_inherited_attribute_restores_instance_dict() -> None:
++    class Parent:
++        value = object()
++
++    class Child(Parent):
++        pass
++
++    target = Child()
++    before = vars(target).copy()
++    monkeypatch = MonkeyPatch()
++
++    monkeypatch.setattr(target, "value", object())
++    monkeypatch.undo()
++
++    assert vars(target) == before
++    assert target.value is Parent.value
++
++
++def test_setattr_inherited_descriptor_keeps_dynamic_lookup() -> None:
++    class Descriptor:
++        def __get__(self, obj, owner):
++            return object() if obj is not None else self
++
++    class Parent:
++        value = Descriptor()
++
++    class Child(Parent):
++        pass
++
++    target = Child()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(target, "value", object())
++    monkeypatch.undo()
++
++    assert "value" not in vars(target)
++    assert target.value is not target.value
++
++
+ class TestSetattrWithImportPath:
+     def test_string_expression(self, monkeypatch: MonkeyPatch) -> None:
+         with monkeypatch.context() as mp:

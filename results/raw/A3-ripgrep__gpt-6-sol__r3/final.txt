@@ -1,0 +1,14 @@
+Implemented the `ignore` crate fix.
+
+- Worker callback panics now signal all workers to stop, join cleanly, and re-propagate to the caller.
+- Visitor builder panics during parallel worker setup are handled similarly.
+- Idle workers now detect the quit signal and cannot remain blocked indefinitely.
+- Added regression tests for visitor and builder panics.
+
+Verified with:
+
+```text
+timeout 120 cargo test -p ignore
+```
+
+All 147 unit tests, integration tests, and doctests passed.

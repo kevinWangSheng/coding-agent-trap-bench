@@ -1,0 +1,4 @@
+ changelog/13456.bugfix.rst  |   1 +
+ src/_pytest/monkeypatch.py  |  19 ++++++++-
+ testing/test_monkeypatch.py | 101 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 120 insertions(+), 1 deletion(-)

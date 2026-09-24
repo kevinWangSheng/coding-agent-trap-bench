@@ -1,0 +1,10 @@
+Reading additional input from stdin...
+2026-09-23T20:03:27.765050Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T20:08:14.522618Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in ~/.bench-runs/D-sqlx__gpt-6-astra__r2/repo/sqlx-sqlite/src/statement/virtual.rs:
+    fn trigger_scripts_are_left_to_sqlite() {
+        assert_eq!(
+            statement_len(b"CREATE TRIGGER x AFTER INSERT ON t BEGIN SELECT 1; END;"),
+            None
+        );
+    }
+}

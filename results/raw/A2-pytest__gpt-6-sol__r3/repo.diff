@@ -1,0 +1,91 @@
+diff --git a/src/_pytest/monkeypatch.py b/src/_pytest/monkeypatch.py
+index 9ae9e2b..975edd0 100644
+--- a/src/_pytest/monkeypatch.py
++++ b/src/_pytest/monkeypatch.py
+@@ -240,11 +240,33 @@ class MonkeyPatch:
+         oldval = getattr(target, name, NOTSET)
+         if raising and oldval is NOTSET:
+             raise AttributeError(f"{target!r} has no attribute {name!r}")
++        lookup_oldval = oldval
+ 
+         # avoid class descriptors like staticmethod/classmethod
+         if inspect.isclass(target):
+             oldval = target.__dict__.get(name, NOTSET)
++        else:
++            # For instances, an attribute found by ``getattr`` may be
++            # inherited.  In that case the assignment below creates a new
++            # instance attribute, which must be deleted during undo rather
++            # than restoring the inherited value onto the instance.
++            try:
++                oldval = vars(target).get(name, NOTSET)
++            except TypeError:
++                # Objects without an instance dictionary (for example,
++                # ``__slots__`` instances) retain the value obtained above.
++                pass
+         setattr(target, name, value)
++        if oldval is NOTSET:
++            try:
++                # A data descriptor or custom __setattr__ may have handled
++                # the assignment without creating an instance dictionary
++                # entry.  Such a target still needs the original value
++                # restored with setattr during undo.
++                if name not in vars(target):
++                    oldval = lookup_oldval
++            except TypeError:
++                oldval = lookup_oldval
+         self._setattr.append((target, name, oldval))
+ 
+     def delattr(
+diff --git a/testing/test_monkeypatch.py b/testing/test_monkeypatch.py
+index 63e145c..5aaf1fd 100644
+--- a/testing/test_monkeypatch.py
++++ b/testing/test_monkeypatch.py
+@@ -501,6 +501,48 @@ def test_context_classmethod() -> None:
+     assert A.x == 1
+ 
+ 
++def test_setattr_inherited_attribute_restores_instance_dict() -> None:
++    class Parent:
++        value = "inherited"
++
++    class Child(Parent):
++        pass
++
++    target = Child()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(target, "value", "patched")
++    assert vars(target) == {"value": "patched"}
++
++    monkeypatch.undo()
++    assert vars(target) == {}
++    assert target.value == "inherited"
++
++
++def test_setattr_inherited_descriptor_does_not_cache_on_undo() -> None:
++    class Descriptor:
++        def __init__(self) -> None:
++            self.calls = 0
++
++        def __get__(self, instance, owner):
++            self.calls += 1
++            return self.calls
++
++    class Parent:
++        value = Descriptor()
++
++    class Child(Parent):
++        pass
++
++    target = Child()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(target, "value", "patched")
++    monkeypatch.undo()
++
++    assert vars(target) == {}
++    assert target.value == 2
++    assert target.value == 3
++
++
+ @pytest.mark.filterwarnings(
+     r"ignore:.*\bpkg_resources\b:DeprecationWarning",
+     r"ignore:.*\bpkg_resources\b:UserWarning",

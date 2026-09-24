@@ -1,0 +1,13 @@
+Nested transactions now count against the backend quota. A `Put` inside a nested `Txn`, in either the success or failure branch, gets rejected with "database space exceeded" just like its flat equivalent. The new tests and the related server packages all pass.
+
+**The bug:** In `server/storage/quota.go`, the function that works out how much space a transaction will use (`costTxnReq`) only looked at direct `Put` operations. A nested `Txn` was counted as zero bytes. That made the whole request look read-only, so it went through the quota checks in both the gRPC layer and the apply layer (which enforces the quota and triggers the space alarm).
+
+**The fix:** `costTxnReq` now goes into nested transactions and counts them the same way as the outer one: whichever branch costs more, at any depth. Every quota check calls this same function, so fixing it covers all of them.
+
+**Tests:** I added `server/storage/quota_test.go`:
+- `TestBackendQuotaCost` checks the calculated cost for a plain put, a lease grant, a read-only txn, a flat txn (the larger branch wins), and nested txns: success-only, failure-only, mixed with flat puts, and nested several levels deep.
+- `TestBackendQuotaAvailableNestedTxn` uses a real temporary backend with a small quota. It checks that nested puts that are too big get rejected in each branch and in deeper nesting, and that a small nested put is still allowed.
+
+**Verification:** `go test ./storage/ ./etcdserver/apply/... ./etcdserver/api/v3rpc/...` passes, and `go vet ./storage/` is clean.
+
+**Not done:** I didn't run the new tests against the old code to watch them fail. They should: the old code gave the nested cases a cost of 0 where the tests expect a positive number. I also didn't run the integration or e2e suites, which start a real etcd cluster.

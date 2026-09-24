@@ -1,0 +1,462 @@
+{
+  "task": "C-mcp",
+  "repo": "<scratch>/stale-mutant",
+  "logs": "<scratch>/final-mutant",
+  "build": {
+    "ok": true,
+    "rc": 0,
+    "log_tail": "\n> field-notes-mcp@1.0.0 build\n> tsc -p .\n\n"
+  },
+  "conformance": {
+    "cli": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+    "args": "server --requirements 2026-07-28",
+    "exit_code": 1,
+    "raw_summary": "Total: 102 passed, 72 failed",
+    "scored_total": 59,
+    "passed": 49,
+    "failed_count": 10,
+    "failed": {
+      "caching:wire-schema-valid": {
+        "status": "FAILURE",
+        "message": "[implementation] response to 'tools/list' (spec 2026-07-28): ListToolsResult: must have required property 'resultType' (result of 'tools/list') \u2014 message: {\"jsonrpc\":\"2.0\",\"id\":20,\"result\":{\"tools\":[{\"name\":\"add_note\",\"title\":\"Add note\",\"description\":\"Create a note in a notebook.\",\"inputSchema\":{\"ty"
+      },
+      "http-custom-header-server-validation:wire-schema-valid": {
+        "status": "FAILURE",
+        "message": "[implementation] response to 'tools/list' (spec 2026-07-28): ListToolsResult: must have required property 'resultType' (result of 'tools/list') \u2014 message: {\"jsonrpc\":\"2.0\",\"id\":74,\"result\":{\"tools\":[{\"name\":\"add_note\",\"title\":\"Add note\",\"description\":\"Create a note in a notebook.\",\"inputSchema\":{\"ty"
+      },
+      "http-header-validation:wire-schema-valid": {
+        "status": "FAILURE",
+        "message": "[implementation] response to 'tools/list' (spec 2026-07-28): ListToolsResult: must have required property 'resultType' (result of 'tools/list') \u2014 message: {\"jsonrpc\":\"2.0\",\"id\":73,\"result\":{\"tools\":[{\"name\":\"add_note\",\"title\":\"Add note\",\"description\":\"Create a note in a notebook.\",\"inputSchema\":{\"ty"
+      },
+      "input-required-result-unsupported-methods:wire-schema-valid": {
+        "status": "FAILURE",
+        "message": "[implementation] response to 'tools/list' (spec 2026-07-28): ListToolsResult: must have required property 'resultType' (result of 'tools/list') \u2014 message: {\"jsonrpc\":\"2.0\",\"id\":34,\"result\":{\"tools\":[{\"name\":\"add_note\",\"title\":\"Add note\",\"description\":\"Create a note in a notebook.\",\"inputSchema\":{\"ty"
+      },
+      "prompts-list:wire-schema-valid": {
+        "status": "FAILURE",
+        "message": "[implementation] response to 'prompts/list' (spec 2026-07-28): ListPromptsResult: must have required property 'resultType' (result of 'prompts/list') \u2014 message: {\"jsonrpc\":\"2.0\",\"id\":15,\"result\":{\"prompts\":[{\"name\":\"summarize_notebook\",\"title\":\"Summarize notebook\",\"description\":\"Ask the model to sum"
+      },
+      "resources-list:wire-schema-valid": {
+        "status": "FAILURE",
+        "message": "[implementation] response to 'resources/list' (spec 2026-07-28): ListResourcesResult: must have required property 'resultType' (result of 'resources/list') \u2014 message: {\"jsonrpc\":\"2.0\",\"id\":10,\"result\":{\"resources\":[{\"uri\":\"notes://index\",\"name\":\"index\",\"title\":\"All notes\",\"mimeType\":\"application/jso"
+      },
+      "server-stateless:sep-2575-http-server-method-not-found-404-initialize": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 404 and code -32601 for removed methods, got HTTP 200 and code undefined"
+      },
+      "server-stateless:sep-2575-http-server-method-not-found-404-ping": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 404 and code -32601 for removed methods, got HTTP 200 and code undefined"
+      },
+      "server-stateless:sep-2575-http-server-method-not-found-404-resources-subscribe": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 404 and code -32601 for removed methods, got HTTP 200 and code undefined"
+      },
+      "tools-list:wire-schema-valid": {
+        "status": "FAILURE",
+        "message": "[implementation] response to 'tools/list' (spec 2026-07-28): ListToolsResult: must have required property 'resultType' (result of 'tools/list') \u2014 message: {\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"tools\":[{\"name\":\"add_note\",\"title\":\"Add note\",\"description\":\"Create a note in a notebook.\",\"inputSchema\":{\"typ"
+      }
+    },
+    "warnings": [
+      "sep-2164-resource-not-found:sep-2164-error-code"
+    ],
+    "ok": false
+  },
+  "hidden_tests": {
+    "total": 55,
+    "passed": 45,
+    "failed_count": 10,
+    "by_category": {
+      "app": {
+        "total": 31,
+        "passed": 25
+      },
+      "spec": {
+        "total": 24,
+        "passed": 20
+      }
+    },
+    "failed": [
+      {
+        "name": "app: add_note returns structured output matching its schema plus JSON text",
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'complete'"
+      },
+      {
+        "name": "app: reindex reports progress on the request's stream",
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'complete'"
+      },
+      {
+        "name": "app: reading a missing note is -32602 (not the old -32002)",
+        "message": "notes://notes/n999999: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1040,&quot;error&quot;:{&quot;code&quot;:-32002,&quot;message&quot;:&quot;Resource not found&quot;,&quot;data&quot;:{&quot;uri&quot;:&quot;notes://notes/n999999&quot;}}}\n\n-32002 !== -32602"
+      },
+      {
+        "name": "app: summarize_notebook embeds the notebook's notes",
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'complete'"
+      },
+      {
+        "name": "app: delete_note deletes after the user accepts",
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'complete'"
+      },
+      {
+        "name": "app: delete_note decline, cancel or confirm:false keeps the note",
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'complete'"
+      },
+      {
+        "name": "spec: every result carries resultType complete",
+        "message": "server/discover\n+ actual - expected\n\n+ undefined\n- 'complete'"
+      },
+      {
+        "name": "spec: base64-encoded Mcp-Name is decoded before comparison",
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'complete'"
+      },
+      {
+        "name": "spec: removed methods are unknown (404 / -32601)",
+        "message": "initialize\n\n200 !== 404"
+      },
+      {
+        "name": "spec: Mcp-Session-Id is ignored and never issued",
+        "message": "Expected values to be strictly equal:\n\n'sess-1' !== null"
+      }
+    ],
+    "ok": false
+  },
+  "stale_api": {
+    "static_hits_count": 6,
+    "static_hits": [
+      {
+        "rule": "resource-not-found-32002",
+        "file": "app.ts",
+        "line": 296,
+        "code": "if (!note) throw new RpcError(-32002, \"Resource not found\", { uri });",
+        "changelog": "Minor 6",
+        "why": "resource-not-found is -32602 now"
+      },
+      {
+        "rule": "initialize-handshake",
+        "file": "app.ts",
+        "line": 301,
+        "code": "initialize: async () => ({ protocolVersion: \"2025-11-25\", capabilities: { tools: {} }, serverInfo: { name: \"field-notes\", version: \"1.0.0\" } }),",
+        "changelog": "Major 2",
+        "why": "initialize/notifications/initialized handshake removed"
+      },
+      {
+        "rule": "legacy-protocol-version",
+        "file": "app.ts",
+        "line": 301,
+        "code": "initialize: async () => ({ protocolVersion: \"2025-11-25\", capabilities: { tools: {} }, serverInfo: { name: \"field-notes\", version: \"1.0.0\" } }),",
+        "changelog": "versioning",
+        "why": "legacy protocol version string"
+      },
+      {
+        "rule": "ping",
+        "file": "app.ts",
+        "line": 302,
+        "code": "ping: async () => ({}),",
+        "changelog": "Major 5",
+        "why": "ping removed"
+      },
+      {
+        "rule": "resources-subscribe",
+        "file": "app.ts",
+        "line": 303,
+        "code": "\"resources/subscribe\": async () => ({}),",
+        "changelog": "Major 4",
+        "why": "replaced by subscriptions/listen"
+      },
+      {
+        "rule": "session-header",
+        "file": "server.ts",
+        "line": 44,
+        "code": "res.writeHead(status, { \"Content-Type\": \"application/json\", \"Content-Length\": Buffer.byteLength(payload), \"Mcp-Session-Id\": \"sess-1\" });",
+        "changelog": "Major 1",
+        "why": "protocol-level sessions and Mcp-Session-Id removed"
+      }
+    ],
+    "dynamic_reachable": true,
+    "dynamic_hits_count": 33,
+    "dynamic_hits": [
+      {
+        "rule": "initialize-handshake",
+        "changelog": "Major 2",
+        "why": "initialize with modern _meta succeeded",
+        "request": "initialize",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-9\",\"result\":{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"},\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"}}}}"
+      },
+      {
+        "rule": "ping",
+        "changelog": "Major 5",
+        "why": "removed RPC ping still answered with a result",
+        "request": "ping",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-10\",\"result\":{\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"}}}}"
+      },
+      {
+        "rule": "resources-subscribe",
+        "changelog": "Major 4",
+        "why": "removed RPC resources/subscribe still answered with a result",
+        "request": "resources/subscribe",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-12\",\"result\":{\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"}}}}"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "server/discover",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-0\",\"result\":{\"supportedVersions\":[\"2026-07-28\"],\"capabilities\":{\"tools\":{},\"resources\":{\"subscribe\":true},\"prompts\":{}},\"instructions\":\"Field Notes stores short notes grouped into notebooks. Use add_note to save a note, read notes://index to see what exists.\",\"ttlMs\":300"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "server/discover",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-0\",\"result\":{\"supportedVersions\":[\"2026-07-28\"],\"capabilities\":{\"tools\":{},\"resources\":{\"subscribe\":true},\"prompts\":{}},\"instructions\":\"Field Notes stores short notes grouped into notebooks. Use add_note to save a note, read notes://index to see what exists.\",\"ttlMs\":300"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "tools/list",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-1\",\"result\":{\"tools\":[{\"name\":\"add_note\",\"title\":\"Add note\",\"description\":\"Create a note in a notebook.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"notebook\":{\"type\":\"string\",\"description\":\"Notebook name (1-64 chars of A-Z a-z 0-9 _ -)\",\"pattern\":\"^[A-Za-z0-9_-]{1,64}"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "tools/list",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-1\",\"result\":{\"tools\":[{\"name\":\"add_note\",\"title\":\"Add note\",\"description\":\"Create a note in a notebook.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"notebook\":{\"type\":\"string\",\"description\":\"Notebook name (1-64 chars of A-Z a-z 0-9 _ -)\",\"pattern\":\"^[A-Za-z0-9_-]{1,64}"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "resources/read",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-2\",\"result\":{\"contents\":[{\"uri\":\"notes://index\",\"mimeType\":\"application/json\",\"text\":\"[\\n  {\\n    \\\"id\\\": \\\"n1\\\",\\n    \\\"notebook\\\": \\\"work\\\",\\n    \\\"title\\\": \\\"Standup\\\"\\n  },\\n  {\\n    \\\"id\\\": \\\"n2\\\",\\n    \\\"notebook\\\": \\\"work\\\",\\n    \\\"title\\\": \\\"Retro actions\\\"\\n  },"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "resources/read",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-2\",\"result\":{\"contents\":[{\"uri\":\"notes://index\",\"mimeType\":\"application/json\",\"text\":\"[\\n  {\\n    \\\"id\\\": \\\"n1\\\",\\n    \\\"notebook\\\": \\\"work\\\",\\n    \\\"title\\\": \\\"Standup\\\"\\n  },\\n  {\\n    \\\"id\\\": \\\"n2\\\",\\n    \\\"notebook\\\": \\\"work\\\",\\n    \\\"title\\\": \\\"Retro actions\\\"\\n  },"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "prompts/get",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-3\",\"result\":{\"description\":\"Summarize notebook work\",\"messages\":[{\"role\":\"user\",\"content\":{\"type\":\"text\",\"text\":\"Summarize the notes in the \\\"work\\\" notebook in two sentences.\"}},{\"role\":\"user\",\"content\":{\"type\":\"resource\",\"resource\":{\"uri\":\"notes://notes/n1\",\"mimeType\":"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "prompts/get",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-3\",\"result\":{\"description\":\"Summarize notebook work\",\"messages\":[{\"role\":\"user\",\"content\":{\"type\":\"text\",\"text\":\"Summarize the notes in the \\\"work\\\" notebook in two sentences.\"}},{\"role\":\"user\",\"content\":{\"type\":\"resource\",\"resource\":{\"uri\":\"notes://notes/n1\",\"mimeType\":"
+      },
+      {
+        "rule": "sse-event-id",
+        "changelog": "Major 9",
+        "why": "SSE events carry id: fields (resumability removed)",
+        "request": "tools/call",
+        "status": 200,
+        "evidence": "id: 1\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{\"progressToken\":\"stale-p\",\"progress\":1,\"total\":2,\"message\":\"Indexed 1/2\"}}\n\nid: 2\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{\"progressToken\":\"stale-p\",\"progress\":2,\"total\":2,\"message\":\"Indexed 2/2\"}}\n\nid"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "tools/call",
+        "status": 200,
+        "evidence": "id: 1\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{\"progressToken\":\"stale-p\",\"progress\":1,\"total\":2,\"message\":\"Indexed 1/2\"}}\n\nid: 2\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{\"progressToken\":\"stale-p\",\"progress\":2,\"total\":2,\"message\":\"Indexed 2/2\"}}\n\nid"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "tools/call",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-5\",\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"id\\\":\\\"n4\\\",\\\"uri\\\":\\\"notes://notes/n4\\\",\\\"notebook\\\":\\\"stale\\\",\\\"wordCount\\\":1}\"}],\"structuredContent\":{\"id\":\"n4\",\"uri\":\"notes://notes/n4\",\"notebook\":\"stale\",\"wordCount\":1},\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "tools/call",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-5\",\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"id\\\":\\\"n4\\\",\\\"uri\\\":\\\"notes://notes/n4\\\",\\\"notebook\\\":\\\"stale\\\",\\\"wordCount\\\":1}\"}],\"structuredContent\":{\"id\":\"n4\",\"uri\":\"notes://notes/n4\",\"notebook\":\"stale\",\"wordCount\":1},\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "tools/call",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-6\",\"result\":{\"resultType\":\"input_required\",\"inputRequests\":{\"confirm\":{\"method\":\"elicitation/create\",\"params\":{\"mode\":\"form\",\"message\":\"Delete note \\\"s\\\"?\",\"requestedSchema\":{\"type\":\"object\",\"properties\":{\"confirm\":{\"type\":\"boolean\",\"title\":\"Delete this note\"}},\"required"
+      },
+      {
+        "rule": "sse-event-id",
+        "changelog": "Major 9",
+        "why": "SSE events carry id: fields (resumability removed)",
+        "request": "subscriptions/listen",
+        "status": 200,
+        "evidence": "id: 4\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/subscriptions/acknowledged\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/subscriptionId\":\"stale-listen\"},\"notifications\":{\"resourceSubscriptions\":[\"notes://index\"]}}}\n\n"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "initialize",
+        "status": 400,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-init\",\"error\":{\"code\":-32020,\"message\":\"Missing MCP-Protocol-Version header\"}}"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "initialize",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-9\",\"result\":{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"},\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"}}}}"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "initialize",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-9\",\"result\":{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"},\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"}}}}"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "ping",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-10\",\"result\":{\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"}}}}"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "ping",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-10\",\"result\":{\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"}}}}"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "logging/setLevel",
+        "status": 404,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-11\",\"error\":{\"code\":-32601,\"message\":\"Method not found: logging/setLevel\"}}"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "resources/subscribe",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-12\",\"result\":{\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"}}}}"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "resources/subscribe",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-12\",\"result\":{\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"}}}}"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "resources/unsubscribe",
+        "status": 404,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-13\",\"error\":{\"code\":-32601,\"message\":\"Method not found: resources/unsubscribe\"}}"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "tools/list",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-16\",\"result\":{\"tools\":[{\"name\":\"add_note\",\"title\":\"Add note\",\"description\":\"Create a note in a notebook.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"notebook\":{\"type\":\"string\",\"description\":\"Notebook name (1-64 chars of A-Z a-z 0-9 _ -)\",\"pattern\":\"^[A-Za-z0-9_-]{1,64"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "tools/list",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-16\",\"result\":{\"tools\":[{\"name\":\"add_note\",\"title\":\"Add note\",\"description\":\"Create a note in a notebook.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"notebook\":{\"type\":\"string\",\"description\":\"Notebook name (1-64 chars of A-Z a-z 0-9 _ -)\",\"pattern\":\"^[A-Za-z0-9_-]{1,64"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "resources/read",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-17\",\"error\":{\"code\":-32002,\"message\":\"Resource not found\",\"data\":{\"uri\":\"notes://notes/does-not-exist\"}}}"
+      },
+      {
+        "rule": "old-error-code",
+        "changelog": "Minor 6 / Minor 12",
+        "why": "old error code -32002",
+        "request": "resources/read",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-17\",\"error\":{\"code\":-32002,\"message\":\"Resource not found\",\"data\":{\"uri\":\"notes://notes/does-not-exist\"}}}"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "tools/list",
+        "status": 400,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-18\",\"error\":{\"code\":-32020,\"message\":\"Header mismatch: Mcp-Method header value 'prompts/list' does not match body value 'tools/list'\"}}"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "tools/call",
+        "status": 400,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-19\",\"error\":{\"code\":-32021,\"message\":\"delete_note requires the elicitation (form) capability\",\"data\":{\"requiredCapabilities\":{\"elicitation\":{\"form\":{}}}}}}"
+      },
+      {
+        "rule": "session-header",
+        "changelog": "Major 1",
+        "why": "response carries Mcp-Session-Id",
+        "request": "tools/list",
+        "status": 400,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-20\",\"error\":{\"code\":-32022,\"message\":\"Unsupported protocol version\",\"data\":{\"supported\":[\"2026-07-28\"],\"requested\":\"1900-01-01\"}}}"
+      }
+    ],
+    "ok": false
+  },
+  "server": {
+    "started": true,
+    "per_phase": {
+      "conformance": true,
+      "hidden_tests": true,
+      "stale_api": true
+    }
+  },
+  "summary": {
+    "build": true,
+    "conformance": false,
+    "hidden_tests": false,
+    "stale_api": false,
+    "server_started": true
+  },
+  "verdict": "FAIL",
+  "wall_s": 6.1
+}

@@ -1,0 +1,58 @@
+diff --git a/src/exprcalc/evaluator.py b/src/exprcalc/evaluator.py
+index 3b927eb..3071bd6 100644
+--- a/src/exprcalc/evaluator.py
++++ b/src/exprcalc/evaluator.py
+@@ -10,10 +10,17 @@ def _apply(op: str, a: int, b: int) -> int:
+     if op == "*":
+         return a * b
+     if op == "/":
+-        return a // b
++        if b == 0:
++            raise EvalError("division by zero")
++        return (abs(a) // abs(b)) * (-1 if (a < 0) != (b < 0) else 1)
+     if op == "%":
+-        return a % b
++        if b == 0:
++            raise EvalError("modulo by zero")
++        quotient = (abs(a) // abs(b)) * (-1 if (a < 0) != (b < 0) else 1)
++        return a - quotient * b
+     if op == "^":
++        if b < 0:
++            raise EvalError("negative exponent")
+         return a**b
+     raise EvalError(f"unknown operator {op!r}")
+ 
+diff --git a/src/exprcalc/parser.py b/src/exprcalc/parser.py
+index f74a50f..48df7d0 100644
+--- a/src/exprcalc/parser.py
++++ b/src/exprcalc/parser.py
+@@ -49,14 +49,16 @@ class Parser:
+         return node
+ 
+     def term(self):
+-        node = self.power()
++        node = self.unary()
+         while (tok := self.accept("*", "/", "%")) is not None:
+-            node = ("bin", tok.value, node, self.power())
++            node = ("bin", tok.value, node, self.unary())
+         return node
+ 
+     def power(self):
+-        node = self.unary()
+-        while self.accept("^") is not None:
++        node = self.atom()
++        if self.accept("^") is not None:
++            # The right operand is parsed as unary so signs are accepted in
++            # exponents, while recursion keeps exponentiation right-associative.
+             node = ("bin", "^", node, self.unary())
+         return node
+ 
+@@ -65,7 +67,7 @@ class Parser:
+             return ("neg", self.unary())
+         if self.accept("+") is not None:
+             return self.unary()
+-        return self.atom()
++        return self.power()
+ 
+     def atom(self):
+         tok = self.peek()

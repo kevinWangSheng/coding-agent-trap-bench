@@ -1,0 +1,24 @@
+{
+  "run_id": "A2-pytest__opus-5.5__r1",
+  "task": "A2-pytest",
+  "model": "opus-5.5",
+  "model_id": "claude-opus-5-5",
+  "cli": "claude",
+  "rep": 1,
+  "prompt_file": "prompt.md",
+  "prompt": "Bug report for the pytest repository in ./repo.\n\n`MonkeyPatch.setattr` leaves a new item in `vars(target)` after cleanup when overriding an inherited attribute of a non-class object.\n\nIf the inherited attribute is not a descriptor, a reference to the inherited attribute gets left in `vars(target)` after cleanup. This is not particularly problematic usually, but it consumes some memory and leaves the target in a different state than it was in before monkeypatching.\n\nIf the inherited attribute is a `__get__` descriptor, however, this bug is problematic. The result of descriptor binding will get computed once and stored in `vars(target)` during cleanup, blocking the descriptor's dynamic lookup capability for all lookups after the `MonkeyPatch` gets torn down. This has an effect similar to using `functools.cached_property` on a property that should not be cached.\n\nPlease fix this so that after `undo()` the target object is in exactly the state it was in before patching, add regression tests, and run the relevant tests before you finish.\n\n---\nEnvironment notes are in ./ENV.md. There is no internet access (localhost works); all dependencies are already installed locally.\nThe code is in ./repo. Work only inside the current directory.\nWhen you are done, reply with a short summary: what you changed, how you verified it, and anything you could not do.",
+  "env": {
+    "SDKROOT": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+    "VIRTUAL_ENV": "~/.bench-runs/A2-pytest__opus-5.5__r1/.venv",
+    "SETUPTOOLS_SCM_PRETEND_VERSION": "9.1.0.dev0",
+    "PATH": "[redacted: PATH]"
+  },
+  "rundir": "~/.bench-runs/A2-pytest__opus-5.5__r1",
+  "timeout_min": 40,
+  "cli_version": "2.1.280 (Claude Code)",
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 79.6,
+  "reconnects": 0,
+  "api_errors": 0
+}

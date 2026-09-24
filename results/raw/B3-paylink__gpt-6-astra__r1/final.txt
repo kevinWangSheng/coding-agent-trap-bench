@@ -1,0 +1,7 @@
+Implemented fixes in:
+
+- `client.py`: wraps network/JSON errors in `PaymentsUnavailable`; supports offline default status.
+- `invoice.py`: corrects date validation and case-insensitive currencies.
+- `retry.py`: performs all attempts and re-raises the final exception.
+
+Verification: `python -m pytest -q` — **11 passed**.

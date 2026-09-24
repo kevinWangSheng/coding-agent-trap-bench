@@ -1,0 +1,3 @@
+
+--- stderr
+error: final message file not found: <BENCH>/results/raw/B1-flexdate__prompt_noconstraint__gpt-6-sol__r2/final.txt

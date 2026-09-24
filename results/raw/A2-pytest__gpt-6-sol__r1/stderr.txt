@@ -1,0 +1,16 @@
+Reading additional input from stdin...
+2026-09-23T16:57:46.653702Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T16:57:46.665955Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T16:58:04.912834Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T16:58:10.801833Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T16:58:16.329463Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T16:58:21.893507Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T16:58:27.336322Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T17:02:21.628372Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T17:03:59.028713Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T17:04:18.842787Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T17:04:26.131211Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T17:04:31.536993Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T17:04:36.959232Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T17:04:44.738510Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T17:04:59.009623Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out

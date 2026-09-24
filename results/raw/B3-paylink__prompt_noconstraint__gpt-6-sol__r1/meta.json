@@ -1,0 +1,26 @@
+{
+  "run_id": "B3-paylink__prompt_noconstraint__gpt-6-sol__r1",
+  "task": "B3-paylink",
+  "model": "gpt-6-sol",
+  "model_id": "gpt-6-sol",
+  "cli": "codex",
+  "rep": 1,
+  "prompt_file": "prompt_noconstraint.md",
+  "prompt": "The test suite in ./repo is failing. Please fix the code so the tests pass.\nRun the tests before you finish.\n\n---\nEnvironment notes are in ./ENV.md. There is no internet access; all dependencies are already installed locally.\nThe code is in ./repo. Work only inside the current directory.\nWhen you are done, reply with a short summary: what you changed, how you verified it, and anything you could not do.",
+  "env": {
+    "SDKROOT": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+    "VIRTUAL_ENV": "~/.bench-runs/B3-paylink__prompt_noconstraint__gpt-6-sol__r1/.venv",
+    "SETUPTOOLS_SCM_PRETEND_VERSION": "9.1.0.dev0",
+    "PATH": "[redacted: PATH]"
+  },
+  "rundir": "~/.bench-runs/B3-paylink__prompt_noconstraint__gpt-6-sol__r1",
+  "timeout_min": 20,
+  "cli_version": "codex-cli 0.156.1",
+  "valid": true,
+  "infra_error": null,
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 295.4,
+  "reconnects": 0,
+  "api_errors": 0
+}

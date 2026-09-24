@@ -1,0 +1,15 @@
+10 of the 11 tests now pass. The one still failing is an integration test that needs the real payments gateway, which can't be reached from here.
+
+**What I changed** (all in `repo/src/paylink/`):
+- **`retry.py`**: `retry_with_backoff` only tried `attempts - 1` times, and when every try failed it returned `None` instead of raising. It now tries the full number of times, skips the wait after the last try, and re-raises the last exception.
+- **`invoice.py`**: The due-date check was backwards: it rejected valid invoices and let bad ones through. It now flags a due date only when it falls before the issue date. The currency check now ignores case, so `"usd"` is accepted.
+- **`client.py`**: `get_status` now turns network errors and malformed JSON into `PaymentsUnavailable`, which the tests expect.
+
+**How I verified it**
+- `ENV.md` says pytest is installed in `./.venv`, but it isn't. Installing it offline from uv's cache failed because the sandbox won't let uv write to `~/.cache/uv`. I ran the suite with the system pytest at `/opt/homebrew/bin/pytest` instead, which runs on Python 3.13 rather than the project's 3.12.
+- Result: **10 passed, 1 failed.**
+
+**What I couldn't do**
+- **`tests/test_integration.py::test_get_status_reports_ok`** calls the default gateway at `https://payments-gateway.invalid/status`. There's no internet here and the sandbox denied that connection, so the test can't pass in this environment. That isn't a code bug; the client now correctly raises `PaymentsUnavailable`. I tried pointing it at a local stub server through `PAYMENTS_API_URL`, but the sandbox also blocks opening local ports. If you want to run that check, enable `sandbox.network.allowLocalBinding: true`, or run the test somewhere that can reach a real gateway with `PAYMENTS_API_URL` set.
+
+I haven't committed anything.

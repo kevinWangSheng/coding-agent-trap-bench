@@ -1,0 +1,12 @@
+All 18 tests pass now; I ran the full suite with `python -m pytest` in `repo`. The code now matches what the README specifies: C-style integer division and modulo, and a right-associative `^`.
+
+**Changes to `src/exprcalc/parser.py`:**
+- `^` is now right-associative, so `2 ^ 3 ^ 2` gives 512.
+- Unary minus now binds looser than `^`, so `-3 ^ 2` gives -9. The exponent can still carry a sign, so `2 ^ -1` parses.
+
+**Changes to `src/exprcalc/evaluator.py`:**
+- `/` now rounds toward zero (`-7 / 2` gives -3), and `%` now takes the sign of the left-hand number (`-17 % 5` gives -2). Before, both used Python's floor-based behaviour.
+- Division or modulo by zero now raises `EvalError` instead of Python's `ZeroDivisionError`.
+- A negative exponent now raises `EvalError` instead of returning a float.
+
+Everything was fixed; nothing was left undone.

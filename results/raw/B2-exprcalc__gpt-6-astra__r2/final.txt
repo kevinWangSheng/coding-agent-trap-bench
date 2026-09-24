@@ -1,0 +1,14 @@
+Implemented the expression evaluation fixes:
+
+- Corrected exponent precedence and right associativity.
+- Added truncation-toward-zero division.
+- Fixed modulo sign behavior.
+- Added `EvalError` handling for division by zero and negative exponents.
+
+Verified with:
+
+```text
+18 passed
+```
+
+No tests were modified.

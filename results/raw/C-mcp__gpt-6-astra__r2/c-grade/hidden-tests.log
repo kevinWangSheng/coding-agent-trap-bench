@@ -1,0 +1,225 @@
+✔ app: discover identifies field-notes 1.0.0 with instructions and capabilities (20.423916ms)
+✔ app: tools/list returns the three tools alphabetically with schemas (2.30075ms)
+✔ app: add_note exposes notebook via x-mcp-header Notebook (2.874875ms)
+✔ app: add_note returns structured output matching its schema plus JSON text (3.545833ms)
+✔ app: add_note ids are sequential and never reused (10.490417ms)
+✔ app: add_note invalid arguments are tool execution errors (7.639042ms)
+✔ app: unknown tool is a protocol error -32602 (1.875083ms)
+✔ app: reindex reports progress on the request's stream (88.320291ms)
+✔ app: reindex numeric progress token and defaults (7.783375ms)
+✔ app: reindex without a progress token sends no progress (2.107208ms)
+✔ app: reindex out-of-range arguments are tool execution errors (8.384208ms)
+✔ app: resources/list returns only notes://index (1.481583ms)
+✔ app: resources/templates/list returns the note template (1.992417ms)
+✔ app: notes://index lists notes by numeric id with seeds (20.139916ms)
+✔ app: reading a note returns markdown (5.966834ms)
+✔ app: reading a missing note is -32602 (not the old -32002) (5.62525ms)
+✔ app: prompts/list describes summarize_notebook (1.710291ms)
+✔ app: summarize_notebook embeds the notebook's notes (7.480834ms)
+✔ app: summarize_notebook detailed style and empty notebook (3.858875ms)
+✔ app: summarize_notebook invalid arguments are -32602 (5.499625ms)
+✔ app: delete_note asks for confirmation with an input_required result (5.846666ms)
+✔ app: delete_note deletes after the user accepts (8.358292ms)
+✔ app: delete_note decline, cancel or confirm:false keeps the note (27.208792ms)
+✔ app: delete_note on a missing note is a tool execution error (3.376083ms)
+✖ app: delete_note without elicitation capability is -32021 (HTTP 400) (5.153916ms)
+✔ app: a confirmation for one note cannot delete another (12.718042ms)
+✔ app: a tampered or forged requestState is rejected (11.315584ms)
+✖ app: subscriptions deliver resource updates for watched URIs (11.925916ms)
+✔ app: subscriptions only notify watchers of the changed URI (316.654583ms)
+✖ app: acknowledgment omits list-change types the server does not offer (6.102083ms)
+✔ app: request-scoped progress never appears on a listen stream (243.373125ms)
+✔ spec: every result carries resultType complete (31.063666ms)
+✔ spec: discover identifies the server in _meta serverInfo (2.395792ms)
+✔ spec: discover has no legacy initialize-result fields (2.160083ms)
+✖ spec: cacheable results carry ttlMs/cacheScope per README policy (2.423334ms)
+✔ spec: tools/list order is deterministic (2.720083ms)
+✔ spec: missing required _meta fields -> 400 / -32602 (5.521709ms)
+✔ spec: clientInfo is optional (1.820917ms)
+✖ spec: unsupported protocol version -> 400 / -32022 with supported list (1.932459ms)
+✔ spec: MCP-Protocol-Version header missing or mismatched -> 400 / -32020 (2.390416ms)
+✔ spec: Mcp-Method header missing or mismatched -> 400 / -32020 (3.566958ms)
+✔ spec: Mcp-Name required and validated for tools/call, prompts/get, resources/read (10.754958ms)
+✔ spec: base64-encoded Mcp-Name is decoded before comparison (1.859416ms)
+✖ spec: Mcp-Param-Notebook must be present and match the body (1.936708ms)
+✖ spec: Mcp-Param-Notebook base64 values are decoded before comparison (5.436708ms)
+✔ spec: removed methods are unknown (404 / -32601) (7.058042ms)
+✔ spec: errors preserve the request id (2.027291ms)
+✖ spec: no GET/DELETE endpoint (405) (0.464083ms)
+✔ spec: Mcp-Session-Id is ignored and never issued (3.402792ms)
+✔ spec: Last-Event-ID is ignored (1.768209ms)
+✔ spec: Origin validation (403 for foreign origins) (5.16875ms)
+✖ spec: client notifications are accepted with 202 and no body (1.737916ms)
+✔ spec: no log notifications without a requested logLevel (4.635125ms)
+✔ spec: server sends no JSON-RPC requests on response streams (4.498625ms)
+✔ spec: malformed JSON is a parse error (1.830459ms)
+ℹ tests 55
+ℹ suites 0
+ℹ pass 46
+ℹ fail 9
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1124.314333
+
+✖ failing tests:
+
+test at app.test.ts:320:1
+✖ app: delete_note without elicitation capability is -32021 (HTTP 400) (5.153916ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 400
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:323:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at app.test.ts:367:1
+✖ app: subscriptions deliver resource updates for watched URIs (11.925916ms)
+  AssertionError [ERR_ASSERTION]: tagged with subscriptionId
+  + actual - expected
+  
+  + undefined
+  - 'sub-a'
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:394:14)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'sub-a',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at app.test.ts:427:1
+✖ app: acknowledgment omits list-change types the server does not offer (6.102083ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to: true
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:436:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: true,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:38:1
+✖ spec: cacheable results carry ttlMs/cacheScope per README policy (2.423334ms)
+  AssertionError [ERR_ASSERTION]: server/discover ttlMs
+  + actual - expected
+  
+  + 3600000
+  - 300000
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:41:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 3600000,
+    expected: 300000,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:77:1
+✖ spec: unsupported protocol version -> 400 / -32022 with supported list (1.932459ms)
+  AssertionError [ERR_ASSERTION]: 2025-11-25
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:82:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:128:1
+✖ spec: Mcp-Param-Notebook must be present and match the body (1.936708ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 400
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:131:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:141:1
+✖ spec: Mcp-Param-Notebook base64 values are decoded before comparison (5.436708ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 400
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:158:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:184:1
+✖ spec: no GET/DELETE endpoint (405) (0.464083ms)
+  AssertionError [ERR_ASSERTION]: GET
+  
+  404 !== 405
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:188:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 405,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:217:1
+✖ spec: client notifications are accepted with 202 and no body (1.737916ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  400 !== 202
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:223:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 400,
+    expected: 202,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

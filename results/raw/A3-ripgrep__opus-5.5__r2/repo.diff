@@ -1,0 +1,238 @@
+diff --git a/crates/ignore/src/walk.rs b/crates/ignore/src/walk.rs
+index 93e6cf1..386b091 100644
+--- a/crates/ignore/src/walk.rs
++++ b/crates/ignore/src/walk.rs
+@@ -1445,27 +1445,43 @@ impl WalkParallel {
+         let quit_now = Arc::new(AtomicBool::new(false));
+         let active_workers = Arc::new(AtomicUsize::new(threads));
+         let stacks = Stack::new_for_each_thread(threads, stack);
+-        std::thread::scope(|s| {
+-            let handles: Vec<_> = stacks
++        // Build every worker (and thus every visitor) before spawning any
++        // threads. If the caller's builder panics, then no worker threads
++        // have been started yet, so the panic can propagate without leaving
++        // any spawned workers waiting forever for peers that never started.
++        let workers: Vec<Worker<'_>> = stacks
++            .into_iter()
++            .map(|stack| Worker {
++                visitor: builder.build(),
++                stack,
++                quit_now: quit_now.clone(),
++                active_workers: active_workers.clone(),
++                max_depth: self.max_depth,
++                min_depth: self.min_depth,
++                max_filesize: self.max_filesize,
++                follow_links: self.follow_links,
++                skip: self.skip.clone(),
++                filter: self.filter.clone(),
++            })
++            .collect();
++        let panic = std::thread::scope(|s| {
++            let handles: Vec<_> = workers
+                 .into_iter()
+-                .map(|stack| Worker {
+-                    visitor: builder.build(),
+-                    stack,
+-                    quit_now: quit_now.clone(),
+-                    active_workers: active_workers.clone(),
+-                    max_depth: self.max_depth,
+-                    min_depth: self.min_depth,
+-                    max_filesize: self.max_filesize,
+-                    follow_links: self.follow_links,
+-                    skip: self.skip.clone(),
+-                    filter: self.filter.clone(),
+-                })
+                 .map(|worker| s.spawn(|| worker.run()))
+                 .collect();
++            // Join every thread before propagating a panic, so that we
++            // re-raise the original panic payload rather than a generic one.
++            let mut panic = None;
+             for handle in handles {
+-                handle.join().unwrap();
++                if let Err(err) = handle.join() {
++                    panic.get_or_insert(err);
++                }
+             }
++            panic
+         });
++        if let Some(err) = panic {
++            std::panic::resume_unwind(err);
++        }
+     }
+ 
+     fn threads(&self) -> usize {
+@@ -1905,6 +1921,13 @@ impl<'s> Worker<'s> {
+                     }
+                     // Wait for next `Work` or `Quit` message.
+                     loop {
++                        // If another worker requested that everyone quit
++                        // (e.g., because it panicked), then stop waiting.
++                        if self.is_quit_now() {
++                            self.activate_worker();
++                            value = Some(Message::Quit);
++                            break;
++                        }
+                         if let Some(v) = self.recv() {
+                             self.activate_worker();
+                             value = Some(v);
+@@ -1958,6 +1981,20 @@ impl<'s> Worker<'s> {
+     }
+ }
+ 
++impl<'s> Drop for Worker<'s> {
++    fn drop(&mut self) {
++        // If this worker is being dropped because the caller's callback
++        // panicked, then this worker will never deactivate itself. Without
++        // intervention, the other workers would then wait forever for it to
++        // do so. So tell all workers to quit instead, which lets the panic
++        // propagate to the caller of `WalkParallel::visit`.
++        if std::thread::panicking() {
++            self.quit_now();
++            self.send_quit();
++        }
++    }
++}
++
+ fn check_symlink_loop(
+     ig_parent: &Ignore,
+     child_path: &Path,
+@@ -2604,4 +2641,139 @@ mod tests {
+             ],
+         );
+     }
++
++    /// Creates a directory tree with enough entries to keep many parallel
++    /// workers busy.
++    fn mk_panic_tree() -> TempDir {
++        let td = tmpdir();
++        for i in 0..10 {
++            for j in 0..10 {
++                let dir = td.path().join(format!("d{i}/e{j}"));
++                mkdirp(&dir);
++                for k in 0..5 {
++                    wfile(dir.join(format!("f{k}")), "");
++                }
++            }
++        }
++        td
++    }
++
++    /// Runs `f` on a separate thread and asserts that it panics with a
++    /// message containing `expected` within a generous timeout. A timeout
++    /// indicates a deadlock, which is reported as a test failure instead of
++    /// hanging the test suite.
++    fn assert_panics_without_hang<F>(expected: &str, f: F)
++    where
++        F: FnOnce() + Send + 'static,
++    {
++        use std::panic::{AssertUnwindSafe, catch_unwind};
++        use std::sync::mpsc;
++        use std::time::Duration;
++
++        let (tx, rx) = mpsc::channel();
++        std::thread::spawn(move || {
++            let result = catch_unwind(AssertUnwindSafe(f));
++            let _ = tx.send(result.map_err(|payload| {
++                if let Some(s) = payload.downcast_ref::<&str>() {
++                    s.to_string()
++                } else if let Some(s) = payload.downcast_ref::<String>() {
++                    s.clone()
++                } else {
++                    "<non-string panic payload>".to_string()
++                }
++            }));
++        });
++        match rx.recv_timeout(Duration::from_secs(30)) {
++            Ok(Ok(())) => panic!("expected parallel walk to panic"),
++            Ok(Err(msg)) => assert!(
++                msg.contains(expected),
++                "unexpected panic message: {msg:?}",
++            ),
++            Err(_) => panic!("parallel walk deadlocked after a panic"),
++        }
++    }
++
++    #[test]
++    fn parallel_visitor_panic_does_not_hang() {
++        let td = Arc::new(mk_panic_tree());
++        for threads in [1, 2, 8, 40] {
++            for _ in 0..5 {
++                let td = td.clone();
++                assert_panics_without_hang("oops!", move || {
++                    WalkBuilder::new(td.path())
++                        .threads(threads)
++                        .build_parallel()
++                        .run(|| Box::new(|_| panic!("oops!")));
++                });
++            }
++        }
++    }
++
++    #[test]
++    fn parallel_visitor_panic_on_deep_entry_does_not_hang() {
++        let td = Arc::new(mk_panic_tree());
++        for threads in [2, 8, 40] {
++            for _ in 0..5 {
++                let td = td.clone();
++                assert_panics_without_hang("deep oops!", move || {
++                    WalkBuilder::new(td.path())
++                        .threads(threads)
++                        .build_parallel()
++                        .run(|| {
++                            Box::new(|result| {
++                                if result.unwrap().depth() >= 3 {
++                                    panic!("deep oops!");
++                                }
++                                WalkState::Continue
++                            })
++                        });
++                });
++            }
++        }
++    }
++
++    #[test]
++    fn parallel_visitor_builder_panic_does_not_hang() {
++        use std::sync::atomic::{AtomicUsize, Ordering};
++
++        let td = Arc::new(mk_panic_tree());
++        // Panic on various build() calls: the first one is used for the root
++        // paths, the rest are used for each worker thread.
++        for panic_at in [0, 1, 2, 5, 39] {
++            let td = td.clone();
++            assert_panics_without_hang("build oops!", move || {
++                let count = AtomicUsize::new(0);
++                WalkBuilder::new(td.path()).threads(40).build_parallel().run(
++                    || {
++                        if count.fetch_add(1, Ordering::SeqCst) == panic_at {
++                            panic!("build oops!");
++                        }
++                        Box::new(|_| WalkState::Continue)
++                    },
++                );
++            });
++        }
++    }
++
++    #[test]
++    fn parallel_filter_panic_does_not_hang() {
++        let td = Arc::new(mk_panic_tree());
++        for threads in [2, 8, 40] {
++            for _ in 0..5 {
++                let td = td.clone();
++                assert_panics_without_hang("filter oops!", move || {
++                    WalkBuilder::new(td.path())
++                        .threads(threads)
++                        .filter_entry(|dent| {
++                            if dent.depth() >= 2 {
++                                panic!("filter oops!");
++                            }
++                            true
++                        })
++                        .build_parallel()
++                        .run(|| Box::new(|_| WalkState::Continue));
++                });
++            }
++        }
++    }
+ }

@@ -1,0 +1,12 @@
+Implemented a SQLite multi-statement scaling fix in [virtual.rs](~/.bench-runs/D-sqlx__gpt-6-sol__r1/repo/sqlx-sqlite/src/statement/virtual.rs).
+
+- Splits scripts into bounded SQL slices before preparing statements, avoiding repeated parsing of the entire remaining script.
+- Handles quoted strings, identifiers, comments, and trigger bodies.
+- Added focused splitter tests.
+- SQLite test suite passed: 44 runnable integration tests.
+- Benchmark results:
+
+  - Before: 16k statements ~325 ms; 32k ~1.3 s
+  - After: 16k ~113 ms; 32k ~252 ms
+
+Focused unit tests passed. A final direct cargo invocation hit the repository’s Rust version/MSRV mismatch, but the same code compiled and passed through the configured workspace test run.

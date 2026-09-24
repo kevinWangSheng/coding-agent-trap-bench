@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testcase name="app: discover identifies field-notes 1.0.0 with instructions and capabilities" time="0.023637" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: tools/list returns the three tools alphabetically with schemas" time="0.002130" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: add_note exposes notebook via x-mcp-header Notebook" time="0.003267" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: add_note returns structured output matching its schema plus JSON text" time="0.003506" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: add_note ids are sequential and never reused" time="0.011237" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: add_note invalid arguments are tool execution errors" time="0.011707" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: unknown tool is a protocol error -32602" time="0.000819" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: reindex reports progress on the request's stream" time="0.087202" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: reindex numeric progress token and defaults" time="0.009464" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: reindex without a progress token sends no progress" time="0.004667" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: reindex out-of-range arguments are tool execution errors" time="0.010892" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: resources/list returns only notes://index" time="0.002238" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: resources/templates/list returns the note template" time="0.001755" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: notes://index lists notes by numeric id with seeds" time="0.019838" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: reading a note returns markdown" time="0.005471" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: reading a missing note is -32602 (not the old -32002)" time="0.007458" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: prompts/list describes summarize_notebook" time="0.001770" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: summarize_notebook embeds the notebook's notes" time="0.005313" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: summarize_notebook detailed style and empty notebook" time="0.004366" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: summarize_notebook invalid arguments are -32602" time="0.006763" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: delete_note asks for confirmation with an input_required result" time="0.006153" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: delete_note deletes after the user accepts" time="0.011012" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: delete_note decline, cancel or confirm:false keeps the note" time="0.021411" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: delete_note on a missing note is a tool execution error" time="0.001773" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: delete_note without elicitation capability is -32021 (HTTP 400)" time="0.007223" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: a confirmation for one note cannot delete another" time="0.010305" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: a tampered or forged requestState is rejected" time="0.011487" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: subscriptions deliver resource updates for watched URIs" time="0.012105" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: subscriptions only notify watchers of the changed URI" time="0.309349" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: acknowledgment omits list-change types the server does not offer" time="0.005177" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="app: request-scoped progress never appears on a listen stream" time="0.237004" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts"/>
+	<testcase name="spec: every result carries resultType complete" time="0.037176" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: discover identifies the server in _meta serverInfo" time="0.002377" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: discover has no legacy initialize-result fields" time="0.002001" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: cacheable results carry ttlMs/cacheScope per README policy" time="0.012271" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: tools/list order is deterministic" time="0.002213" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: missing required _meta fields -> 400 / -32602" time="0.005167" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: clientInfo is optional" time="0.001790" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: unsupported protocol version -> 400 / -32022 with supported list" time="0.003890" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: MCP-Protocol-Version header missing or mismatched -> 400 / -32020" time="0.003311" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: Mcp-Method header missing or mismatched -> 400 / -32020" time="0.003509" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: Mcp-Name required and validated for tools/call, prompts/get, resources/read" time="0.012520" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: base64-encoded Mcp-Name is decoded before comparison" time="0.003280" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: Mcp-Param-Notebook must be present and match the body" time="0.005070" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: Mcp-Param-Notebook base64 values are decoded before comparison" time="0.006188" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: removed methods are unknown (404 / -32601)" time="0.002236" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts" failure="initialize&#10;&#10;400 !== 404&#10;">
+		<failure type="testCodeFailure" message="initialize&#10;&#10;400 !== 404">
+[Error [ERR_TEST_FAILURE]: initialize
+
+400 !== 404
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: initialize
+  
+  400 !== 404
+  
+      at TestContext.&lt;anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:172:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 400,
+    expected: 404,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="spec: errors preserve the request id" time="0.003590" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: no GET/DELETE endpoint (405)" time="0.003832" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: Mcp-Session-Id is ignored and never issued" time="0.004418" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: Last-Event-ID is ignored" time="0.001943" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: Origin validation (403 for foreign origins)" time="0.005082" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: client notifications are accepted with 202 and no body" time="0.001795" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: no log notifications without a requested logLevel" time="0.004399" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: server sends no JSON-RPC requests on response streams" time="0.004016" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<testcase name="spec: malformed JSON is a parse error" time="0.001848" classname="test" file="<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts"/>
+	<!-- tests 55 -->
+	<!-- suites 0 -->
+	<!-- pass 54 -->
+	<!-- fail 1 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 0 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 1151.232333 -->
+</testsuites>

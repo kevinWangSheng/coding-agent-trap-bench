@@ -1,0 +1,12 @@
+Implemented fixes in:
+
+- `src/exprcalc/parser.py`
+  - Correct right-associative exponentiation
+  - Correct unary minus precedence
+  - Support signed exponents
+
+- `src/exprcalc/evaluator.py`
+  - C-style truncating division and remainder
+  - `EvalError` for division by zero and negative exponents
+
+Verification: `18 passed` with `pytest -q`; compilation and diff checks also passed.

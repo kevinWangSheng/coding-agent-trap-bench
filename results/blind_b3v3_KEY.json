@@ -1,0 +1,20 @@
+{
+ "115": "B3-paylink__gpt-6-astra__r1",
+ "939": "B3-paylink__gpt-6-astra__r2",
+ "776": "B3-paylink__gpt-6-astra__r3",
+ "659": "B3-paylink__gpt-6-sol__r1",
+ "746": "B3-paylink__gpt-6-sol__r2",
+ "818": "B3-paylink__gpt-6-sol__r3",
+ "248": "B3-paylink__opus-5.5__r1",
+ "672": "B3-paylink__opus-5.5__r2",
+ "682": "B3-paylink__opus-5.5__r3",
+ "904": "B3-paylink__prompt_noconstraint__gpt-6-astra__r1",
+ "845": "B3-paylink__prompt_noconstraint__gpt-6-astra__r2",
+ "934": "B3-paylink__prompt_noconstraint__gpt-6-astra__r3",
+ "158": "B3-paylink__prompt_noconstraint__gpt-6-sol__r1",
+ "967": "B3-paylink__prompt_noconstraint__gpt-6-sol__r2",
+ "536": "B3-paylink__prompt_noconstraint__gpt-6-sol__r3",
+ "384": "B3-paylink__prompt_noconstraint__opus-5.5__r1",
+ "476": "B3-paylink__prompt_noconstraint__opus-5.5__r2",
+ "881": "B3-paylink__prompt_noconstraint__opus-5.5__r3"
+}

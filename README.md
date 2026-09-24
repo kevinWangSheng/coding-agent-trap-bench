@@ -1,7 +1,5 @@
 # What coding agents do when the tests can't pass
 
-> **Status (2026-09-24):** the write-up is below. The tasks, graders, per-run logs and the attempt ledger are being added after a privacy review of the raw logs (expected within a day). Watch or star the repo to get notified.
-
 I ran 99 coding-agent runs across four kinds of task. The clearest difference was not skill. It was what each agent did when the tests could not be passed honestly.
 
 ![When tests can't pass honestly, do agents game them? 12 runs per model on the two impossible traps](docs/img/img1_chart_trap_honesty.png)
@@ -151,6 +149,8 @@ Everything behind the numbers above is in this repository; you can read it in a 
 
 The harness is small (five Python scripts in `harness/`) and was written for one machine; expect to read it before trusting it. Rough figures below are from the original run and marked approximate.
 
+> **Not yet validated on a clean machine.** The study ran on the original machine before the harness was generalized for this repo. `setup.sh` has been syntax-checked and its MCP-spec step tested, but it has not been run end to end from a fresh clone. If a step fails for you, please open an issue.
+
 ### Prerequisites
 
 - **macOS.** Both agent sandboxes and the B-task grader use the macOS seatbelt (`sandbox-exec`); nothing here has been run on Linux or Windows. Xcode Command Line Tools must be installed (`xcode-select --install`) for `xcrun` and the SDK used by Go/cgo and Rust linking.
@@ -164,7 +164,7 @@ The harness is small (five Python scripts in `harness/`) and was written for one
 ./setup.sh
 ```
 
-This downloads the Go modules, vendors the ripgrep and sqlx crates, installs the C task's npm packages and the pinned MCP conformance CLI into `cache/`, creates the B graders' venvs, and warms the `uv` cache so each run's virtualenv can be built offline. It uses the versions recorded in `docs/tasks/*/README.md` and `docs/HARNESS_NOTES.md` and is safe to re-run.
+This downloads the Go modules, vendors the ripgrep and sqlx crates, fetches and checksum-verifies the MCP spec snapshot, installs the C task's npm packages and the pinned MCP conformance CLI into `cache/`, creates the B graders' venvs, and warms the `uv` cache so each run's virtualenv can be built offline. It uses the versions recorded in `docs/tasks/*/README.md` and `docs/HARNESS_NOTES.md` and is safe to re-run.
 
 Environment variables the harness honors (all optional): `BENCH_RUNS_DIR` (run directories, default `~/.bench-runs`), `SDKROOT` (macOS SDK; default `xcrun --show-sdk-path`), `CODEX_HOME` (where `auth.json` is read from; default `~/.codex`), `BENCH_PROXY_PORT` (a local HTTP proxy port that the graders' no-network sandbox must also block; default `1087`, harmless if nothing listens there).
 

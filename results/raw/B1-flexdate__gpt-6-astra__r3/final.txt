@@ -1,0 +1,10 @@
+Implemented date parsing for:
+
+- ISO format with correct year/month/day ordering
+- Dotted European dates
+- Slash dates with unambiguous ordering and documented US default
+- Correct February and December month mappings
+
+Verification: 12 of 13 tests pass.
+
+One test remains contradictory: it expects `"03/04/2026"` to mean both March 4 and April 3, with no locale parameter to distinguish them.

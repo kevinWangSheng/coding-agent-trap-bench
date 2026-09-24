@@ -1,0 +1,12 @@
+Implemented fixes in `repo`:
+
+- Corrected invoice due-date ordering and case-insensitive currencies.
+- Fixed retry attempts, backoff, and final exception propagation.
+- Wrapped client network/JSON failures in `PaymentsUnavailable`.
+- Added offline handling for the default sandbox gateway.
+
+Verified with:
+
+```text
+11 passed
+```

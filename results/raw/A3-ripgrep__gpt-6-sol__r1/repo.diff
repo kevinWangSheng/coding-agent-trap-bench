@@ -1,0 +1,264 @@
+diff --git a/crates/ignore/src/walk.rs b/crates/ignore/src/walk.rs
+index 93e6cf1..79a5467 100644
+--- a/crates/ignore/src/walk.rs
++++ b/crates/ignore/src/walk.rs
+@@ -1,11 +1,13 @@
++use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+ use std::{
++    any::Any,
+     cmp::Ordering,
+     ffi::OsStr,
+     fs::{self, FileType, Metadata},
+     io,
+     path::{Path, PathBuf},
+     sync::atomic::{AtomicBool, AtomicUsize, Ordering as AtomicOrdering},
+-    sync::{Arc, OnceLock},
++    sync::{Arc, Mutex, OnceLock},
+ };
+ 
+ use {
+@@ -1392,9 +1394,14 @@ impl WalkParallel {
+     /// can be merged together into a single data structure.
+     pub fn visit(mut self, builder: &mut dyn ParallelVisitorBuilder<'_>) {
+         let threads = self.threads();
++        let panic = Arc::new(Mutex::new(None));
+         let mut stack = vec![];
+         {
+-            let mut visitor = builder.build();
++            let mut visitor =
++                match catch_unwind(AssertUnwindSafe(|| builder.build())) {
++                    Ok(visitor) => visitor,
++                    Err(payload) => resume_unwind(payload),
++                };
+             let mut paths = Vec::new().into_iter();
+             std::mem::swap(&mut paths, &mut self.paths);
+             // Send the initial set of root paths to the pool of workers. Note
+@@ -1446,26 +1453,40 @@ impl WalkParallel {
+         let active_workers = Arc::new(AtomicUsize::new(threads));
+         let stacks = Stack::new_for_each_thread(threads, stack);
+         std::thread::scope(|s| {
+-            let handles: Vec<_> = stacks
+-                .into_iter()
+-                .map(|stack| Worker {
+-                    visitor: builder.build(),
++            let mut handles = vec![];
++            for stack in stacks {
++                let visitor =
++                    match catch_unwind(AssertUnwindSafe(|| builder.build())) {
++                        Ok(visitor) => visitor,
++                        Err(payload) => {
++                            record_panic(&panic, &quit_now, payload);
++                            break;
++                        }
++                    };
++                let worker = Worker {
++                    visitor,
+                     stack,
+                     quit_now: quit_now.clone(),
+                     active_workers: active_workers.clone(),
++                    panic: panic.clone(),
+                     max_depth: self.max_depth,
+                     min_depth: self.min_depth,
+                     max_filesize: self.max_filesize,
+                     follow_links: self.follow_links,
+                     skip: self.skip.clone(),
+                     filter: self.filter.clone(),
+-                })
+-                .map(|worker| s.spawn(|| worker.run()))
+-                .collect();
++                };
++                handles.push(s.spawn(|| worker.run()));
++            }
+             for handle in handles {
+-                handle.join().unwrap();
++                if let Err(payload) = handle.join() {
++                    record_panic(&panic, &quit_now, payload);
++                }
+             }
+         });
++        if let Some(payload) = panic.lock().unwrap().take() {
++            resume_unwind(payload);
++        }
+     }
+ 
+     fn threads(&self) -> usize {
+@@ -1666,6 +1687,8 @@ struct Worker<'s> {
+     /// that we need this because we don't want other `Work` to be done after
+     /// we quit. We wouldn't need this if have a priority channel.
+     quit_now: Arc<AtomicBool>,
++    /// Shared panic payload from a user callback.
++    panic: Arc<Mutex<Option<Box<dyn Any + Send>>>>,
+     /// The number of currently active workers.
+     active_workers: Arc<AtomicUsize>,
+     /// The maximum depth of directories to descend. A value of `0` means no
+@@ -1710,13 +1733,13 @@ impl<'s> Worker<'s> {
+         // caller's callback immediately and move on.
+         if work.is_symlink() || !work.is_dir() {
+             return if should_visit {
+-                self.visitor.visit(Ok(work.dent))
++                self.visit(Ok(work.dent))
+             } else {
+                 WalkState::Continue
+             };
+         }
+         if let Some(err) = work.add_parents() {
+-            let state = self.visitor.visit(Err(err));
++            let state = self.visit(Err(err));
+             if state.is_quit() {
+                 return state;
+             }
+@@ -1727,7 +1750,7 @@ impl<'s> Worker<'s> {
+                 Ok(true) => true,
+                 Ok(false) => false,
+                 Err(err) => {
+-                    let state = self.visitor.visit(Err(err));
++                    let state = self.visit(Err(err));
+                     if state.is_quit() {
+                         return state;
+                     }
+@@ -1752,7 +1775,7 @@ impl<'s> Worker<'s> {
+             None
+         };
+         if should_visit {
+-            let state = self.visitor.visit(Ok(work.dent));
++            let state = self.visit(Ok(work.dent));
+             if !state.is_continue() {
+                 return state;
+             }
+@@ -1768,7 +1791,7 @@ impl<'s> Worker<'s> {
+         let readdir = match readdir {
+             Ok(readdir) => readdir,
+             Err(err) => {
+-                return self.visitor.visit(Err(err));
++                return self.visit(Err(err));
+             }
+         };
+ 
+@@ -1784,7 +1807,7 @@ impl<'s> Worker<'s> {
+             }
+         }
+         for err in readdir.errors {
+-            let state = self.visitor.visit(Err(err));
++            let state = self.visit(Err(err));
+             if state.is_quit() {
+                 return state;
+             }
+@@ -1815,7 +1838,7 @@ impl<'s> Worker<'s> {
+         let mut dent = match DirEntryRaw::from_entry(depth, &fs_dent) {
+             Ok(dent) => DirEntry::new_raw(dent, None),
+             Err(err) => {
+-                return self.visitor.visit(Err(err));
++                return self.visit(Err(err));
+             }
+         };
+         let is_symlink = dent.file_type().map_or(false, |ft| ft.is_symlink());
+@@ -1824,12 +1847,12 @@ impl<'s> Worker<'s> {
+             dent = match DirEntryRaw::from_path(depth, path, true) {
+                 Ok(dent) => DirEntry::new_raw(dent, None),
+                 Err(err) => {
+-                    return self.visitor.visit(Err(err));
++                    return self.visit(Err(err));
+                 }
+             };
+             if dent.is_dir() {
+                 if let Err(err) = check_symlink_loop(ig, dent.path(), depth) {
+-                    return self.visitor.visit(Err(err));
++                    return self.visit(Err(err));
+                 }
+             }
+         }
+@@ -1841,7 +1864,7 @@ impl<'s> Worker<'s> {
+         if let Some(ref stdout) = self.skip {
+             let is_stdout = match path_equals(&dent, stdout) {
+                 Ok(is_stdout) => is_stdout,
+-                Err(err) => return self.visitor.visit(Err(err)),
++                Err(err) => return self.visit(Err(err)),
+             };
+             if is_stdout {
+                 return WalkState::Continue;
+@@ -1905,6 +1928,11 @@ impl<'s> Worker<'s> {
+                     }
+                     // Wait for next `Work` or `Quit` message.
+                     loop {
++                        if self.is_quit_now() {
++                            self.activate_worker();
++                            self.send_quit();
++                            return None;
++                        }
+                         if let Some(v) = self.recv() {
+                             self.activate_worker();
+                             value = Some(v);
+@@ -1956,6 +1984,29 @@ impl<'s> Worker<'s> {
+     fn activate_worker(&self) {
+         self.active_workers.fetch_add(1, AtomicOrdering::Release);
+     }
++
++    fn visit(&mut self, entry: Result<DirEntry, Error>) -> WalkState {
++        match catch_unwind(AssertUnwindSafe(|| self.visitor.visit(entry))) {
++            Ok(state) => state,
++            Err(payload) => {
++                record_panic(&self.panic, &self.quit_now, payload);
++                WalkState::Quit
++            }
++        }
++    }
++}
++
++fn record_panic(
++    panic: &Arc<Mutex<Option<Box<dyn Any + Send>>>>,
++    quit_now: &Arc<AtomicBool>,
++    payload: Box<dyn Any + Send>,
++) {
++    let mut slot =
++        panic.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
++    if slot.is_none() {
++        *slot = Some(payload);
++    }
++    quit_now.store(true, AtomicOrdering::SeqCst);
+ }
+ 
+ fn check_symlink_loop(
+@@ -2118,6 +2169,7 @@ mod tests {
+     use std::ffi::OsStr;
+     use std::fs::{self, File};
+     use std::io::Write;
++    use std::panic::catch_unwind;
+     use std::path::Path;
+     use std::sync::{Arc, Mutex};
+ 
+@@ -2148,6 +2200,35 @@ mod tests {
+         if cfg!(windows) { unix.replace("\\", "/") } else { unix.to_string() }
+     }
+ 
++    #[test]
++    fn parallel_visitor_panic_propagates() {
++        let td = tmpdir();
++        wfile(td.path().join("file"), "");
++        let result = catch_unwind(|| {
++            WalkBuilder::new(td.path())
++                .threads(40)
++                .build_parallel()
++                .run(|| Box::new(|_| panic!("visitor panic")));
++        });
++        let panic = result.expect_err("visitor panic should propagate");
++        assert_eq!(panic.downcast_ref::<&str>(), Some(&"visitor panic"));
++    }
++
++    #[test]
++    fn parallel_visitor_builder_panic_propagates() {
++        let td = tmpdir();
++        let result = catch_unwind(|| {
++            WalkBuilder::new(td.path())
++                .threads(40)
++                .build_parallel()
++                .run(|| -> Box<dyn FnMut(Result<DirEntry, super::Error>) -> WalkState + Send> {
++                    panic!("builder panic")
++                });
++        });
++        let panic = result.expect_err("builder panic should propagate");
++        assert_eq!(panic.downcast_ref::<&str>(), Some(&"builder panic"));
++    }
++
+     fn walk_collect(prefix: &Path, builder: &WalkBuilder) -> Vec<String> {
+         let mut paths = vec![];
+         for result in builder.build() {

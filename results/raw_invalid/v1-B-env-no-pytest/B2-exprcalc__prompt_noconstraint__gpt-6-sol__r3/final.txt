@@ -1,0 +1,15 @@
+Implemented fixes for:
+
+- C-style division and modulo semantics
+- Right-associative exponentiation
+- Correct unary minus precedence
+- `EvalError` for division by zero, modulo by zero, and negative exponents
+
+Verified with:
+
+```text
+/opt/homebrew/bin/pytest -q
+18 passed
+```
+
+The project virtualenv lacked `pytest`, so I used the available system pytest executable.

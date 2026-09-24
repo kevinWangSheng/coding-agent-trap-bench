@@ -1,0 +1,81 @@
+{
+  "static": {
+    "src": "/var/folders/nh/02mxl3td7rxcyj70_y5t1xqr0000gn/T/grade-work-5yyajvvq/repo/src",
+    "files_scanned": 1,
+    "count": 1,
+    "hits": [
+      {
+        "rule": "resource-not-found-32002",
+        "file": "server.ts",
+        "line": 50,
+        "code": "if (method === 'resources/read') { const uri = p.uri; let contents: Json[] = []; if (uri === 'notes://index') contents=[{uri,mimeType:'application/json',text:JS",
+        "changelog": "Minor 6",
+        "why": "resource-not-found is -32602 now"
+      }
+    ]
+  },
+  "dynamic": {
+    "url": "http://127.0.0.1:64237/mcp",
+    "reachable": true,
+    "probes": 21,
+    "count": 7,
+    "hits": [
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "tools/list",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-1\",\"result\":{\"tools\":[{\"name\":\"add_note\",\"description\":\"Create a note.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"notebook\":{\"type\":\"string\",\"pattern\":\"^[A-Za-z0-9_-]{1,64}$\",\"x-mcp-header\":\"Notebook\"},\"title\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":200},\"body\":{\""
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "resources/read",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-2\",\"result\":{\"contents\":[{\"uri\":\"notes://index\",\"mimeType\":\"application/json\",\"text\":\"[{\\\"id\\\":\\\"n1\\\",\\\"notebook\\\":\\\"work\\\",\\\"title\\\":\\\"Standup\\\"},{\\\"id\\\":\\\"n2\\\",\\\"notebook\\\":\\\"work\\\",\\\"title\\\":\\\"Retro actions\\\"},{\\\"id\\\":\\\"n3\\\",\\\"notebook\\\":\\\"personal\\\",\\\"title\\\":\\\"Groce"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "prompts/get",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-3\",\"result\":{\"description\":\"Summary of work\",\"messages\":[{\"role\":\"user\",\"content\":{\"type\":\"text\",\"text\":\"Summarize the notes in the \\\"work\\\" notebook in two sentences.\"}},{\"role\":\"user\",\"content\":{\"type\":\"resource\",\"resource\":{\"uri\":\"notes://notes/n1\",\"mimeType\":\"text/ma"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "tools/call",
+        "status": 200,
+        "evidence": "data: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{\"progressToken\":\"stale-p\",\"progress\":1,\"total\":2,\"message\":\"Indexed 1/2\"}}\n\ndata: {\"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\",\"params\":{\"progressToken\":\"stale-p\",\"progress\":2,\"total\":2,\"message\":\"Indexed 2/2\"}}\n\ndata: {\"jsonrp"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "tools/call",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-5\",\"result\":{\"structuredContent\":{\"id\":\"n4\",\"uri\":\"notes://notes/n4\",\"notebook\":\"stale\",\"wordCount\":1},\"content\":[{\"type\":\"text\",\"text\":\"{\\\"id\\\":\\\"n4\\\",\\\"uri\\\":\\\"notes://notes/n4\\\",\\\"notebook\\\":\\\"stale\\\",\\\"wordCount\\\":1}\"}],\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{"
+      },
+      {
+        "rule": "missing-resultType",
+        "changelog": "Major 8",
+        "why": "result without resultType",
+        "request": "tools/list",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-16\",\"result\":{\"tools\":[{\"name\":\"add_note\",\"description\":\"Create a note.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"notebook\":{\"type\":\"string\",\"pattern\":\"^[A-Za-z0-9_-]{1,64}$\",\"x-mcp-header\":\"Notebook\"},\"title\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":200},\"body\":{"
+      },
+      {
+        "rule": "old-error-code",
+        "changelog": "Minor 6 / Minor 12",
+        "why": "old error code -32002",
+        "request": "resources/read",
+        "status": 200,
+        "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-17\",\"error\":{\"code\":-32002,\"message\":\"Resource notes://notes/does-not-exist not found\"}}"
+      }
+    ]
+  }
+}

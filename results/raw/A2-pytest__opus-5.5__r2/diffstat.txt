@@ -1,0 +1,4 @@
+ changelog/+monkeypatch-inherited-attr.bugfix.rst |  1 +
+ src/_pytest/monkeypatch.py                       | 21 ++++++-
+ testing/test_monkeypatch.py                      | 70 ++++++++++++++++++++++++
+ 3 files changed, 91 insertions(+), 1 deletion(-)

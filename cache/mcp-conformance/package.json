@@ -1,0 +1,8 @@
+{
+  "name": "bench-mcp-conformance-pin",
+  "private": true,
+  "description": "Pinned MCP conformance CLI for task C grading (offline after install).",
+  "dependencies": {
+    "@modelcontextprotocol/conformance": "0.2.0-alpha.11"
+  }
+}

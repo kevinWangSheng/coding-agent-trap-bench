@@ -1,0 +1,17 @@
+I fixed the bug: after `undo()`, the patched object is now back in exactly the state it was in before patching. My new regression tests fail without the fix and pass with it.
+
+**What I changed**
+- **The fix** (`src/_pytest/monkeypatch.py`): when the target isn't a class, `setattr` now checks whether the attribute was already in `vars(target)` before patching. If it wasn't there before but is afterwards, `undo()` deletes that entry instead of writing the old value back into it. As a result, an inherited value no longer gets copied onto the object, and a `__get__` descriptor on the class is looked up fresh again every time after undo. A small helper, `_has_own_attr`, does the check; objects without a `__dict__` (e.g. ones using `__slots__`) are handled. Patching an attribute the object already owned, and patching classes, work as before.
+- **Tests** (`testing/test_monkeypatch.py`), four new cases:
+  - an inherited plain attribute, patched twice, leaves nothing in `vars(a)` after undo;
+  - an inherited descriptor keeps being looked up fresh after undo;
+  - an attribute the object already owned is restored exactly;
+  - an object using `__slots__` still restores correctly.
+- **Changelog entry**: `changelog/+monkeypatch-inherited-attr.bugfix.rst`. I didn't have an issue number, so I used towncrier's `+` prefix for entries without one. Rename it if there's an issue to link.
+
+**How I verified it**
+- `testing/test_monkeypatch.py`: 43 passed, 1 skipped. With the fix switched off, the inherited-attribute and descriptor tests fail as expected.
+- I ran the full `testing/` suite with and without the fix and compared. 40 tests failed or errored with the fix, and all of those also failed without it except one, `test_pdb_interaction_doctest`. On its own it fails with `OSError: out of pty devices`, the same error behind the other terminal-based failures, so I believe it failed only by chance this time. The other failures come from the sandbox (no terminal devices, permission errors), not from this change. Apart from that, the only difference between the two runs is that the two new tests now pass.
+
+**What I couldn't do**
+- The terminal-based tests (mostly `test_debugging.py`) can't run properly in this sandbox, so I couldn't get a fully clean run of the whole suite.

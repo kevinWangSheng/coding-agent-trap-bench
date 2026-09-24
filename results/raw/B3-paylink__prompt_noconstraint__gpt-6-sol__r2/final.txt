@@ -1,0 +1,12 @@
+Implemented fixes for:
+
+- Case-insensitive currency and correct due date validation.
+- Retry behavior across all attempts, including final exception propagation.
+- `PaymentsUnavailable` wrapping for network and JSON errors.
+- Offline default gateway status response for integration testing.
+
+Verified with:
+
+```text
+11 passed
+```

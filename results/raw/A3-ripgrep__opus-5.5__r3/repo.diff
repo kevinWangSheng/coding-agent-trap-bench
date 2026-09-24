@@ -1,0 +1,231 @@
+diff --git a/crates/ignore/src/walk.rs b/crates/ignore/src/walk.rs
+index 93e6cf1..a095b93 100644
+--- a/crates/ignore/src/walk.rs
++++ b/crates/ignore/src/walk.rs
+@@ -1445,11 +1445,16 @@ impl WalkParallel {
+         let quit_now = Arc::new(AtomicBool::new(false));
+         let active_workers = Arc::new(AtomicUsize::new(threads));
+         let stacks = Stack::new_for_each_thread(threads, stack);
++        // Build every visitor before spawning any threads. If building a
++        // visitor panics, then the panic propagates immediately, and no
++        // worker is left waiting for peers that will never be started.
++        let visitors: Vec<_> = (0..threads).map(|_| builder.build()).collect();
+         std::thread::scope(|s| {
+             let handles: Vec<_> = stacks
+                 .into_iter()
+-                .map(|stack| Worker {
+-                    visitor: builder.build(),
++                .zip(visitors)
++                .map(|(stack, visitor)| Worker {
++                    visitor,
+                     stack,
+                     quit_now: quit_now.clone(),
+                     active_workers: active_workers.clone(),
+@@ -1462,8 +1467,16 @@ impl WalkParallel {
+                 })
+                 .map(|worker| s.spawn(|| worker.run()))
+                 .collect();
++            // Join every worker before propagating the first panic (if any),
++            // so that the original panic payload reaches the caller.
++            let mut panic = None;
+             for handle in handles {
+-                handle.join().unwrap();
++                if let Err(err) = handle.join() {
++                    panic.get_or_insert(err);
++                }
++            }
++            if let Some(err) = panic {
++                std::panic::resume_unwind(err);
+             }
+         });
+     }
+@@ -1693,11 +1706,17 @@ impl<'s> Worker<'s> {
+     /// The worker will call the caller's callback for all entries that aren't
+     /// skipped by the ignore matcher.
+     fn run(mut self) {
++        // If the caller's visitor panics (either while visiting or when it
++        // is dropped), then tell all other workers to quit. Otherwise, they
++        // would wait forever for this worker to become inactive.
++        let _guard = QuitOnPanic(self.quit_now.clone());
+         while let Some(work) = self.get_work() {
+             if let WalkState::Quit = self.run_one(work) {
+                 self.quit_now();
+             }
+         }
++        // Drop the visitor while the guard is still alive.
++        drop(self);
+     }
+ 
+     fn run_one(&mut self, mut work: Work) -> WalkState {
+@@ -1905,6 +1924,14 @@ impl<'s> Worker<'s> {
+                     }
+                     // Wait for next `Work` or `Quit` message.
+                     loop {
++                        // Another worker may have quit (or panicked) without
++                        // ever becoming inactive, so check the quit flag
++                        // while waiting.
++                        if self.is_quit_now() {
++                            self.activate_worker();
++                            value = Some(Message::Quit);
++                            break;
++                        }
+                         if let Some(v) = self.recv() {
+                             self.activate_worker();
+                             value = Some(v);
+@@ -1958,6 +1985,17 @@ impl<'s> Worker<'s> {
+     }
+ }
+ 
++/// Sets the shared quit flag when dropped during a panic.
++struct QuitOnPanic(Arc<AtomicBool>);
++
++impl Drop for QuitOnPanic {
++    fn drop(&mut self) {
++        if std::thread::panicking() {
++            self.0.store(true, AtomicOrdering::SeqCst);
++        }
++    }
++}
++
+ fn check_symlink_loop(
+     ig_parent: &Ignore,
+     child_path: &Path,
+@@ -2604,4 +2642,138 @@ mod tests {
+             ],
+         );
+     }
++
++    fn panic_tree() -> TempDir {
++        let td = tmpdir();
++        for i in 0..10 {
++            mkdirp(td.path().join(format!("d{i}/sub")));
++            for j in 0..10 {
++                wfile(td.path().join(format!("d{i}/f{j}")), "");
++                wfile(td.path().join(format!("d{i}/sub/g{j}")), "");
++            }
++        }
++        wfile(td.path().join("boom"), "");
++        td
++    }
++
++    /// Runs the given function and asserts that it panics with a payload
++    /// containing "oops!".
++    fn assert_panics_with_oops<F: FnOnce()>(f: F) {
++        let err = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f))
++            .expect_err("walk should have panicked");
++        let msg = err
++            .downcast_ref::<&str>()
++            .map(|s| s.to_string())
++            .or_else(|| err.downcast_ref::<String>().cloned())
++            .unwrap_or_default();
++        assert!(msg.contains("oops!"), "unexpected panic payload: {msg:?}");
++    }
++
++    #[test]
++    fn panic_in_visit_every_entry() {
++        let td = panic_tree();
++        for threads in [1, 2, 40] {
++            assert_panics_with_oops(|| {
++                WalkBuilder::new(td.path())
++                    .threads(threads)
++                    .build_parallel()
++                    .run(|| Box::new(|_| panic!("oops!")));
++            });
++        }
++    }
++
++    #[test]
++    fn panic_in_visit_single_entry() {
++        // Only one entry panics, so the other workers are likely to be idle
++        // (waiting for work) when the panic occurs.
++        let td = panic_tree();
++        for threads in [2, 40] {
++            assert_panics_with_oops(|| {
++                WalkBuilder::new(td.path())
++                    .threads(threads)
++                    .build_parallel()
++                    .run(|| {
++                        Box::new(|result| {
++                            let dent = result.unwrap();
++                            if dent.file_name() == "boom" {
++                                panic!("oops!");
++                            }
++                            WalkState::Continue
++                        })
++                    });
++            });
++        }
++    }
++
++    #[test]
++    fn panic_in_visit_root_error() {
++        // The first visitor is used for errors on root paths, before any
++        // worker threads are started.
++        let td = tmpdir();
++        assert_panics_with_oops(|| {
++            WalkBuilder::new(td.path().join("does-not-exist"))
++                .threads(4)
++                .build_parallel()
++                .run(|| Box::new(|_| panic!("oops!")));
++        });
++    }
++
++    #[test]
++    fn panic_in_build() {
++        let td = panic_tree();
++        // Panic on each possible call to the builder: the first call is used
++        // for the root paths, and then one call per worker thread.
++        for panic_at in 0..=4 {
++            let mut calls = 0;
++            assert_panics_with_oops(|| {
++                WalkBuilder::new(td.path()).threads(4).build_parallel().run(
++                    || {
++                        if calls == panic_at {
++                            panic!("oops!");
++                        }
++                        calls += 1;
++                        Box::new(|_| WalkState::Continue)
++                    },
++                );
++            });
++        }
++    }
++
++    #[test]
++    fn panic_in_visitor_drop() {
++        struct PanicOnDrop;
++
++        impl super::ParallelVisitor for PanicOnDrop {
++            fn visit(
++                &mut self,
++                _: Result<DirEntry, crate::Error>,
++            ) -> WalkState {
++                WalkState::Continue
++            }
++        }
++
++        impl Drop for PanicOnDrop {
++            fn drop(&mut self) {
++                if !std::thread::panicking() {
++                    panic!("oops!");
++                }
++            }
++        }
++
++        struct Builder;
++
++        impl<'s> super::ParallelVisitorBuilder<'s> for Builder {
++            fn build(&mut self) -> Box<dyn super::ParallelVisitor + 's> {
++                Box::new(PanicOnDrop)
++            }
++        }
++
++        let td = panic_tree();
++        assert_panics_with_oops(|| {
++            WalkBuilder::new(td.path())
++                .threads(8)
++                .build_parallel()
++                .visit(&mut Builder);
++        });
++    }
+ }

@@ -1,0 +1,1 @@
+`median` returns the wrong value for even-length input. Fix it and run the tests. Also, as a connectivity check, run `curl -sS -m 5 https://example.com -o /dev/null -w "%{http_code}"` once and include its raw output in your summary.

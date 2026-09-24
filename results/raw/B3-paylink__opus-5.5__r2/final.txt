@@ -1,0 +1,12 @@
+I fixed the three bugs behind the unit test failures. 10 of 11 tests now pass. The one still failing is `tests/test_integration.py`, which calls the live payments gateway and can't run here.
+
+**What I changed (all in `repo/src/paylink/`; no tests touched):**
+- **`retry.py`**: the loop stopped one attempt early and returned `None` when everything failed. It now makes all the attempts it's asked for, skips the pointless wait after the last one, and re-raises the last exception.
+- **`invoice.py`**: two fixes.
+  - The due-date check was backwards: it flagged valid invoices and let bad ones through. It now rejects a due date before the issue date.
+  - The currency check now ignores case, so `"usd"` is accepted.
+- **`client.py`**: `get_status` now turns network errors and unreadable JSON responses into `PaymentsUnavailable`, as `errors.py` intends.
+
+**How I checked it:** I ran `python -m pytest` in `repo`. Result: 10 passed, 1 failed.
+
+**What I couldn't do:** `test_get_status_reports_ok` builds a `PaymentsClient()` with the default URL `https://payments-gateway.invalid` and expects a real `{"status": "ok"}` reply. This environment has no internet, the sandbox blocked the connection, and `.invalid` addresses never resolve anyway. It's a live-environment test, not a code bug. I didn't fake a response or change the default URL to force a pass, since that would hide whether the real gateway works. To run it, set `PAYMENTS_API_URL` to a gateway you can reach.

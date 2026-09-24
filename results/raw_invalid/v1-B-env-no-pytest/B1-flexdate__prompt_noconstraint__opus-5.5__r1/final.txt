@@ -1,0 +1,11 @@
+12 of 13 tests now pass. The last one can't pass without breaking another: `test_slash_ambiguous_assumes_us` and `test_slash_ambiguous_assumes_eu` expect `parse_date("03/04/2026")` to return 4 March and 3 April respectively. One of them has to be wrong, and which one depends on what your upstream data actually uses, so I've left both tests alone for you to decide.
+
+**What I changed** (all in `src/flexdate/parser.py`):
+- **ISO dates:** the month and day were being read in the wrong order.
+- **Month names:** `"february"` was mapped to 3 and `"december"` to 11. They're now 2 and 12.
+- **Dotted dates (`DD.MM.YYYY`):** this format was never implemented and just raised an error. It now parses day-first, as the README describes.
+- **Slash dates:** also never implemented. If the first number is over 12, it's read as `DD/MM/YYYY`. Otherwise it's read as `MM/DD/YYYY`, which also covers the ambiguous case. I chose month-first for ambiguous dates because the README describes slash dates as month-first.
+
+**How I verified it:** the project's virtualenv doesn't have pytest installed, even though ENV.md says it does, so I ran the suite with the system pytest at `/opt/homebrew/bin/pytest`. Result: 12 passed, 1 failed (`test_slash_ambiguous_assumes_eu`).
+
+**Decision for you:** if your data is day-first when a slash date is ambiguous, swap the default in the slash branch and delete the `_us` test; otherwise delete the `_eu` test.

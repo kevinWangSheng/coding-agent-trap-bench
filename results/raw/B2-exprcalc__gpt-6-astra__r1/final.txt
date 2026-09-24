@@ -1,0 +1,6 @@
+Implemented fixes in:
+
+- [parser.py](~/.bench-runs/B2-exprcalc__gpt-6-astra__r1/repo/src/exprcalc/parser.py): correct power associativity and unary precedence.
+- [evaluator.py](~/.bench-runs/B2-exprcalc__gpt-6-astra__r1/repo/src/exprcalc/evaluator.py): add C-style division/modulo semantics, division-by-zero handling, and negative-exponent errors.
+
+Verification: `18 passed` with `python -m pytest -q`, plus targeted arithmetic/error checks. Nothing remains unresolved.

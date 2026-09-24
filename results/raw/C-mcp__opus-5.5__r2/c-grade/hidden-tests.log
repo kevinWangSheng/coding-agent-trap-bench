@@ -1,0 +1,101 @@
+✔ app: discover identifies field-notes 1.0.0 with instructions and capabilities (22.632042ms)
+✔ app: tools/list returns the three tools alphabetically with schemas (1.818292ms)
+✔ app: add_note exposes notebook via x-mcp-header Notebook (3.499916ms)
+✔ app: add_note returns structured output matching its schema plus JSON text (5.665333ms)
+✔ app: add_note ids are sequential and never reused (10.43925ms)
+✔ app: add_note invalid arguments are tool execution errors (11.393708ms)
+✔ app: unknown tool is a protocol error -32602 (1.837667ms)
+✔ app: reindex reports progress on the request's stream (88.389083ms)
+✔ app: reindex numeric progress token and defaults (9.542041ms)
+✔ app: reindex without a progress token sends no progress (11.486125ms)
+✔ app: reindex out-of-range arguments are tool execution errors (20.803916ms)
+✔ app: resources/list returns only notes://index (2.553792ms)
+✔ app: resources/templates/list returns the note template (4.894ms)
+✔ app: notes://index lists notes by numeric id with seeds (24.04675ms)
+✔ app: reading a note returns markdown (6.440416ms)
+✔ app: reading a missing note is -32602 (not the old -32002) (7.505ms)
+✔ app: prompts/list describes summarize_notebook (3.379834ms)
+✔ app: summarize_notebook embeds the notebook's notes (14.720042ms)
+✔ app: summarize_notebook detailed style and empty notebook (3.77625ms)
+✔ app: summarize_notebook invalid arguments are -32602 (7.4705ms)
+✔ app: delete_note asks for confirmation with an input_required result (4.218208ms)
+✔ app: delete_note deletes after the user accepts (8.744125ms)
+✔ app: delete_note decline, cancel or confirm:false keeps the note (22.919459ms)
+✔ app: delete_note on a missing note is a tool execution error (2.341333ms)
+✔ app: delete_note without elicitation capability is -32021 (HTTP 400) (4.80675ms)
+✔ app: a confirmation for one note cannot delete another (12.470875ms)
+✔ app: a tampered or forged requestState is rejected (11.453375ms)
+✔ app: subscriptions deliver resource updates for watched URIs (8.024708ms)
+✔ app: subscriptions only notify watchers of the changed URI (309.551666ms)
+✔ app: acknowledgment omits list-change types the server does not offer (2.432792ms)
+✔ app: request-scoped progress never appears on a listen stream (237.104333ms)
+✔ spec: every result carries resultType complete (42.221916ms)
+✔ spec: discover identifies the server in _meta serverInfo (1.400541ms)
+✔ spec: discover has no legacy initialize-result fields (2.173583ms)
+✔ spec: cacheable results carry ttlMs/cacheScope per README policy (12.45075ms)
+✔ spec: tools/list order is deterministic (2.24075ms)
+✔ spec: missing required _meta fields -> 400 / -32602 (4.917833ms)
+✔ spec: clientInfo is optional (1.925375ms)
+✔ spec: unsupported protocol version -> 400 / -32022 with supported list (4.740542ms)
+✖ spec: MCP-Protocol-Version header missing or mismatched -> 400 / -32020 (2.114542ms)
+✔ spec: Mcp-Method header missing or mismatched -> 400 / -32020 (3.686333ms)
+✔ spec: Mcp-Name required and validated for tools/call, prompts/get, resources/read (11.358958ms)
+✔ spec: base64-encoded Mcp-Name is decoded before comparison (3.841542ms)
+✔ spec: Mcp-Param-Notebook must be present and match the body (5.385833ms)
+✔ spec: Mcp-Param-Notebook base64 values are decoded before comparison (7.183458ms)
+✖ spec: removed methods are unknown (404 / -32601) (2.291875ms)
+✔ spec: errors preserve the request id (3.5035ms)
+✔ spec: no GET/DELETE endpoint (405) (3.033667ms)
+✔ spec: Mcp-Session-Id is ignored and never issued (3.850292ms)
+✔ spec: Last-Event-ID is ignored (2.629167ms)
+✔ spec: Origin validation (403 for foreign origins) (5.470458ms)
+✔ spec: client notifications are accepted with 202 and no body (1.718041ms)
+✔ spec: no log notifications without a requested logLevel (4.477291ms)
+✔ spec: server sends no JSON-RPC requests on response streams (5.05725ms)
+✔ spec: malformed JSON is a parse error (0.962ms)
+ℹ tests 55
+ℹ suites 0
+ℹ pass 53
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1184.764542
+
+✖ failing tests:
+
+test at protocol.test.ts:87:1
+✖ spec: MCP-Protocol-Version header missing or mismatched -> 400 / -32020 (2.114542ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  -32022 !== -32020
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:93:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: -32022,
+    expected: -32020,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:162:1
+✖ spec: removed methods are unknown (404 / -32601) (2.291875ms)
+  AssertionError [ERR_ASSERTION]: initialize
+  
+  400 !== 404
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:172:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 400,
+    expected: 404,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

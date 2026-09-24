@@ -1,0 +1,162 @@
+diff --git a/src/server.ts b/src/server.ts
+new file mode 100644
+index 0000000..432d1b3
+--- /dev/null
++++ b/src/server.ts
+@@ -0,0 +1,135 @@
++import http from 'node:http';
++import crypto from 'node:crypto';
++
++const VERSION = '2026-07-28';
++const INSTRUCTIONS = 'Field Notes stores short notes grouped into notebooks. Use add_note to save a note, read notes://index to see what exists.';
++const SERVER_INFO = { name: 'field-notes', version: '1.0.0' };
++type Note = { id: string; notebook: string; title: string; body: string };
++type Rpc = { jsonrpc?: unknown; id?: string | number | null; method?: unknown; params?: any };
++const notes: Note[] = [
++  { id: 'n1', notebook: 'work', title: 'Standup', body: 'Discussed the release schedule and blockers.' },
++  { id: 'n2', notebook: 'work', title: 'Retro actions', body: 'Automate the changelog. Rotate the on-call.' },
++  { id: 'n3', notebook: 'personal', title: 'Groceries', body: 'Eggs, flour, coffee.' },
++];
++let nextId = 4;
++type Subscriber = { res: http.ServerResponse; filter: any; id: string | number };
++const subscribers = new Set<Subscriber>();
++
++const json = (res: http.ServerResponse, status: number, value: unknown, headers: Record<string, string> = {}) => {
++  const body = JSON.stringify(value); res.writeHead(status, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body), ...headers }); res.end(body);
++};
++const err = (id: any, code: number, message: string, data?: unknown) => ({ jsonrpc: '2.0', ...(id !== undefined && id !== null ? { id } : {}), error: { code, message, ...(data === undefined ? {} : { data }) } });
++const result = (id: any, value: Record<string, unknown>) => ({ jsonrpc: '2.0', id, result: { resultType: 'complete', ...value, _meta: { ...(value._meta as any), 'io.modelcontextprotocol/serverInfo': SERVER_INFO } } });
++const toolError = (id: any, message: string) => result(id, { content: [{ type: 'text', text: message }], isError: true });
++const noteFor = (id: string) => notes.find(n => n.id === id);
++const noteMarkdown = (n: Note) => `# ${n.title}\n\n${n.body}\n`;
++const cache = (scope: 'public' | 'private', ttl = 300000) => ({ ttlMs: ttl, cacheScope: scope });
++
++function decodeHeader(v: string | undefined): string | undefined {
++  if (v === undefined) return undefined;
++  if (v.startsWith('=?base64?') && v.endsWith('?=')) {
++    try { return Buffer.from(v.slice(9, -2), 'base64').toString('utf8'); } catch { return undefined; }
++  }
++  return v;
++}
++function protocolError(id: any, message: string, data?: unknown) { return err(id, -32020, `Header mismatch: ${message}`, data); }
++function capabilities(params: any): any { return params?._meta?.['io.modelcontextprotocol/clientCapabilities'] ?? undefined; }
++function validateRpc(body: any, headers: http.IncomingHttpHeaders): { response?: any; status?: number; rpc?: Rpc } {
++  const id = body?.id;
++  if (!body || body.jsonrpc !== '2.0' || typeof body.method !== 'string' || (body.id === null || (body.id !== undefined && typeof body.id !== 'string' && !Number.isInteger(body.id)))) return { response: err(id, -32600, 'Invalid Request'), status: 400 };
++  const meta = body.params?._meta;
++  if (!meta || typeof meta['io.modelcontextprotocol/protocolVersion'] !== 'string' || !meta['io.modelcontextprotocol/clientCapabilities']) return { response: err(id, -32602, 'Missing or invalid request metadata'), status: 400 };
++  const requestedVersion = meta['io.modelcontextprotocol/protocolVersion'];
++  const ph = headers['mcp-protocol-version']; if (!ph) return { response: protocolError(id, 'MCP-Protocol-Version header is required'), status: 400 }; if (ph !== requestedVersion) return { response: protocolError(id, `MCP-Protocol-Version header value '${ph}' does not match body value '${requestedVersion}'`), status: 400 }; if (requestedVersion !== VERSION) return { response: err(id, -32022, 'Unsupported protocol version', { supportedVersions: [VERSION] }), status: 400 };
++  if (headers['mcp-method'] !== body.method) return { response: protocolError(id, `Mcp-Method header value '${headers['mcp-method'] ?? ''}' does not match body value '${body.method}'`), status: 400 };
++  if (['tools/call', 'resources/read', 'prompts/get'].includes(body.method)) {
++    const source = body.params?.name ?? body.params?.uri;
++    const h = decodeHeader(typeof headers['mcp-name'] === 'string' ? headers['mcp-name'] : undefined);
++    if (typeof source !== 'string' || h !== source) return { response: protocolError(id, `Mcp-Name header does not match body value`), status: 400 };
++  }
++  return { rpc: body };
++}
++function notify(method: string, params: any) {
++  const message = `data: ${JSON.stringify({ jsonrpc: '2.0', method, params })}\n\n`;
++  for (const s of subscribers) {
++    const f = s.filter; let yes = false;
++    if (method === 'notifications/tools/list_changed') yes = f.toolsListChanged === true;
++    if (method === 'notifications/prompts/list_changed') yes = f.promptsListChanged === true;
++    if (method === 'notifications/resources/list_changed') yes = f.resourcesListChanged === true;
++    if (method === 'notifications/resources/updated') yes = Array.isArray(f.resourceSubscriptions) && f.resourceSubscriptions.includes(params.uri);
++    if (yes && !s.res.destroyed) s.res.write(message);
++  }
++}
++function listNotes() { return [...notes].sort((a,b) => Number(a.id.slice(1)) - Number(b.id.slice(1))); }
++
++async function handle(rpc: Rpc, req: http.IncomingMessage, res: http.ServerResponse): Promise<{ value?: any; stream?: boolean }> {
++  const id = rpc.id, p = rpc.params ?? {}, method = rpc.method as string;
++  if (method === 'server/discover') return { value: result(id, { supportedVersions: [VERSION], capabilities: { tools: {}, resources: { subscribe: true }, prompts: {} }, instructions: INSTRUCTIONS, ...cache('public', 3600000) }) };
++  if (method === 'tools/list') return { value: result(id, { tools: [
++    { name: 'add_note', description: 'Create a note.', inputSchema: { type: 'object', properties: { notebook: { type: 'string', pattern: '^[A-Za-z0-9_-]{1,64}$', 'x-mcp-header': 'Notebook' }, title: { type: 'string', minLength: 1, maxLength: 200 }, body: { type: 'string' } }, required: ['notebook','title','body'] }, outputSchema: { type: 'object', properties: { id: { type:'string' }, uri: { type:'string' }, notebook: { type:'string' }, wordCount: { type:'integer' } }, required: ['id','uri','notebook','wordCount'] } },
++    { name: 'delete_note', description: 'Delete a note after confirmation.', inputSchema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] } },
++    { name: 'reindex', description: 'Rebuild the search index.', inputSchema: { type: 'object', properties: { steps: { type: 'integer', minimum: 1, maximum: 20, default: 5 }, delayMs: { type: 'integer', minimum: 0, maximum: 1000, default: 200 } } } },
++  ], ...cache('public') }) };
++  if (method === 'resources/list') return { value: result(id, { resources: [{ uri: 'notes://index', name: 'index', title: 'All notes', mimeType: 'application/json' }], ...cache('public') }) };
++  if (method === 'resources/templates/list') return { value: result(id, { resourceTemplates: [{ uriTemplate: 'notes://notes/{id}', name: 'note', title: 'A single note', mimeType: 'text/markdown' }], ...cache('public') }) };
++  if (method === 'prompts/list') return { value: result(id, { prompts: [{ name: 'summarize_notebook', description: 'Summarize notes in a notebook.', arguments: [{ name: 'notebook', required: true }, { name: 'style', required: false }] }], ...cache('public') }) };
++  if (method === 'resources/read') {
++    const uri = p.uri; let content: any;
++    if (uri === 'notes://index') content = { uri, mimeType: 'application/json', text: JSON.stringify(listNotes().map(n => ({ id:n.id, notebook:n.notebook, title:n.title }))) };
++    else { const m = /^notes:\/\/notes\/(n\d+)$/.exec(uri ?? ''); const n = m?.[1] ? noteFor(m[1]) : undefined; if (!n) return { value: err(id, -32602, `Resource ${uri} not found`) }; content = { uri, mimeType: 'text/markdown', text: noteMarkdown(n) }; }
++    return { value: result(id, { contents: [content], ...cache('private', 0) }) };
++  }
++  if (method === 'prompts/get') {
++    const notebook = p.arguments?.notebook; const style = p.arguments?.style ?? 'brief';
++    if (typeof notebook !== 'string' || !['brief','detailed'].includes(style)) return { value: err(id, -32602, 'Invalid prompt arguments') };
++    const messages: any[] = [{ role: 'user', content: { type: 'text', text: style === 'brief' ? `Summarize the notes in the "${notebook}" notebook in two sentences.` : `Summarize the notes in the "${notebook}" notebook in detail, one paragraph per note.` } }];
++    for (const n of listNotes().filter(n => n.notebook === notebook)) messages.push({ role: 'user', content: { type: 'resource', resource: { uri: `notes://notes/${n.id}`, mimeType: 'text/markdown', text: noteMarkdown(n) } } });
++    return { value: result(id, { messages }) };
++  }
++  if (method === 'tools/call') {
++    const name = p.name, a = p.arguments ?? {};
++    if (name === 'add_note') {
++      const hv = decodeHeader(typeof req.headers['mcp-param-notebook'] === 'string' ? req.headers['mcp-param-notebook'] : undefined);
++      if (hv !== a.notebook) return { value: protocolError(id, 'Mcp-Param-Notebook does not match body value') };
++      if (typeof a.notebook !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(a.notebook)) return { value: toolError(id, 'Invalid notebook: use 1-64 letters, numbers, underscores, or hyphens') };
++      if (typeof a.title !== 'string' || !a.title.length || a.title.length > 200) return { value: toolError(id, 'Invalid title: must be non-empty and at most 200 characters') };
++      if (typeof a.body !== 'string') return { value: toolError(id, 'Invalid body: must be a string') };
++      const n: Note = { id: `n${nextId++}`, notebook: a.notebook, title: a.title, body: a.body }; notes.push(n); notify('notifications/resources/updated', { uri: 'notes://index' });
++      const out = { id:n.id, uri:`notes://notes/${n.id}`, notebook:n.notebook, wordCount:n.body.trim() ? n.body.trim().split(/\s+/).length : 0 };
++      return { value: result(id, { structuredContent: out, content: [{ type:'text', text: JSON.stringify(out) }], isError:false }) };
++    }
++    if (name === 'delete_note') {
++      const n = noteFor(a.id); if (!n) return { value: toolError(id, `Note ${a.id} not found`) };
++      const caps = capabilities(p); const response = p.inputResponses?.delete_confirmation;
++      if (!response) { if (!caps?.elicitation) return { value: err(id, -32021, 'Client capability required', { requiredCapabilities: ['elicitation'] }) }; const state = crypto.createHmac('sha256', 'field-notes-confirmation').update(n.id).digest('base64url'); return { value: { jsonrpc:'2.0', id, result:{ resultType:'input_required', inputRequests:{ delete_confirmation:{ method:'elicitation/create', params:{ mode:'form', message:`Delete note "${n.title}"?`, requestedSchema:{ type:'object', properties:{ confirm:{ type:'boolean' } }, required:['confirm'] } } } }, requestState: state } } }; }
++      const expected = crypto.createHmac('sha256', 'field-notes-confirmation').update(n.id).digest('base64url'); if (p.requestState !== expected) return { value: err(id, -32602, 'Invalid request state') };
++      if (response.action === 'accept' && response.content?.confirm === true) { notes.splice(notes.indexOf(n),1); notify('notifications/resources/updated', { uri:'notes://index' }); notify('notifications/resources/updated', { uri:`notes://notes/${n.id}` }); return { value: result(id, { content:[{type:'text',text:`Deleted note ${n.id}`}], isError:false }) }; }
++      return { value: result(id, { content:[{type:'text',text:'Deletion cancelled'}], isError:false }) };
++    }
++    if (name === 'reindex') {
++      const steps = a.steps ?? 5, delayMs = a.delayMs ?? 200; if (!Number.isInteger(steps)||steps<1||steps>20||!Number.isInteger(delayMs)||delayMs<0||delayMs>1000) return { value: toolError(id, 'steps must be 1-20 and delayMs must be 0-1000') };
++      if (p._meta?.progressToken !== undefined) { res.writeHead(200, {'content-type':'text/event-stream','cache-control':'no-cache','connection':'keep-alive','x-accel-buffering':'no'}); for(let k=1;k<=steps;k++){ await new Promise<void>(r=>setTimeout(r,delayMs)); if(res.destroyed)return {stream:true}; res.write(`data: ${JSON.stringify({jsonrpc:'2.0',method:'notifications/progress',params:{progressToken:p._meta.progressToken,progress:k,total:steps,message:`Indexed ${k}/${steps}`}})}\n\n`); } res.write(`data: ${JSON.stringify(result(id,{content:[{type:'text',text:`Reindex complete: ${steps} steps`}],isError:false}))}\n\n`); res.end(); return {stream:true}; }
++      return { value: result(id,{content:[{type:'text',text:`Reindex complete: ${steps} steps`}],isError:false}) };
++    }
++    return { value: err(id, -32602, `Unknown tool ${name}`) };
++  }
++  if (method === 'subscriptions/listen') {
++    res.writeHead(200, {'content-type':'text/event-stream','cache-control':'no-cache','connection':'keep-alive','x-accel-buffering':'no'}); const filter = p.notifications ?? {}; const sub: Subscriber = { res, filter, id: id as string | number }; subscribers.add(sub); res.on('close',()=>subscribers.delete(sub));
++    res.write(`data: ${JSON.stringify({jsonrpc:'2.0',method:'notifications/subscriptions/acknowledged',params:{_meta:{'io.modelcontextprotocol/subscriptionId':id},notifications:filter}})}\n\n`); return { stream:true };
++  }
++  return { value: err(id, -32601, 'Method not found') };
++}
++
++function originAllowed(origin: string | undefined, port: number) { return !origin || origin === `http://localhost:${port}` || origin === `http://127.0.0.1:${port}`; }
++export function createServer(port = Number(process.env.PORT ?? 3000)) {
++  return http.createServer(async (req,res) => {
++    if (req.url !== '/mcp' || req.method !== 'POST') { res.writeHead(404); res.end(); return; }
++    if (!originAllowed(req.headers.origin, port)) { res.writeHead(403); res.end(); return; }
++    let raw=''; req.setEncoding('utf8'); for await (const chunk of req) { raw += chunk; if (raw.length > 2_000_000) break; }
++    let body: any; try { body=JSON.parse(raw); } catch { json(res,400,err(undefined,-32700,'Parse error')); return; }
++    const v=validateRpc(body,req.headers); if (v.response) { json(res,v.status ?? 400,v.response); return; }
++    if (body.id === undefined) { await handle(body,req,res); res.writeHead(202); res.end(); return; }
++    const out=await handle(body,req,res); if (!out.stream && out.value) { const status=(out.value.error?.code===-32601?404:200); json(res,status,out.value); }
++  });
++}
++const port=Number(process.env.PORT ?? 3000); if (process.argv[1]?.endsWith('/server.js')) createServer(port).listen(port,'127.0.0.1',()=>console.log(`field-notes MCP listening on 127.0.0.1:${port}`));
+diff --git a/test/server.test.js b/test/server.test.js
+new file mode 100644
+index 0000000..6121b7a
+--- /dev/null
++++ b/test/server.test.js
+@@ -0,0 +1,15 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { spawn } from 'node:child_process';
++
++const port = 34000 + Math.floor(Math.random() * 1000);
++let child; let available = true;
++const meta = { 'io.modelcontextprotocol/protocolVersion': '2026-07-28', 'io.modelcontextprotocol/clientCapabilities': { elicitation: { form: {} } } };
++function headers(method, name) { return { 'content-type': 'application/json', accept: 'application/json, text/event-stream', 'mcp-protocol-version': '2026-07-28', 'mcp-method': method, ...(name ? { 'mcp-name': name } : {}) }; }
++async function call(method, params = {}, id = 1, name) { const r = await fetch(`http://127.0.0.1:${port}/mcp`, { method:'POST', headers:headers(method,name), body:JSON.stringify({jsonrpc:'2.0',id,method,params:{...params,_meta:meta}}) }); return { status:r.status, type:r.headers.get('content-type'), body:await r.json() }; }
++test.before(async () => { child = spawn(process.execPath, ['dist/server.js'], { cwd: new URL('..', import.meta.url), env:{...process.env,PORT:String(port)}, stdio:'ignore' }); for(let i=0;i<30;i++){ try { await fetch(`http://127.0.0.1:${port}/mcp`); break; } catch (e) { if (e?.cause?.code === 'EPERM') { available = false; break; } await new Promise(r=>setTimeout(r,50)); } } });
++test.after(() => child?.kill());
++
++test('discovery and lists follow MCP response shape', async (t) => { if(!available)return t.skip('localhost networking unavailable'); const d=await call('server/discover',{},'d'); assert.equal(d.status,200); assert.deepEqual(d.body.result.supportedVersions,['2026-07-28']); const l=await call('tools/list',{},1); assert.equal(l.body.result.tools.length,3); });
++test('add_note validates mirrored notebook header and returns structured output', async (t) => { if(!available)return t.skip('localhost networking unavailable'); const bad=await call('tools/call',{name:'add_note',arguments:{notebook:'work',title:'X',body:'one two'}},2,'add_note'); assert.equal(bad.status,400); const p={...meta}; const r=await fetch(`http://127.0.0.1:${port}/mcp`,{method:'POST',headers:{...headers('tools/call','add_note'),'mcp-param-notebook':'work'},body:JSON.stringify({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'add_note',arguments:{notebook:'work',title:'X',body:'one two'},_meta:p}})}); const j=await r.json(); assert.equal(j.result.structuredContent.wordCount,2); });
++test('resource and prompt operations work', async (t) => { if(!available)return t.skip('localhost networking unavailable'); const x=await call('resources/read',{uri:'notes://index'},4,'notes://index'); assert.equal(x.body.result.contents[0].mimeType,'application/json'); const p=await call('prompts/get',{name:'summarize_notebook',arguments:{notebook:'work'}},5,'summarize_notebook'); assert.equal(p.body.result.messages.length,3); });

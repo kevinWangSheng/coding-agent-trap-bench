@@ -1,0 +1,15 @@
+Nested transactions now count against the backend quota the same way as their flat equivalents, in both the `success` and `failure` branches. The new tests pass.
+
+**The bug:** in `server/storage/quota.go`, the function that works out a transaction's size (`costTxnReq`) only counted `Put`s placed directly in the transaction. A nested `Txn` was counted as zero bytes, so it got past the quota check.
+
+**The fix:** `costTxnReq` now also looks inside nested `Txn`s, at any depth. A nested transaction is costed like a flat one: its larger branch counts, added to any `Put`s next to it. This one function covers all three places that enforce the quota: the gRPC check, the apply-time check, and the check that rejects writes once the space alarm has gone off.
+
+**Tests:** I added `server/storage/quota_test.go`; the `storage` package had no tests for this code before.
+- `TestBackendQuotaCost` checks the computed size for plain `Put`s, lease grants, read-only transactions, flat transactions, and nested transactions in either branch or several levels deep.
+- `TestBackendQuotaAvailableNestedTxn` runs against a real temporary database with a small quota. A nested transaction with a large `Put` in either branch is rejected, while small requests and read-only nested transactions still go through.
+
+**Verification:**
+- `go test ./storage/ ./etcdserver/apply/ ./etcdserver/api/v3rpc/` passes, and `go vet ./storage/` is clean.
+- With the fix temporarily removed, both new tests fail, so they do catch this bug.
+
+I didn't run the integration or end-to-end suites, which need a running cluster.

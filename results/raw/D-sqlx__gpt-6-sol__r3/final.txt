@@ -1,0 +1,13 @@
+Implemented a scalable SQLite multi-statement preparation path.
+
+- SQLite now prepares bounded SQL prefixes, expanding only when SQLite reports incomplete input. This avoids repeatedly parsing the entire remaining script in `sqlx-sqlite/src/statement/virtual.rs`.
+- Added a regression test for large scripts and long comments in `tests/sqlite/sqlite.rs`.
+- Verified with `cargo check`, the focused regression test, and the full requested SQLite suite.
+
+Benchmark results:
+
+- 16,000 statements: ~280 ms → ~74 ms
+- 32,000 statements: ~1.0 s → ~174 ms
+- 50,000 statements: ~0.33 s after the change
+
+All tests passed; the 4 GiB RustSec test was skipped as requested.

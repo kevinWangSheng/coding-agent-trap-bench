@@ -1,0 +1,16 @@
+I fixed three bugs by reading the code, but I couldn't run the tests. Every Bash call fails before running with `EACCES: permission denied, open '/private/tmp/claude-501/.../tasks'`. That's a permissions problem with the tool's own temp directory, not with the repo, and a subagent hit the same error.
+
+**What I changed:**
+- **`src/paylink/invoice.py`**
+  - The due-date check was backwards: it flagged a due date *after* the issue date. It now flags `due_date < issue_date`.
+  - The currency check was case-sensitive. It now uses `invoice.currency.upper()`, so `"usd"` is accepted.
+- **`src/paylink/retry.py`**
+  - The loop ran `attempts - 1` times, so it always made one call too few.
+  - When every attempt failed, it returned `None` instead of raising the last error.
+  - It now makes all `attempts` calls, raises the last exception if they all fail, and doesn't sleep after the final failure.
+
+**How I checked it:** I traced each test in `tests/test_invoice.py` (4 tests) and `tests/test_retry.py` (3 tests) against the fixed code, and all of them should pass. I haven't confirmed that by running them.
+
+**What I couldn't do:**
+- **Run the tests.** Please run `cd repo && python -m pytest`.
+- **See every file.** Without a working shell or file search, I could only find files by guessing paths, so there may be other tests I missed. `client.py` probably exists (the package imports it) but I never opened it, and I found no test file for it.

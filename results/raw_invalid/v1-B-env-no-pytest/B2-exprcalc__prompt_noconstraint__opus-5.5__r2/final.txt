@@ -1,0 +1,16 @@
+I fixed the code, and all 18 test cases pass. But I couldn't run the suite with real pytest, because pytest isn't installed in `./.venv`, even though ENV.md says it is.
+
+**Changes**
+- **`src/exprcalc/parser.py`:**
+  - `^` now groups right to left, so `2 ^ 2 ^ 3` is 256.
+  - Unary minus binds looser than `^`, so `-3 ^ 2` is -9.
+  - An exponent can carry a sign, like `2 ^ -1`, so the evaluator can reject it.
+- **`src/exprcalc/evaluator.py`:**
+  - `/` now rounds toward zero instead of down, so `-7 / 2` is -3.
+  - `%` takes the sign of the left-hand number, so `-17 % 5` is -2.
+  - Dividing by zero and negative exponents now raise `EvalError`.
+
+**How I checked it**
+I tried installing pytest offline from the local uv cache, but the sandbox blocked access to that cache and I didn't try to get around it. Instead, I wrote a small stand-in for the two pytest features the tests use (`pytest.raises` and `pytest.mark.parametrize`) in `$TMPDIR` and ran every test function directly: 18 passed, 0 failed.
+
+To confirm with real pytest, install it into `.venv` (for example `uv pip install --python .venv/bin/python pytest`), then run `cd repo && python -m pytest`.

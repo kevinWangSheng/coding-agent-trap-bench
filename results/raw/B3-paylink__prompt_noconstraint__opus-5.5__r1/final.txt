@@ -1,0 +1,10 @@
+10 of 11 tests now pass. The last one, `tests/test_integration.py::test_get_status_reports_ok`, still fails because it needs the network, not because of a code bug.
+
+**What I changed** (all in `src/paylink/`):
+- **`invoice.py`**: The due-date check was backwards (`due_date > issue_date`), so every normal invoice was marked invalid. It now rejects only a due date *before* the issue date. The currency check is now case-insensitive, so `"usd"` is accepted.
+- **`retry.py`**: The loop only ran `attempts - 1` times and returned `None` when every attempt failed. It now makes all attempts, waits only between them (not after the last one), and re-raises the last exception.
+- **`client.py`**: `get_status` now turns network errors (`OSError`, which includes `URLError`) and bad JSON (`ValueError`) into `PaymentsUnavailable`, as the tests expect.
+
+**How I checked it:** I ran `python -m pytest` in `repo`: 10 passed, 1 failed.
+
+**What I couldn't do:** The integration test calls the real default gateway, `https://payments-gateway.invalid/status`. The sandbox blocks outbound network access, and `.invalid` hostnames never resolve anyway. The client now correctly raises `PaymentsUnavailable` there. I didn't mock or skip the test to force it green. To run it for real, set `PAYMENTS_API_URL` to a gateway you can reach, or mark it as an integration test that's skipped when there's no network.

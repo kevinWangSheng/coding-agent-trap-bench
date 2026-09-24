@@ -1,0 +1,73 @@
+   Compiling libc v0.2.189
+   Compiling syn v3.0.6
+   Compiling num-traits v0.2.19
+   Compiling libsqlite3-sys v0.37.0
+   Compiling serde_json v1.0.151
+   Compiling atoi v2.0.0
+   Compiling chrono v0.4.45
+   Compiling synstructure v0.14.0
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.3
+   Compiling zerovec-derive v0.11.6
+   Compiling displaydoc v0.2.7
+   Compiling serde_derive v1.0.229
+   Compiling thiserror-impl v2.0.20
+   Compiling parking_lot_core v0.9.12
+   Compiling socket2 v0.6.5
+   Compiling mio v1.2.3
+   Compiling cpufeatures v0.3.1
+   Compiling clang-sys v1.9.1
+   Compiling sha2 v0.11.0
+   Compiling zerofrom v0.1.8
+   Compiling parking_lot v0.12.5
+   Compiling futures-intrusive v0.5.0
+   Compiling tokio v1.53.1
+   Compiling yoke v0.8.3
+   Compiling thiserror v2.0.20
+   Compiling zerovec v0.11.8
+   Compiling zerotrie v0.2.5
+   Compiling serde v1.0.229
+   Compiling tinystr v0.8.4
+   Compiling potential_utf v0.1.6
+   Compiling icu_collections v2.3.0
+   Compiling icu_locale_core v2.3.0
+   Compiling tokio-stream v0.1.19
+   Compiling either v1.18.0
+   Compiling icu_provider v2.3.1
+   Compiling itertools v0.13.0
+   Compiling icu_properties v2.3.0
+   Compiling icu_normalizer v2.3.0
+   Compiling bindgen v0.72.1
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling url v2.5.8
+   Compiling sqlx-core v0.9.0 (<BENCH>/tasks/D-perf/D-sqlx/hidden/.cache/work-20260923-143225-73620/cand/sqlx-core)
+   Compiling sqlx-sqlite v0.9.0 (<BENCH>/tasks/D-perf/D-sqlx/hidden/.cache/work-20260923-143225-73620/cand/sqlx-sqlite)
+   Compiling sqlx-macros-core v0.9.0 (<BENCH>/tasks/D-perf/D-sqlx/hidden/.cache/work-20260923-143225-73620/cand/sqlx-macros-core)
+   Compiling sqlx-macros v0.9.0 (<BENCH>/tasks/D-perf/D-sqlx/hidden/.cache/work-20260923-143225-73620/cand/sqlx-macros)
+   Compiling sqlx v0.9.0 (<BENCH>/tasks/D-perf/D-sqlx/hidden/.cache/work-20260923-143225-73620/cand)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 19.71s
+     Running unittests src/lib.rs (target/debug/deps/sqlx_sqlite-365877db5e88498d)
+
+running 10 tests
+test type_info::test_data_type_from_str ... ok
+test types::chrono::tests::decodes_pre_epoch_float_datetime ... ok
+test testing::test_convert_path ... ok
+test types::chrono::tests::decodes_post_epoch_float_datetime ... ok
+test options::parse::test_parse_read_only ... ok
+test options::parse::test_parse_shared_in_memory ... ok
+test options::parse::test_parse_in_memory ... ok
+test options::parse::it_returns_the_parsed_url ... ok
+test connection::explain::test_root_block_columns_has_types ... ok
+test connection::explain::test_explain ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests sqlx_sqlite
+
+running 2 tests
+test sqlx-sqlite/src/options/mod.rs - options::SqliteConnectOptions::extension (line 501) - compile ... ok
+test sqlx-sqlite/src/options/mod.rs - options::SqliteConnectOptions (line 41) - compile ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+

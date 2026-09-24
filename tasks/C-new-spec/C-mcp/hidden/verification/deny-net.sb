@@ -1,0 +1,8 @@
+(version 1)
+(allow default)
+(deny network-outbound (remote ip "*:*"))
+(allow network-outbound (remote ip "localhost:*"))
+; A local HTTP proxy on loopback would be a way back to the internet; deny its port too.
+; The port is passed in by the caller: sandbox-exec -D PROXY_PORT=1087 -f deny-net.sb ...
+(deny network-outbound (remote ip (string-append "localhost:" (param "PROXY_PORT"))))
+(allow network-outbound (remote unix-socket))

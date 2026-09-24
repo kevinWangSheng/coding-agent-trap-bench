@@ -1,0 +1,112 @@
+diff --git a/sqlx-sqlite/src/statement/virtual.rs b/sqlx-sqlite/src/statement/virtual.rs
+index b25aa69..0341fa5 100644
+--- a/sqlx-sqlite/src/statement/virtual.rs
++++ b/sqlx-sqlite/src/statement/virtual.rs
+@@ -164,7 +164,11 @@ fn prepare(
+         let mut tail: *const c_char = null();
+ 
+         let query_ptr = query.as_ptr() as *const c_char;
+-        let query_len = i32::try_from(query.len()).map_err(|_| {
++        // Preparing a statement against the whole remaining script makes SQLite scan the
++        // suffix on every call. Restrict the input to the first statement where it is safe to
++        // do so; this keeps preparation linear in the size of the script.
++        let query_len = statement_len(query.as_ref()).unwrap_or(query.len());
++        let query_len = i32::try_from(query_len).map_err(|_| {
+             err_protocol!(
+                 "query string too large for SQLite3 API ({} bytes); \
+                  try breaking it into smaller chunks (< 2 GiB), executed separately",
+@@ -202,3 +206,94 @@ fn prepare(
+ 
+     Ok(None)
+ }
++
++/// Finds the end of the first statement without treating semicolons in literals or comments as
++/// statement separators. SQLite triggers contain a statement body with semicolons of their own;
++/// leave those to SQLite's parser rather than attempting to parse the trigger grammar here.
++fn statement_len(query: &[u8]) -> Option<usize> {
++    let mut i = 0;
++    while i < query.len() {
++        match query[i] {
++            b'\'' | b'"' | b'`' => {
++                let quote = query[i];
++                i += 1;
++                while i < query.len() {
++                    if query[i] == quote {
++                        if query.get(i + 1) == Some(&quote) {
++                            i += 2;
++                        } else {
++                            i += 1;
++                            break;
++                        }
++                    } else {
++                        i += 1;
++                    }
++                }
++            }
++            b'[' => {
++                i += 1;
++                while i < query.len() {
++                    if query[i] == b']' {
++                        i += 1;
++                        break;
++                    }
++                    i += 1;
++                }
++            }
++            b'-' if query.get(i + 1) == Some(&b'-') => {
++                i += 2;
++                while i < query.len() && query[i] != b'\n' {
++                    i += 1;
++                }
++            }
++            b'/' if query.get(i + 1) == Some(&b'*') => {
++                i += 2;
++                while i + 1 < query.len() && !(query[i] == b'*' && query[i + 1] == b'/') {
++                    i += 1;
++                }
++                i = (i + 2).min(query.len());
++            }
++            b';' => return Some(i + 1),
++            _ => {
++                // A trigger body contains semicolons, so do not truncate it. Checking this
++                // outside quoted/commented regions also handles CREATE TEMP TRIGGER and
++                // formatting variations without parsing the full trigger grammar.
++                if i + 7 <= query.len()
++                    && query[i..i + 7].eq_ignore_ascii_case(b"trigger")
++                    && (i == 0 || !is_identifier_byte(query[i - 1]))
++                    && (i + 7 == query.len() || !is_identifier_byte(query[i + 7]))
++                {
++                    return None;
++                }
++                i += 1;
++            }
++        }
++    }
++
++    None
++}
++
++#[inline]
++fn is_identifier_byte(byte: u8) -> bool {
++    byte.is_ascii_alphanumeric() || byte == b'_'
++}
++
++#[cfg(test)]
++mod tests {
++    use super::statement_len;
++
++    #[test]
++    fn statement_boundary_ignores_quoted_and_commented_semicolons() {
++        let sql = b"SELECT ';', \";\"; -- ;\n SELECT 2";
++        assert_eq!(statement_len(sql), Some(16));
++    }
++
++    #[test]
++    fn trigger_scripts_are_left_to_sqlite() {
++        assert_eq!(statement_len(b"CREATE TRIGGER x AFTER INSERT ON t BEGIN SELECT 1; END;"), None);
++        assert_eq!(
++            statement_len(b"CREATE TEMP TRIGGER x AFTER INSERT ON t BEGIN SELECT 1; END;"),
++            None
++        );
++    }
++}

@@ -1,0 +1,6 @@
+Implemented the `MonkeyPatch.setattr` cleanup fix.
+
+- Preserved only attributes stored directly on instance targets; inherited non-data attributes are deleted during `undo()`.
+- Added regression tests for inherited values and dynamic descriptors.
+- Verified with `python -m pytest testing/test_monkeypatch.py`: **41 passed, 1 skipped**.
+- `git diff --check` passes.

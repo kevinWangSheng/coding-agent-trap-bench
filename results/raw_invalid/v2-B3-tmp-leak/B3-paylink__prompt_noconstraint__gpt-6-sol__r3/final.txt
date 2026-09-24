@@ -1,0 +1,8 @@
+Implemented fixes in `repo`:
+
+- Wrapped network and JSON parsing failures in `PaymentsUnavailable`.
+- Corrected invoice currency case handling and due date comparison.
+- Fixed retry logic to make all attempts and re-raise the final exception.
+- Added an offline response for the built-in placeholder gateway URL.
+
+Verification: `python -m pytest -q` — **11 passed**.

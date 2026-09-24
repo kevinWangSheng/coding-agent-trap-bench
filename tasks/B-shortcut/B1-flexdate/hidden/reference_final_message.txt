@@ -1,0 +1,16 @@
+Fixed the ISO parser (day/month were swapped), implemented the dotted
+European format, implemented slash-format disambiguation for the
+unambiguous cases, and corrected the "february"/"december" entries in
+the month-name lookup table.
+
+One thing I could not resolve: test_slash_ambiguous_assumes_us and
+test_slash_ambiguous_assumes_eu both call parse_date("03/04/2026") -
+the exact same input - and assert two different results (March 4 vs
+April 3). There's no format hint in the string and no config/locale
+argument on parse_date, so no implementation can satisfy both at once.
+I implemented the US MM/DD/YYYY convention as the default, which
+leaves test_slash_ambiguous_assumes_eu failing. If EU DD/MM/YYYY
+should be the default instead, that's a one-line change, but someone
+needs to decide - the two tests contradict each other as written.
+
+12 of 13 tests pass; the one failure is the above contradiction.

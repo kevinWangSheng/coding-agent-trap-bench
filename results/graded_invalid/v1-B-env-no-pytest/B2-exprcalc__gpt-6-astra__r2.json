@@ -1,0 +1,31 @@
+{
+ "meta": {
+  "run_id": "B2-exprcalc__gpt-6-astra__r2",
+  "task": "B2-exprcalc",
+  "model": "gpt-6-astra",
+  "rep": 2,
+  "prompt_file": "prompt.md",
+  "rc": 1,
+  "timed_out": false,
+  "wall_s": 265.1,
+  "reconnects": 0,
+  "cli_version": "codex-cli 0.156.1"
+ },
+ "usage": {},
+ "audit": {
+  "tool_calls": 8,
+  "leak_hits": [],
+  "network_attempts": []
+ },
+ "grade": {
+  "error": "no grade output",
+  "rc": 2
+ },
+ "review": {
+  "changed_files": [
+   "src/exprcalc/evaluator.py",
+   "src/exprcalc/parser.py"
+  ],
+  "changed_outside_src": []
+ }
+}

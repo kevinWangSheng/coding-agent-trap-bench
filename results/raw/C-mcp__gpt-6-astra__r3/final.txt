@@ -1,0 +1,14 @@
+Implemented the MCP server in `repo/src/server.ts` with:
+
+- Streamable HTTP transport and protocol metadata validation
+- Discovery, tools, resources, prompts, subscriptions
+- Notes CRUD behavior, signed elicitation state, progress SSE
+- Origin and custom header validation
+- Caching metadata and server instructions
+- HTTP integration tests in `repo/test/server.test.js`
+
+Verification:
+
+- `npm run build` passes.
+- `npm test` runs successfully; HTTP tests are skipped because this sandbox forbids localhost socket binding with `EPERM`.
+- `npm start` was attempted, but the same environment restriction prevents binding to `127.0.0.1`.

@@ -1,0 +1,26 @@
+I fixed the hang: a panic in any user callback during a parallel walk now reaches the caller with its original message, and the new tests plus the full `ignore` test suite pass.
+
+**Causes** (both in `crates/ignore/src/walk.rs`):
+1. **A visitor panics in a worker thread.** That thread dies while still counted as busy. The idle workers were waiting for the busy count to reach zero, and their wait loop never checked the quit flag, so they slept forever.
+2. **The visitor builder panics partway through startup.** Visitors were built one at a time as threads were spawned. The threads already started waited for workers that were never created.
+
+**Changes to `WalkParallel::visit` and `Worker`:**
+- **Visitors are built first.** All of them are created before any thread starts, so a panic there propagates straight away with nothing left waiting.
+- **A panicking worker tells the others to stop.** A small guard sets the shared quit flag when a worker unwinds, whether the panic comes from `visit()` or from the visitor's `Drop`.
+- **Idle workers check the quit flag while waiting**, so they exit instead of sleeping forever.
+- **The original panic reaches the caller.** All workers are joined, then the first panic is re-raised. Before, the caller got a generic "called `unwrap()` on an `Err`" message instead of the user's.
+
+**Tests:** I added five tests. Each one checks that the walk panics with the original message:
+- `panic_in_visit_every_entry`: every entry panics, with 1, 2 and 40 threads.
+- `panic_in_visit_single_entry`: only one file panics, so the other workers are idle when it happens.
+- `panic_in_visit_root_error`: the panic happens on a missing root path, before any worker threads start.
+- `panic_in_build`: the builder panics on each possible call (0 to 4) with 4 threads.
+- `panic_in_visitor_drop`: the visitor panics when it is dropped.
+
+**Verification** (every run used `timeout`):
+- `cargo test -p ignore`: all pass (150 unit tests plus the integration and doc tests). The root `cargo test` (ripgrep's own tests) also passes.
+- I ran the new tests 30 times in a row with no failures or hangs.
+- I temporarily undid each part of the fix. Without the worker change, both visit tests hung until the 60s timeout. Without the build-first change, `panic_in_build` hung too. So the tests do catch the bug.
+- `cargo fmt --check -p ignore` is clean.
+
+Nothing was left undone. The repo has no git, so there is no commit.

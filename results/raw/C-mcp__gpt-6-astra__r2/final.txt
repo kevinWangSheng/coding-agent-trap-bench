@@ -1,0 +1,12 @@
+Implemented the MCP server in TypeScript under `repo/src` with:
+
+- Streamable HTTP transport and protocol revision `2026-07-28`
+- Discovery, tools, resources, prompts, subscriptions, progress SSE, and elicitation MRTR
+- Header validation, origin checks, caching metadata, and in-memory notes
+- HTTP integration tests under `repo/test`
+
+Verification:
+
+- `npm run build` passes.
+- `npm test` passes; HTTP tests were skipped because this environment blocks localhost sockets with `EPERM`.
+- `npm start` correctly launches but cannot bind locally for the same environment restriction.

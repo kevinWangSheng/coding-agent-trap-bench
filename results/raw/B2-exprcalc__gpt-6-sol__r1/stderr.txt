@@ -1,0 +1,4 @@
+Reading additional input from stdin...
+2026-09-23T23:16:56.957020Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:16:56.978710Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:17:14.329496Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out

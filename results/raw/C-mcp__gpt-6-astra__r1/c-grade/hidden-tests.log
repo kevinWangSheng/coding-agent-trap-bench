@@ -1,0 +1,395 @@
+✔ app: discover identifies field-notes 1.0.0 with instructions and capabilities (21.087625ms)
+✔ app: tools/list returns the three tools alphabetically with schemas (2.348583ms)
+✔ app: add_note exposes notebook via x-mcp-header Notebook (3.412625ms)
+✔ app: add_note returns structured output matching its schema plus JSON text (4.294834ms)
+✖ app: add_note ids are sequential and never reused (5.864583ms)
+✔ app: add_note invalid arguments are tool execution errors (12.299708ms)
+✔ app: unknown tool is a protocol error -32602 (1.8095ms)
+✖ app: reindex reports progress on the request's stream (83.525292ms)
+✖ app: reindex numeric progress token and defaults (4.112875ms)
+✔ app: reindex without a progress token sends no progress (3.639625ms)
+✔ app: reindex out-of-range arguments are tool execution errors (7.8035ms)
+✔ app: resources/list returns only notes://index (1.969125ms)
+✔ app: resources/templates/list returns the note template (1.9835ms)
+✔ app: notes://index lists notes by numeric id with seeds (17.352125ms)
+✔ app: reading a note returns markdown (5.627375ms)
+✖ app: reading a missing note is -32602 (not the old -32002) (1.986083ms)
+✔ app: prompts/list describes summarize_notebook (0.950916ms)
+✔ app: summarize_notebook embeds the notebook's notes (5.9315ms)
+✔ app: summarize_notebook detailed style and empty notebook (4.146458ms)
+✔ app: summarize_notebook invalid arguments are -32602 (5.859625ms)
+✖ app: delete_note asks for confirmation with an input_required result (3.506584ms)
+✖ app: delete_note deletes after the user accepts (3.516ms)
+✖ app: delete_note decline, cancel or confirm:false keeps the note (3.106875ms)
+✔ app: delete_note on a missing note is a tool execution error (2.291083ms)
+✖ app: delete_note without elicitation capability is -32021 (HTTP 400) (3.632667ms)
+✖ app: a confirmation for one note cannot delete another (6.380583ms)
+✖ app: a tampered or forged requestState is rejected (5.635959ms)
+✖ app: subscriptions deliver resource updates for watched URIs (4.658083ms)
+✖ app: subscriptions only notify watchers of the changed URI (3.917917ms)
+✖ app: acknowledgment omits list-change types the server does not offer (2.278584ms)
+✖ app: request-scoped progress never appears on a listen stream (35.099167ms)
+✔ spec: every result carries resultType complete (32.937625ms)
+✔ spec: discover identifies the server in _meta serverInfo (2.499709ms)
+✔ spec: discover has no legacy initialize-result fields (1.990666ms)
+✖ spec: cacheable results carry ttlMs/cacheScope per README policy (8.728666ms)
+✔ spec: tools/list order is deterministic (2.272458ms)
+✖ spec: missing required _meta fields -> 400 / -32602 (1.825375ms)
+✔ spec: clientInfo is optional (1.822583ms)
+✖ spec: unsupported protocol version -> 400 / -32022 with supported list (0.472917ms)
+✔ spec: MCP-Protocol-Version header missing or mismatched -> 400 / -32020 (3.234166ms)
+✔ spec: Mcp-Method header missing or mismatched -> 400 / -32020 (3.547875ms)
+✔ spec: Mcp-Name required and validated for tools/call, prompts/get, resources/read (9.683875ms)
+✖ spec: base64-encoded Mcp-Name is decoded before comparison (1.845625ms)
+✖ spec: Mcp-Param-Notebook must be present and match the body (0.787166ms)
+✖ spec: Mcp-Param-Notebook base64 values are decoded before comparison (5.989667ms)
+✔ spec: removed methods are unknown (404 / -32601) (5.258083ms)
+✔ spec: errors preserve the request id (3.121167ms)
+✖ spec: no GET/DELETE endpoint (405) (1.870833ms)
+✔ spec: Mcp-Session-Id is ignored and never issued (4.085084ms)
+✔ spec: Last-Event-ID is ignored (1.71575ms)
+✔ spec: Origin validation (403 for foreign origins) (4.679917ms)
+✔ spec: client notifications are accepted with 202 and no body (1.676875ms)
+✔ spec: no log notifications without a requested logLevel (2.971792ms)
+✔ spec: server sends no JSON-RPC requests on response streams (2.983375ms)
+✔ spec: malformed JSON is a parse error (1.922958ms)
+ℹ tests 55
+ℹ suites 0
+ℹ pass 34
+ℹ fail 21
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 539.573667
+
+✖ failing tests:
+
+test at app.test.ts:91:1
+✖ app: add_note ids are sequential and never reused (5.864583ms)
+  Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1007,"error":{"code":-32005,"message":"Missing required client capability: elicitation"}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async confirmDelete (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:142:17)
+      at async TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:98:3)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+
+test at app.test.ts:126:1
+✖ app: reindex reports progress on the request's stream (83.525292ms)
+  AssertionError [ERR_ASSERTION]: progress needs an SSE response, got application/json
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:128:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at app.test.ts:144:1
+✖ app: reindex numeric progress token and defaults (4.112875ms)
+  AssertionError [ERR_ASSERTION]: default steps is 5
+  
+  0 !== 5
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:147:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 5,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at app.test.ts:215:1
+✖ app: reading a missing note is -32602 (not the old -32002) (1.986083ms)
+  AssertionError [ERR_ASSERTION]: notes://notes/n999999: {"jsonrpc":"2.0","id":1039,"error":{"code":-32002,"message":"Resource not found"}}
+  
+  -32002 !== -32602
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:218:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: -32002,
+    expected: -32602,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at app.test.ts:269:1
+✖ app: delete_note asks for confirmation with an input_required result (3.506584ms)
+  Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1051,"error":{"code":-32005,"message":"Missing required client capability: elicitation"}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:271:13)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+
+test at app.test.ts:289:1
+✖ app: delete_note deletes after the user accepts (3.516ms)
+  Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1053,"error":{"code":-32005,"message":"Missing required client capability: elicitation"}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async confirmDelete (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:142:17)
+      at async TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:291:13)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+
+test at app.test.ts:299:1
+✖ app: delete_note decline, cancel or confirm:false keeps the note (3.106875ms)
+  Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1055,"error":{"code":-32005,"message":"Missing required client capability: elicitation"}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async confirmDelete (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:142:17)
+      at async TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:306:15)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+
+test at app.test.ts:320:1
+✖ app: delete_note without elicitation capability is -32021 (HTTP 400) (3.632667ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 400
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:323:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at app.test.ts:330:1
+✖ app: a confirmation for one note cannot delete another (6.380583ms)
+  Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1061,"error":{"code":-32005,"message":"Missing required client capability: elicitation"}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:334:17)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+
+test at app.test.ts:346:1
+✖ app: a tampered or forged requestState is rejected (5.635959ms)
+  Error: tools/call: expected a result, got HTTP 200: {"jsonrpc":"2.0","id":1063,"error":{"code":-32005,"message":"Missing required client capability: elicitation"}}
+      at result (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/lib.ts:121:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:349:17)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+
+test at app.test.ts:367:1
+✖ app: subscriptions deliver resource updates for watched URIs (4.658083ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  404 !== 200
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:377:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at app.test.ts:402:1
+✖ app: subscriptions only notify watchers of the changed URI (3.917917ms)
+  AssertionError [ERR_ASSERTION]: numeric id preserved
+  + actual - expected
+  
+  + undefined
+  - 4242
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:411:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 4242,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at app.test.ts:427:1
+✖ app: acknowledgment omits list-change types the server does not offer (2.278584ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + undefined
+  - [
+  -   'notes://index'
+  - ]
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:439:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: [ 'notes://index' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at app.test.ts:445:1
+✖ app: request-scoped progress never appears on a listen stream (35.099167ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 3
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:450:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:38:1
+✖ spec: cacheable results carry ttlMs/cacheScope per README policy (8.728666ms)
+  AssertionError [ERR_ASSERTION]: notes://index ttlMs
+  
+  undefined !== 0
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:46:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:57:1
+✖ spec: missing required _meta fields -> 400 / -32602 (1.825375ms)
+  AssertionError [ERR_ASSERTION]: no _meta
+  
+  -32020 !== -32602
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:66:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: -32020,
+    expected: -32602,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:77:1
+✖ spec: unsupported protocol version -> 400 / -32022 with supported list (0.472917ms)
+  AssertionError [ERR_ASSERTION]: 2025-11-25
+  
+  -32020 !== -32022
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:81:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: -32020,
+    expected: -32022,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:121:1
+✖ spec: base64-encoded Mcp-Name is decoded before comparison (1.845625ms)
+  AssertionError [ERR_ASSERTION]: {"jsonrpc":"2.0","id":1031,"error":{"code":-32020,"message":"HeaderMismatch"}}
+  
+  400 !== 200
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:124:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 400,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:128:1
+✖ spec: Mcp-Param-Notebook must be present and match the body (0.787166ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 400
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:131:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:141:1
+✖ spec: Mcp-Param-Notebook base64 values are decoded before comparison (5.989667ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(ok.response?.result && !ok.response.result.isError)
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:148:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:184:1
+✖ spec: no GET/DELETE endpoint (405) (1.870833ms)
+  AssertionError [ERR_ASSERTION]: GET
+  
+  404 !== 405
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:188:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 405,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

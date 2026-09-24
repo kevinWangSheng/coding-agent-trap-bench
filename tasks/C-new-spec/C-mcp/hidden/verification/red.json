@@ -1,0 +1,43 @@
+{
+  "task": "C-mcp",
+  "repo": "<BENCH>/tasks/C-new-spec/C-mcp/repo",
+  "logs": "<scratch>/final-red",
+  "build": {
+    "ok": false,
+    "rc": 2,
+    "log_tail": "\n> field-notes-mcp@1.0.0 build\n> tsc -p .\n\nerror TS18003: No inputs were found in config file '/private/var/folders/nh/02mxl3td7rxcyj70_y5t1xqr0000gn/T/grade-work-les75qmk/repo/tsconfig.json'. Specified 'include' paths were '[\"src\"]' and 'exclude' paths were '[\"/private/var/folders/nh/02mxl3td7rxcyj70_y5t1xqr0000gn/T/grade-work-les75qmk/repo/dist\"]'.\n"
+  },
+  "conformance": {
+    "ok": false,
+    "error": "server did not start (see server log)"
+  },
+  "hidden_tests": {
+    "ok": false,
+    "error": "server did not start (see server log)"
+  },
+  "stale_api": {
+    "static_hits_count": 0,
+    "static_hits": [],
+    "dynamic_reachable": null,
+    "dynamic_hits_count": null,
+    "dynamic_hits": [],
+    "ok": false
+  },
+  "server": {
+    "started": false,
+    "per_phase": {
+      "conformance": false,
+      "hidden_tests": false,
+      "stale_api": false
+    }
+  },
+  "summary": {
+    "build": false,
+    "conformance": false,
+    "hidden_tests": false,
+    "stale_api": false,
+    "server_started": false
+  },
+  "verdict": "FAIL",
+  "wall_s": 0.9
+}

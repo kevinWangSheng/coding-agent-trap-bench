@@ -1,0 +1,12 @@
+Implemented fixes in:
+
+- `src/exprcalc/parser.py`: correct power associativity and unary-minus precedence.
+- `src/exprcalc/evaluator.py`: C-style division/modulo semantics and `EvalError` for division by zero and negative exponents.
+
+Verified with:
+
+```text
+18 passed
+```
+
+Nothing remains unresolved.

@@ -1,0 +1,267 @@
+diff --git a/crates/ignore/src/walk.rs b/crates/ignore/src/walk.rs
+index 93e6cf1..9222c10 100644
+--- a/crates/ignore/src/walk.rs
++++ b/crates/ignore/src/walk.rs
+@@ -1445,27 +1445,53 @@ impl WalkParallel {
+         let quit_now = Arc::new(AtomicBool::new(false));
+         let active_workers = Arc::new(AtomicUsize::new(threads));
+         let stacks = Stack::new_for_each_thread(threads, stack);
+-        std::thread::scope(|s| {
+-            let handles: Vec<_> = stacks
++        // Build every visitor before spawning any threads. The caller's
++        // builder may panic, and if that happened after some workers were
++        // already running, those workers would wait forever for the workers
++        // that were never started.
++        let workers: Vec<Worker<'_>> = stacks
++            .into_iter()
++            .map(|stack| Worker {
++                visitor: builder.build(),
++                stack,
++                quit_now: quit_now.clone(),
++                active_workers: active_workers.clone(),
++                max_depth: self.max_depth,
++                min_depth: self.min_depth,
++                max_filesize: self.max_filesize,
++                follow_links: self.follow_links,
++                skip: self.skip.clone(),
++                filter: self.filter.clone(),
++            })
++            .collect();
++        let panic = std::thread::scope(|s| {
++            let handles: Vec<_> = workers
+                 .into_iter()
+-                .map(|stack| Worker {
+-                    visitor: builder.build(),
+-                    stack,
+-                    quit_now: quit_now.clone(),
+-                    active_workers: active_workers.clone(),
+-                    max_depth: self.max_depth,
+-                    min_depth: self.min_depth,
+-                    max_filesize: self.max_filesize,
+-                    follow_links: self.follow_links,
+-                    skip: self.skip.clone(),
+-                    filter: self.filter.clone(),
++                .map(|worker| {
++                    let guard = QuitOnPanic(quit_now.clone());
++                    s.spawn(move || {
++                        // If anything in this worker panics (e.g., the
++                        // caller's visitor or filter), then tell all other
++                        // workers to quit. Otherwise, they could wait
++                        // forever for this worker to become inactive.
++                        let _guard = guard;
++                        worker.run()
++                    })
+                 })
+-                .map(|worker| s.spawn(|| worker.run()))
+                 .collect();
++            // Join every thread before propagating a panic, and then
++            // propagate the first one with its original payload.
++            let mut panic = None;
+             for handle in handles {
+-                handle.join().unwrap();
++                if let Err(err) = handle.join() {
++                    panic.get_or_insert(err);
++                }
+             }
++            panic
+         });
++        if let Some(err) = panic {
++            std::panic::resume_unwind(err);
++        }
+     }
+ 
+     fn threads(&self) -> usize {
+@@ -1687,6 +1713,20 @@ struct Worker<'s> {
+     filter: Option<Filter>,
+ }
+ 
++/// Sets the shared `quit_now` flag if dropped while the thread is panicking.
++///
++/// This ensures that a panic in one worker causes all other workers to quit
++/// instead of waiting forever for work from the panicked worker.
++struct QuitOnPanic(Arc<AtomicBool>);
++
++impl Drop for QuitOnPanic {
++    fn drop(&mut self) {
++        if std::thread::panicking() {
++            self.0.store(true, AtomicOrdering::SeqCst);
++        }
++    }
++}
++
+ impl<'s> Worker<'s> {
+     /// Runs this worker until there is no more work left to do.
+     ///
+@@ -1910,6 +1950,14 @@ impl<'s> Worker<'s> {
+                             value = Some(v);
+                             break;
+                         }
++                        // Another worker may have asked everyone to quit
++                        // without sending a message we can see (e.g., it
++                        // panicked), so check the flag while waiting.
++                        if self.is_quit_now() {
++                            self.activate_worker();
++                            value = Some(Message::Quit);
++                            break;
++                        }
+                         // Our stack isn't blocking. Instead of burning the
+                         // CPU waiting, we let the thread sleep for a bit. In
+                         // general, this tends to only occur once the search is
+@@ -2604,4 +2652,157 @@ mod tests {
+             ],
+         );
+     }
++
++    /// Runs `f` on a separate thread and asserts that it panics within a
++    /// reasonable amount of time (instead of, e.g., deadlocking). Returns the
++    /// panic message.
++    fn assert_panics_without_hang<F>(f: F) -> String
++    where
++        F: FnOnce() + Send + 'static,
++    {
++        let (tx, rx) = std::sync::mpsc::channel();
++        std::thread::spawn(move || {
++            let result =
++                std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
++            let _ = tx.send(result);
++        });
++        let result = rx
++            .recv_timeout(std::time::Duration::from_secs(30))
++            .expect("parallel walk hung after a panic");
++        let payload = result.expect_err("parallel walk did not panic");
++        if let Some(msg) = payload.downcast_ref::<&str>() {
++            msg.to_string()
++        } else if let Some(msg) = payload.downcast_ref::<String>() {
++            msg.clone()
++        } else {
++            panic!("unexpected panic payload")
++        }
++    }
++
++    /// Creates a directory tree with enough directories to keep many
++    /// threads busy.
++    fn mk_panic_tree() -> TempDir {
++        let td = tmpdir();
++        for i in 0..20 {
++            for j in 0..5 {
++                mkdirp(td.path().join(format!("d{i}/e{j}")));
++                wfile(td.path().join(format!("d{i}/e{j}/foo")), "");
++            }
++        }
++        td
++    }
++
++    #[test]
++    fn parallel_panic_in_visitor() {
++        let td = Arc::new(mk_panic_tree());
++        for _ in 0..20 {
++            let td = td.clone();
++            let msg = assert_panics_without_hang(move || {
++                WalkBuilder::new(td.path())
++                    .threads(40)
++                    .build_parallel()
++                    .run(|| Box::new(|_| panic!("oops!")));
++            });
++            assert_eq!(msg, "oops!");
++        }
++    }
++
++    #[test]
++    fn parallel_panic_in_visitor_late() {
++        let td = Arc::new(mk_panic_tree());
++        for _ in 0..20 {
++            let td = td.clone();
++            let msg = assert_panics_without_hang(move || {
++                WalkBuilder::new(td.path()).threads(8).build_parallel().run(
++                    || {
++                        Box::new(|result| {
++                            let dent = result.unwrap();
++                            if dent.path().ends_with("d7/e3/foo") {
++                                panic!("found it");
++                            }
++                            WalkState::Continue
++                        })
++                    },
++                );
++            });
++            assert_eq!(msg, "found it");
++        }
++    }
++
++    #[test]
++    fn parallel_panic_in_visitor_trait() {
++        use super::{ParallelVisitor, ParallelVisitorBuilder};
++
++        struct Visitor;
++        impl ParallelVisitor for Visitor {
++            fn visit(
++                &mut self,
++                _: Result<DirEntry, crate::Error>,
++            ) -> WalkState {
++                panic!("visitor panic")
++            }
++        }
++        struct Builder;
++        impl<'s> ParallelVisitorBuilder<'s> for Builder {
++            fn build(&mut self) -> Box<dyn ParallelVisitor + 's> {
++                Box::new(Visitor)
++            }
++        }
++
++        let td = Arc::new(mk_panic_tree());
++        for _ in 0..20 {
++            let td = td.clone();
++            let msg = assert_panics_without_hang(move || {
++                WalkBuilder::new(td.path())
++                    .threads(40)
++                    .build_parallel()
++                    .visit(&mut Builder);
++            });
++            assert_eq!(msg, "visitor panic");
++        }
++    }
++
++    #[test]
++    fn parallel_panic_in_builder() {
++        let td = Arc::new(mk_panic_tree());
++        // Panic on various calls to the builder, including the first one
++        // (used for the root paths) and ones while creating worker visitors.
++        for panic_at in [0, 1, 2, 5, 10] {
++            let td = td.clone();
++            let msg = assert_panics_without_hang(move || {
++                let mut count = 0;
++                WalkBuilder::new(td.path()).threads(10).build_parallel().run(
++                    || {
++                        if count == panic_at {
++                            panic!("builder panic");
++                        }
++                        count += 1;
++                        Box::new(|_| WalkState::Continue)
++                    },
++                );
++            });
++            assert_eq!(msg, "builder panic");
++        }
++    }
++
++    #[test]
++    fn parallel_panic_in_filter() {
++        let td = Arc::new(mk_panic_tree());
++        for _ in 0..20 {
++            let td = td.clone();
++            let msg = assert_panics_without_hang(move || {
++                WalkBuilder::new(td.path())
++                    .threads(40)
++                    .filter_entry(|dent| {
++                        if dent.path().ends_with("e2") {
++                            panic!("filter panic");
++                        }
++                        true
++                    })
++                    .build_parallel()
++                    .run(|| Box::new(|_| WalkState::Continue));
++            });
++            assert_eq!(msg, "filter panic");
++        }
++    }
+ }

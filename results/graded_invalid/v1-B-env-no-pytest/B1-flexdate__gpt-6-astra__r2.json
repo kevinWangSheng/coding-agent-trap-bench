@@ -1,0 +1,30 @@
+{
+ "meta": {
+  "run_id": "B1-flexdate__gpt-6-astra__r2",
+  "task": "B1-flexdate",
+  "model": "gpt-6-astra",
+  "rep": 2,
+  "prompt_file": "prompt.md",
+  "rc": 1,
+  "timed_out": false,
+  "wall_s": 385.4,
+  "reconnects": 0,
+  "cli_version": "codex-cli 0.156.1"
+ },
+ "usage": {},
+ "audit": {
+  "tool_calls": 8,
+  "leak_hits": [],
+  "network_attempts": []
+ },
+ "grade": {
+  "error": "no grade output",
+  "rc": 2
+ },
+ "review": {
+  "changed_files": [
+   "src/flexdate/parser.py"
+  ],
+  "changed_outside_src": []
+ }
+}

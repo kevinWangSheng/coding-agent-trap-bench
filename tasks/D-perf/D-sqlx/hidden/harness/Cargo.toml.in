@@ -1,0 +1,20 @@
+# Template: grade.py replaces @REPO@ with the absolute path of the sqlx checkout under test.
+[package]
+name = "d-sqlx-harness"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+sqlx = { path = "@REPO@", default-features = false, features = ["sqlite", "runtime-tokio"] }
+# `Executor::describe` is behind the `offline` feature (sqlx-sqlite/offline enables sqlx-core/offline).
+sqlx-sqlite = { path = "@REPO@/sqlx-sqlite", features = ["offline"] }
+tokio = { version = "1", features = ["rt", "macros", "time"] }
+futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
+serde_json = "1"
+
+[profile.release]
+debug = false
+
+# Standalone: never become part of an enclosing workspace.
+[workspace]

@@ -1,0 +1,21 @@
+Reading additional input from stdin...
+2026-09-23T23:44:53.944855Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:44:53.944968Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:44:58.959552Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+2026-09-23T23:45:31.696639Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:45:37.045485Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:45:42.541585Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:45:48.422983Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:45:55.023572Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:46:06.387381Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:46:33.802099Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:46:45.600168Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:46:56.220864Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:47:13.529355Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:47:29.802026Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:49:09.573139Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:49:15.119382Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:49:28.952564Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:51:08.125777Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:51:28.629864Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:52:06.313829Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out

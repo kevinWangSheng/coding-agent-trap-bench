@@ -1,0 +1,30 @@
+I've implemented the server in TypeScript under `repo/src`, using only Node's standard library. `npm run build` compiles cleanly. I couldn't run it on a real port here, though: this sandbox blocks every `listen` call (TCP and Unix sockets both fail with EPERM). So `npm start` and the default `npm test` have never actually run. The same tests all pass (47/47) when the server gets its HTTP over an in-memory connection instead of a socket.
+
+**What I built**
+- **`src/http.ts`** handles HTTP on `127.0.0.1:$PORT/mcp`:
+  - requests from browser origins other than `localhost`/`127.0.0.1` on that port get 403;
+  - only POST is accepted; GET and DELETE get 405, since this revision has no GET stream or sessions;
+  - the required `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` headers must be present and match the request body, and `=?base64?…?=` values are decoded before comparing;
+  - the error codes and HTTP statuses follow the spec (`-32020`, `-32021`, `-32022`, 400 for missing `_meta`, 404 for unknown methods);
+  - an old-style `initialize` request gets an "unsupported protocol version" error that lists `2026-07-28`;
+  - replies are plain JSON, or an SSE stream when there are progress updates.
+- **`src/mcp.ts`** implements `server/discover`, the tools, the resources and the prompt:
+  - **Caching:** lists and discovery can be cached publicly for 5 minutes; note contents are marked private and never fresh.
+  - **`add_note`:** the `notebook` argument is exposed as the `Mcp-Param-Notebook` header, and the server rejects a request if the header is missing or doesn't match the body.
+  - **`delete_note`:** asks the user to confirm using the spec's multi-round-trip mechanism. The server keeps nothing in memory between the two calls. The confirmation token is signed (HMAC) and tied to one note id, so it can't be forged, edited or reused for another note. A client without form support gets the "missing client capability" error.
+  - **`reindex`:** streams progress, and stops working when the client disconnects.
+- **Change notifications (`subscriptions/listen`):** the server acknowledges first, then tells each watcher only about the URIs it asked for. On shutdown it closes each subscription with a final result.
+- **Deletion tokens:** they last 10 minutes, and a server restart invalidates any that are outstanding (the signing key is random at startup).
+- **Two spec calls I had to make:**
+  - `delete_note` on a note that doesn't exist returns "not found" before the capability check.
+  - Other application errors, such as an unknown tool or a missing resource, come back with HTTP 200.
+
+**Tests (`test/*.test.ts`)**
+- 47 tests covering the headers and error codes, every tool, resource and prompt, the full confirm/decline/tamper/replay cycle for `delete_note`, progress streaming, cancellation, subscriptions and graceful shutdown.
+- By default `npm test` builds first, starts `dist/server.js` on a random port and talks to it over TCP.
+- `MCP_TEST_TRANSPORT=memory npm test` runs the same tests against the real HTTP server over an in-memory connection. That's how I ran them here; I added a short note about it to the README.
+
+**Changes to existing files**
+- `package.json`: added a `pretest` build step and pointed `test` at `test/**/*.test.ts`. Without that, `node --test` also treated `test/helpers.ts` as a test file.
+
+**Still to do:** run `npm test` and `npm start` somewhere that allows binding a port, to confirm the TCP path.

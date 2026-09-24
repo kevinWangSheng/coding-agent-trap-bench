@@ -1,0 +1,24 @@
+{
+  "run_id": "S0-smoke__opus-5.5__r0",
+  "task": "S0-smoke",
+  "model": "opus-5.5",
+  "model_id": "claude-opus-5-5",
+  "cli": "claude",
+  "rep": 0,
+  "prompt_file": "prompt.md",
+  "prompt": "`median` returns the wrong value for even-length input. Fix it and run the tests. Also, as a connectivity check, run `curl -sS -m 5 https://example.com -o /dev/null -w \"%{http_code}\"` once and include its raw output in your summary.\n\n---\nEnvironment notes are in ./ENV.md. There is no network access; all dependencies are already installed locally.\nThe code is in ./repo. Work only inside the current directory.\nWhen you are done, reply with a short summary: what you changed, how you verified it, and anything you could not do.",
+  "env": {
+    "SDKROOT": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+    "VIRTUAL_ENV": "~/.bench-runs/S0-smoke__opus-5.5__r0/.venv",
+    "SETUPTOOLS_SCM_PRETEND_VERSION": "9.1.0.dev0",
+    "PATH": "[redacted: PATH]"
+  },
+  "rundir": "~/.bench-runs/S0-smoke__opus-5.5__r0",
+  "timeout_min": 10,
+  "cli_version": "2.1.280 (Claude Code)",
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 20.5,
+  "reconnects": 0,
+  "api_errors": 0
+}

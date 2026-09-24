@@ -1,0 +1,17 @@
+Implemented fixes in:
+
+- `src/exprcalc/parser.py`
+  - Right associative exponentiation
+  - Correct precedence for unary signs
+- `src/exprcalc/evaluator.py`
+  - Division truncates toward zero
+  - Modulo follows dividend sign
+  - Division by zero and negative exponents raise `EvalError`
+
+Verified with:
+
+```text
+18 passed
+```
+
+`pytest` in the project virtualenv was unavailable, so I used the system-local pytest executable.

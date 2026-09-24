@@ -1,0 +1,15 @@
+All 18 tests pass now. I didn't touch the tests.
+
+**What I changed**
+- **`src/exprcalc/parser.py`**:
+  - `^` now groups from the right, so `2 ^ 3 ^ 2` is 512.
+  - A leading minus now applies after `^`, so `-3 ^ 2` is -9.
+  - An exponent can still start with a minus sign, as in `2 ^ -1`.
+- **`src/exprcalc/evaluator.py`**:
+  - `/` now rounds toward zero, so `-7 / 2` is -3.
+  - `%` now gives a result with the same sign as the left-hand number, so `-17 % 5` is -2.
+  - Dividing by zero and negative exponents now raise `EvalError` instead of a Python error or a fraction.
+
+**How I verified it:** I ran `python -m pytest -q` in `repo`, and everything passed, including the cases in `expected.json`.
+
+Nothing was left undone.

@@ -1,0 +1,14 @@
+Implemented the MCP server in [repo/src/server.ts](~/.bench-runs/C-mcp__gpt-6-sol__r1/repo/src/server.ts), including:
+
+- Streamable HTTP MCP transport and protocol/header validation
+- Discovery, tools, resources, templates, prompts, subscriptions
+- Note creation, deletion confirmation via MRTR elicitation, and reindex progress
+- Resource update notifications and caching metadata
+- Signed stateless confirmation state
+- HTTP integration test in [repo/test/http.test.js](~/.bench-runs/C-mcp__gpt-6-sol__r1/repo/test/http.test.js)
+
+Verification:
+
+- `npm run build` succeeds.
+- `npm test` runs successfully.
+- The HTTP test is skipped in this sandbox because localhost socket binding fails with `EPERM`; the test exercises the real server process when networking is available.

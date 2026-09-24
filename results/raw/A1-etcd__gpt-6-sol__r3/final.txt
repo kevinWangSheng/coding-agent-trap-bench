@@ -1,0 +1,9 @@
+Implemented nested transaction quota accounting.
+
+- Recursively include nested `Txn` operations when calculating quota cost.
+- Added tests covering nested success and failure branches and branch cost comparison.
+- Verified with:
+
+  `go test ./server/etcdserver/txn ./server/storage ./server/etcdserver/apply`
+
+All tests passed.

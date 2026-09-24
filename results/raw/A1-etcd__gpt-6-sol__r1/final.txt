@@ -1,0 +1,10 @@
+Implemented recursive quota accounting for nested transactions in both success and failure branches.
+
+Added unit tests covering nested puts and branch cost selection.
+
+Verified with:
+
+- `go test ./server/storage`
+- `go test ./server/etcdserver/apply ./server/etcdserver/txn`
+
+A broader `go test ./server/storage/...` run encountered an unrelated timeout in `mvcc.TestHashKVWhenCompacting`.

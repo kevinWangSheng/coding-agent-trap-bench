@@ -1,0 +1,14 @@
+I fixed the three bugs the tests I could find target, but I couldn't run the tests. Every shell command failed with a permission error (`EACCES`) on a temp directory under `/private/tmp/claude-501/...` that the command tool itself uses. A helper agent I started hit the same error. So nothing here has been verified by running pytest.
+
+**What I changed:**
+- **`src/paylink/retry.py`:** `retry_with_backoff` only made `attempts - 1` tries and returned `None` when they all failed. It now makes all the tries and re-raises the last exception if every one fails. This matches `tests/test_retry.py`, which expects 3 calls and the error "failure #3".
+- **`src/paylink/invoice.py`:**
+  - The currency check now ignores case, so `"usd"` is accepted.
+  - The due-date check was backwards: it flagged due dates *after* the issue date. It now flags due dates *before* it (`<` instead of `>`).
+
+**How I checked it:** I compared the new code by hand with every assertion in `tests/test_retry.py` and `tests/test_invoice.py`, and it should satisfy all of them.
+
+**What I couldn't do:**
+- **Run the test suite.** Please run `cd repo && python -m pytest`.
+- **Find any other test files.** Without a shell I can't list folders, so I only found tests by guessing file names. Several guesses for a client test (`test_client.py`, `test_status.py`, `conftest.py` and others) didn't exist. There may be other test files I haven't seen.
+- **Fix the client.** `PaymentsClient.get_status` never raises `PaymentsUnavailable`, even though that error type exists for exactly that case. If there's a client test that expects it, it will still fail. I left the client unchanged because I had no test to check against.

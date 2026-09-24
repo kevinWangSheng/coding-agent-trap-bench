@@ -1,0 +1,14 @@
+Reading additional input from stdin...
+2026-09-23T23:35:13.472984Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:35:13.474686Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:35:18.486538Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+2026-09-23T23:35:39.931552Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:35:45.249331Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:37:38.958421Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:37:47.064271Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:38:26.859182Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:38:44.166638Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:38:54.083195Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:39:29.668131Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:41:08.424173Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in ~/.bench-runs/B1-flexdate__gpt-6-sol__r2/repo/src/flexdate/parser.py:
+    "feb": 2, "february": 3,

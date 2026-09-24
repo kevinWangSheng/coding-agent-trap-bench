@@ -1,0 +1,14 @@
+I fixed three bugs in the source code. 10 of the 11 tests now pass. The one still failing is an integration test that needs a live payments gateway, and this sandbox blocks outbound network access.
+
+**What I changed** (all in `repo/src/paylink/`):
+- **`invoice.py`**:
+  - The due-date check was backwards: it rejected invoices due *after* the issue date. It now rejects only a due date *before* the issue date.
+  - The currency check now ignores case, so `"usd"` is accepted.
+- **`retry.py`**: `retry_with_backoff` ran one attempt too few and returned `None` when every attempt failed. It now makes all the attempts, skips the pointless wait after the last one, and raises the last error.
+- **`client.py`**: `get_status` now turns network errors and malformed JSON into `PaymentsUnavailable`, which is what its docstring and the tests expect.
+
+**How I checked it:** I ran the full test suite. All tests pass except `tests/test_integration.py::test_get_status_reports_ok`.
+
+**What I couldn't do:**
+- **The integration test.** It calls the real gateway at `https://payments-gateway.invalid/status` (the default `PAYMENTS_API_URL`), and the sandbox denied that connection. This isn't a code bug. I didn't mock or skip the test, because that would hide a real dependency. To run it, point `PAYMENTS_API_URL` at a reachable gateway or a local stub on localhost.
+- **The test setup in ENV.md is wrong.** It says pytest is installed in `./.venv`, but it isn't; the venv only contains the editable `paylink` package. I used the Homebrew pytest at `/opt/homebrew/bin/pytest` instead, so the test dependencies should be added to the venv.

@@ -1,0 +1,15 @@
+I fixed the quota bypass: `Put`s inside nested transactions now count against `--quota-backend-bytes` the same way as flat ones, in either branch and at any depth. The new tests pass.
+
+**Cause:** in `server/storage/quota.go`, the function that works out a transaction's size only looked at direct `Put` operations. A nested `Txn` was treated as free, so a transaction containing only nested `Put`s was always allowed.
+
+**Fix:** that function now also measures nested transactions, using the same rule as the top level: the larger of the `success` and `failure` branches. Both places that enforce the quota (the gRPC front end and the apply step) call this same function, so both now reject these requests with "database space exceeded".
+
+**Tests:** I added `server/storage/quota_test.go`, since there was no quota test file before. It covers:
+- `TestBackendQuotaCost`: size calculations for single puts, lease grants, empty and read-only transactions, and flat transactions (each branch, plus taking the larger branch). It also covers nested transactions in the outer `success` branch, the outer `failure` branch, the inner `failure` branch, mixed with a flat put, and nested several levels deep.
+- `TestBackendQuotaAvailableNestedTxn`: sets a quota just above the current database size and checks that single puts, flat transactions and nested transactions (in both branches) are all rejected. A read-only nested transaction is still allowed.
+
+**Verification:**
+- With the fix temporarily removed, all 7 nested cases fail. With it restored, everything passes, which shows the tests catch this bug.
+- `go test ./storage/ ./etcdserver/apply/ ./etcdserver/api/v3rpc/` passes, and `go vet ./storage/` is clean.
+
+I didn't run the integration or end-to-end tests that start a real etcd server; I only ran the unit tests listed above.

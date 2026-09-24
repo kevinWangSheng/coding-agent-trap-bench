@@ -1,0 +1,23 @@
+.DS_Store
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# fetched by setup.sh
+node_modules/
+cache/*
+!cache/README.md
+!cache/mcp-conformance/
+cache/mcp-conformance/node_modules/
+tasks/*/*/hidden/.venv/
+tasks/*/*/hidden/.cache/
+tasks/*/scratch/
+target/
+
+# produced by a run
+results/.orchestrate.lock
+results/orchestrate.log
+results/tmp_leftovers_*/
+tasks/C-new-spec/C-mcp/repo/docs/mcp-spec-2026-07-28/*
+!tasks/C-new-spec/C-mcp/repo/docs/mcp-spec-2026-07-28/README.md
+!cache/mcp-spec-2026-07-28.sha256

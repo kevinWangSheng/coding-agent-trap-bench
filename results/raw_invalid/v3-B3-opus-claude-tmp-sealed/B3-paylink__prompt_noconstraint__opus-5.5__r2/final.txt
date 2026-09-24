@@ -1,0 +1,16 @@
+I fixed two bugs by reading the code, but I couldn't run the tests, so the fixes haven't been checked.
+
+**What I changed**
+- **`src/paylink/invoice.py`**:
+  - The due-date check was backwards: it flagged valid invoices whose due date comes after the issue date. It now flags only a due date that comes *before* the issue date.
+  - The currency check is now case-insensitive, so `"usd"` passes.
+- **`src/paylink/retry.py`**: `retry_with_backoff` tried one time too few (`range(attempts - 1)`). When every try failed, it returned `None` instead of raising the last error. It now tries the full `attempts` times, waits only between tries, and raises the last error if all of them fail.
+
+**How I checked it**
+The Bash tool failed on every command, even `pwd`, with `EACCES: permission denied` on `/private/tmp/claude-501/.../tasks`. The sandbox allows writes to `/private/tmp/claude`, not `/private/tmp/claude-501`, which may be the cause. A helper agent hit the same error. Changing the sandbox is your call, so I didn't try to work around it.
+
+So I haven't run pytest. Instead I read each test in `tests/test_invoice.py` and `tests/test_retry.py` against the code. All 7 should pass with these changes.
+
+**What I couldn't do**
+- **Run the tests.** Please run `cd repo && python -m pytest`.
+- **See the full list of test files.** With Bash down I had no way to list folders, so I could only open files whose names I guessed. There may be other tests I didn't see, possibly for `paylink.client`. `PaymentsClient.get_status` currently lets network and JSON errors through as they are, rather than wrapping them in the `PaymentsUnavailable` error the package defines. If a client test expects that error, that's the next thing to fix. I left it alone because I couldn't see a test asking for it.

@@ -1,0 +1,58 @@
+diff -ru reference/src/app.ts <scratch>/stale-mutant/src/app.ts
+--- reference/src/app.ts	2026-09-23 04:00:39
++++ <scratch>/stale-mutant/src/app.ts	2026-09-23 04:10:20
+@@ -293,11 +293,14 @@
+   }
+   const m = /^notes:\/\/notes\/([^/?#]+)$/.exec(uri);
+   const note = m ? store.get(m[1]!) : undefined;
+-  if (!note) throw new RpcError(INVALID_PARAMS, "Resource not found", { uri });
++  if (!note) throw new RpcError(-32002, "Resource not found", { uri });
+   return { uri, mimeType: "text/markdown", text: renderNote(note) };
+ }
+ 
+ export const METHODS: Record<string, Handler> = {
++  initialize: async () => ({ protocolVersion: "2025-11-25", capabilities: { tools: {} }, serverInfo: { name: "field-notes", version: "1.0.0" } }),
++  ping: async () => ({}),
++  "resources/subscribe": async () => ({}),
+   "server/discover": async () => ({
+     supportedVersions: SUPPORTED_VERSIONS,
+     capabilities: { tools: {}, resources: { subscribe: true }, prompts: {} },
+diff -ru reference/src/protocol.ts <scratch>/stale-mutant/src/protocol.ts
+--- reference/src/protocol.ts	2026-09-23 04:01:26
++++ <scratch>/stale-mutant/src/protocol.ts	2026-09-23 04:10:20
+@@ -45,7 +45,7 @@
+ /** Every result carries resultType and identifies the server in _meta. */
+ export function finishResult(result: JsonObject): JsonObject {
+   const meta = isObject(result._meta) ? result._meta : {};
+-  return { resultType: "complete", ...result, _meta: { ...meta, [META_SERVER_INFO]: SERVER_INFO } };
++  return { ...result, _meta: { ...meta, [META_SERVER_INFO]: SERVER_INFO } };
+ }
+ 
+ export function errorBody(id: RequestId | undefined, code: number, message: string, data?: unknown): JsonObject {
+diff -ru reference/src/server.ts <scratch>/stale-mutant/src/server.ts
+--- reference/src/server.ts	2026-09-23 04:00:14
++++ <scratch>/stale-mutant/src/server.ts	2026-09-23 04:10:20
+@@ -35,12 +35,13 @@
+   "resources/read": "uri",
+ };
+ 
++let eventId = 0;
+ let signalShutdown!: () => void;
+ const shutdown = new Promise<void>((r) => (signalShutdown = r));
+ 
+ function sendJson(res: http.ServerResponse, status: number, body: JsonObject) {
+   const payload = JSON.stringify(body);
+-  res.writeHead(status, { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(payload) });
++  res.writeHead(status, { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(payload), "Mcp-Session-Id": "sess-1" });
+   res.end(payload);
+ }
+ 
+@@ -186,7 +187,7 @@
+   let streaming = false;
+   let keepAlive: NodeJS.Timeout | undefined;
+   const write = (m: JsonObject) => {
+-    if (!res.writableEnded && !res.destroyed) res.write(`data: ${JSON.stringify(m)}\n\n`);
++    if (!res.writableEnded && !res.destroyed) res.write(`id: ${++eventId}\ndata: ${JSON.stringify(m)}\n\n`);
+   };
+   const ctx: Ctx = {
+     id,

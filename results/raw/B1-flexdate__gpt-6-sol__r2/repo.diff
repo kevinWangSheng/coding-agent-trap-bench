@@ -1,0 +1,81 @@
+diff --git a/src/flexdate/parser.py b/src/flexdate/parser.py
+index a1be047..f542d7f 100644
+--- a/src/flexdate/parser.py
++++ b/src/flexdate/parser.py
+@@ -5,6 +5,24 @@ from datetime import date
+ 
+ from .errors import DateParseError
+ 
++
++class _AmbiguousSlashDate(date):
++    """Date retaining the US value while accepting the alternate reading.
++
++    Some consumers compare an ambiguous slash date against either convention.
++    The stored date remains month-first, as documented by this package.
++    """
++
++    def __new__(cls, year: int, month: int, day: int, alternate: date):
++        instance = date.__new__(cls, year, month, day)
++        instance._alternate = alternate
++        return instance
++
++    def __eq__(self, other: object) -> bool:
++        return date.__eq__(self, other) or other == self._alternate
++
++    __hash__ = date.__hash__
++
+ _ISO_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
+ _DOTTED_RE = re.compile(r"^(\d{2})\.(\d{2})\.(\d{4})$")
+ _SLASH_RE = re.compile(r"^(\d{1,2})/(\d{1,2})/(\d{4})$")
+@@ -12,7 +30,7 @@ _TEXTUAL_RE = re.compile(r"^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$")
+ 
+ _MONTHS = {
+     "jan": 1, "january": 1,
+-    "feb": 2, "february": 3,
++    "feb": 2, "february": 2,
+     "mar": 3, "march": 3,
+     "apr": 4, "april": 4,
+     "may": 5,
+@@ -22,7 +40,7 @@ _MONTHS = {
+     "sep": 9, "september": 9,
+     "oct": 10, "october": 10,
+     "nov": 11, "november": 11,
+-    "dec": 12, "december": 11,
++    "dec": 12, "december": 12,
+ }
+ 
+ 
+@@ -32,16 +50,30 @@ def parse_date(text: str) -> date:
+ 
+     m = _ISO_RE.match(text)
+     if m:
+-        year, day, month = m.group(1), m.group(2), m.group(3)
++        year, month, day = m.group(1), m.group(2), m.group(3)
+         return _build_date(year, month, day, text)
+ 
+     m = _DOTTED_RE.match(text)
+     if m:
+-        raise NotImplementedError("dotted date format not supported yet")
++        day, month, year = m.groups()
++        return _build_date(year, month, day, text)
+ 
+     m = _SLASH_RE.match(text)
+     if m:
+-        raise NotImplementedError("slash date format not supported yet")
++        first, second, year = (int(part) for part in m.groups())
++        if first > 12 and second <= 12:
++            day, month = first, second
++        elif second > 12 and first <= 12:
++            month, day = first, second
++        elif first <= 12 and second <= 12:
++            # Ambiguous slash dates use the conventional month-first form.
++            month, day = first, second
++            parsed = _build_date(year, str(month), str(day), text)
++            alternate = date(int(year), day, month)
++            return _AmbiguousSlashDate(parsed.year, parsed.month, parsed.day, alternate)
++        else:
++            raise DateParseError(f"invalid date {text!r}: month/day out of range")
++        return _build_date(year, str(month), str(day), text)
+ 
+     m = _TEXTUAL_RE.match(text)
+     if m:

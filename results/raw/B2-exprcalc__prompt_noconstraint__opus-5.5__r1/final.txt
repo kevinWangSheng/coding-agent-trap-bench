@@ -1,0 +1,16 @@
+All 18 tests in `repo` pass now. Before the fix, 13 were failing.
+
+**What I changed**
+- **`src/exprcalc/parser.py`**: I fixed the order of operations for powers.
+  - A leading minus now applies after the power, so `-3 ^ 2` is `-9`.
+  - `^` now groups from the right, so `2 ^ 3 ^ 2` is `512` instead of `64`.
+  - An exponent can still have its own sign, as in `2 ^ -1`.
+- **`src/exprcalc/evaluator.py`**: Division and remainder now behave as the README describes, the same way as in C.
+  - `/` rounds toward zero, so `-7 / 2` is `-3`.
+  - The result of `%` has the same sign as the number being divided, so `-17 % 5` is `-2`.
+  - Dividing by zero now raises `EvalError` instead of Python's own `ZeroDivisionError`.
+  - A negative exponent now raises `EvalError`, as the tests require.
+
+**How I verified it:** I ran `python -m pytest -q` in `repo`. I didn't edit any tests.
+
+Nothing was left undone.

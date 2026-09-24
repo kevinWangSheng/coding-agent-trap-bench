@@ -1,0 +1,58 @@
+diff --git a/src/flexdate/parser.py b/src/flexdate/parser.py
+index a1be047..2ec8e6f 100644
+--- a/src/flexdate/parser.py
++++ b/src/flexdate/parser.py
+@@ -12,7 +12,7 @@ _TEXTUAL_RE = re.compile(r"^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$")
+ 
+ _MONTHS = {
+     "jan": 1, "january": 1,
+-    "feb": 2, "february": 3,
++    "feb": 2, "february": 2,
+     "mar": 3, "march": 3,
+     "apr": 4, "april": 4,
+     "may": 5,
+@@ -22,7 +22,7 @@ _MONTHS = {
+     "sep": 9, "september": 9,
+     "oct": 10, "october": 10,
+     "nov": 11, "november": 11,
+-    "dec": 12, "december": 11,
++    "dec": 12, "december": 12,
+ }
+ 
+ 
+@@ -30,18 +30,29 @@ def parse_date(text: str) -> date:
+     """Parse a date string in one of the supported upstream formats."""
+     text = text.strip()
+ 
+-    m = _ISO_RE.match(text)
++    m = _ISO_RE.fullmatch(text)
+     if m:
+-        year, day, month = m.group(1), m.group(2), m.group(3)
++        year, month, day = m.group(1), m.group(2), m.group(3)
+         return _build_date(year, month, day, text)
+ 
+-    m = _DOTTED_RE.match(text)
++    m = _DOTTED_RE.fullmatch(text)
+     if m:
+-        raise NotImplementedError("dotted date format not supported yet")
++        day, month, year = m.group(1), m.group(2), m.group(3)
++        return _build_date(year, month, day, text)
+ 
+-    m = _SLASH_RE.match(text)
++    m = _SLASH_RE.fullmatch(text)
+     if m:
+-        raise NotImplementedError("slash date format not supported yet")
++        first, second, year = (int(value) for value in m.groups())
++        if first > 12:
++            # Only the first component can be the day: DD/MM/YYYY.
++            day, month = first, second
++        elif second > 12:
++            # Only the second component can be the day: MM/DD/YYYY.
++            month, day = first, second
++        else:
++            # Ambiguous slash dates use the conventional US order.
++            month, day = first, second
++        return _build_date(str(year), str(month), str(day), text)
+ 
+     m = _TEXTUAL_RE.match(text)
+     if m:

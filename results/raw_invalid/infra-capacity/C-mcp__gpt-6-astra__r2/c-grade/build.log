@@ -1,0 +1,8 @@
+
+> field-notes-mcp@1.0.0 build
+> tsc -p .
+
+src/server.ts(50,318): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/server.ts(63,1147): error TS2345: Argument of type 'string | string[] | undefined' is not assignable to parameter of type 'string | undefined'.
+  Type 'string[]' is not assignable to type 'string'.

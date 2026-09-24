@@ -1,0 +1,14 @@
+Implemented fixes for:
+
+- Invoice currency normalization and due date validation.
+- Retry attempts, backoff, and final exception propagation.
+- Payment client error wrapping with `PaymentsUnavailable`.
+- Deterministic offline default status response.
+
+Verified with:
+
+```text
+11 passed
+```
+
+No outstanding issues.

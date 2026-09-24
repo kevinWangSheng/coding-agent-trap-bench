@@ -1,0 +1,10 @@
+Implemented recursive quota accounting for nested transactions in [quota.go](~/.bench-runs/A1-etcd__gpt-6-astra__r1/repo/server/storage/quota.go).
+
+Added regression coverage for nested transaction branches in `quota_test.go`.
+
+Verified with:
+
+- `go test ./server/storage`
+- `go test ./server/etcdserver/apply ./server/etcdserver/txn`
+
+Nothing remains unresolved.

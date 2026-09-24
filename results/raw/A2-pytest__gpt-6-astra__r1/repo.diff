@@ -1,0 +1,79 @@
+diff --git a/src/_pytest/monkeypatch.py b/src/_pytest/monkeypatch.py
+index 9ae9e2b..0358fe2 100644
+--- a/src/_pytest/monkeypatch.py
++++ b/src/_pytest/monkeypatch.py
+@@ -244,6 +244,24 @@ class MonkeyPatch:
+         # avoid class descriptors like staticmethod/classmethod
+         if inspect.isclass(target):
+             oldval = target.__dict__.get(name, NOTSET)
++        else:
++            # For objects with an instance dictionary, only remember values
++            # stored on the object itself.  ``getattr`` above may have found
++            # an inherited attribute; restoring that value with ``setattr``
++            # would leave a new entry in the instance dictionary after undo.
++            try:
++                instance_dict = vars(target)
++            except TypeError:
++                pass
++            else:
++                if name in instance_dict:
++                    oldval = instance_dict[name]
++                else:
++                    # Data descriptors handle assignment themselves, so they
++                    # must be restored by assigning their original value.
++                    static_value = inspect.getattr_static(type(target), name, NOTSET)
++                    if not hasattr(static_value, "__set__"):
++                        oldval = NOTSET
+         setattr(target, name, value)
+         self._setattr.append((target, name, oldval))
+ 
+diff --git a/testing/test_monkeypatch.py b/testing/test_monkeypatch.py
+index 63e145c..455188e 100644
+--- a/testing/test_monkeypatch.py
++++ b/testing/test_monkeypatch.py
+@@ -52,6 +52,45 @@ def test_setattr() -> None:
+         monkeypatch.setattr(A, "y")  # type: ignore[call-overload]
+ 
+ 
++def test_setattr_undo_inherited_instance_attribute() -> None:
++    class Parent:
++        value = object()
++
++    class Child(Parent):
++        pass
++
++    target = Child()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(target, "value", object())
++    monkeypatch.undo()
++
++    assert "value" not in vars(target)
++    assert target.value is Parent.value
++
++
++def test_setattr_undo_inherited_instance_descriptor() -> None:
++    class Descriptor:
++        def __get__(self, instance, owner):
++            if instance is None:
++                return self
++            return object()
++
++    class Parent:
++        value = Descriptor()
++
++    class Child(Parent):
++        pass
++
++    target = Child()
++    before = target.value
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(target, "value", object())
++    monkeypatch.undo()
++
++    assert "value" not in vars(target)
++    assert target.value is not before
++
++
+ class TestSetattrWithImportPath:
+     def test_string_expression(self, monkeypatch: MonkeyPatch) -> None:
+         with monkeypatch.context() as mp:

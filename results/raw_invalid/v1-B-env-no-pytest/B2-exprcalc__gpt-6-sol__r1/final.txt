@@ -1,0 +1,11 @@
+Implemented fixes in:
+
+- `src/exprcalc/evaluator.py`: C-style division/modulo, division-by-zero handling, negative exponent errors.
+- `src/exprcalc/parser.py`: correct exponent precedence and right associativity.
+
+Verification:
+
+- Ran `/opt/homebrew/bin/pytest -q`
+- Result: **18 passed**
+
+The project virtualenv lacked `pytest`, so I used the installed system pytest executable.

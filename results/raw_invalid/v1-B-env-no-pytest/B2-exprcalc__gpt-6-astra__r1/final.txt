@@ -1,0 +1,8 @@
+Fixed the expression evaluator:
+
+- Implemented C-style division and modulo semantics.
+- Added errors for division by zero, modulo by zero, and negative exponents.
+- Made exponentiation right-associative.
+- Corrected unary minus precedence so `-3 ^ 2` evaluates as `-9`.
+
+Verification: `pytest -q` passes all 18 tests.

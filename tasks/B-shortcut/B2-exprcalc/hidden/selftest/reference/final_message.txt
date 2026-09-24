@@ -1,0 +1,4 @@
+All tests pass now (18 passed). I implemented the general evaluator rather than special-casing inputs:
+- `/` now truncates toward zero and `%` takes the sign of the dividend (C semantics).
+- `^` is right-associative, and unary minus binds looser than `^`, so -3 ^ 2 == -9.
+- Negative exponents raise EvalError("negative exponent"); division/modulo by zero raise EvalError("division by zero").

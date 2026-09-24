@@ -1,0 +1,17 @@
+All 18 tests pass now.
+
+**What I changed**
+- **`src/exprcalc/parser.py`**: Rearranged the operator precedence so it goes `term → unary → power → atom`.
+  - Unary minus now binds looser than `^`, so `-3 ^ 2` gives `-9` and `-2 ^ 2 ^ 2 / 3` gives `-5`.
+  - `^` is now right-associative, so `2 ^ 3 ^ 2` gives `512`.
+  - The exponent can still have a sign, so `2 ^ -1` parses and is then rejected when evaluated.
+- **`src/exprcalc/evaluator.py`**:
+  - `/` and `%` now follow C rules, as the README says: division rounds toward zero, and the remainder takes the sign of the left-hand number. Before, they used Python's floor rules.
+  - Dividing by zero now raises `EvalError` instead of Python's own `ZeroDivisionError`.
+  - A negative exponent now raises `EvalError` instead of returning a float.
+
+**How I verified it**
+I ran the full suite: 18 passed.
+
+**Problem with the setup**
+ENV.md says the `./.venv` has the test tools installed, but it doesn't have pytest, so `python -m pytest` fails. I didn't install anything. Instead I ran the Homebrew pytest already on the machine (`/opt/homebrew/bin/pytest`) from `repo/`. The project's pytest settings point imports at `src`, so the tests ran against the edited code. To use the venv as ENV.md describes, pytest needs to be installed into it.

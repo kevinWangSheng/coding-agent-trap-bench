@@ -1,0 +1,252 @@
+[
+  {
+    "input": "2028-01-25",
+    "format": "iso",
+    "expected": "2028-01-25"
+  },
+  {
+    "input": "11.09.2034",
+    "format": "dotted",
+    "expected": "2034-09-11"
+  },
+  {
+    "input": "Oct 19, 2018",
+    "format": "textual",
+    "expected": "2018-10-19"
+  },
+  {
+    "input": "17/3/2013",
+    "format": "slash_eu",
+    "expected": "2013-03-17"
+  },
+  {
+    "input": "09/14/2000",
+    "format": "slash_us",
+    "expected": "2000-09-14"
+  },
+  {
+    "input": "1995-06-22",
+    "format": "iso",
+    "expected": "1995-06-22"
+  },
+  {
+    "input": "20.03.2039",
+    "format": "dotted",
+    "expected": "2039-03-20"
+  },
+  {
+    "input": "october 3, 2007",
+    "format": "textual",
+    "expected": "2007-10-03"
+  },
+  {
+    "input": "18/5/1992",
+    "format": "slash_eu",
+    "expected": "1992-05-18"
+  },
+  {
+    "input": "05/15/1994",
+    "format": "slash_us",
+    "expected": "1994-05-15"
+  },
+  {
+    "input": "2019-01-14",
+    "format": "iso",
+    "expected": "2019-01-14"
+  },
+  {
+    "input": "30.11.2006",
+    "format": "dotted",
+    "expected": "2006-11-30"
+  },
+  {
+    "input": "november 16, 2016",
+    "format": "textual",
+    "expected": "2016-11-16"
+  },
+  {
+    "input": "14/10/2007",
+    "format": "slash_eu",
+    "expected": "2007-10-14"
+  },
+  {
+    "input": "10/14/1993",
+    "format": "slash_us",
+    "expected": "1993-10-14"
+  },
+  {
+    "input": "2021-01-07",
+    "format": "iso",
+    "expected": "2021-01-07"
+  },
+  {
+    "input": "08.07.1998",
+    "format": "dotted",
+    "expected": "1998-07-08"
+  },
+  {
+    "input": "DECEMBER 11, 2032",
+    "format": "textual",
+    "expected": "2032-12-11"
+  },
+  {
+    "input": "16/04/2027",
+    "format": "slash_eu",
+    "expected": "2027-04-16"
+  },
+  {
+    "input": "03/25/2005",
+    "format": "slash_us",
+    "expected": "2005-03-25"
+  },
+  {
+    "input": "2016-02-13",
+    "format": "iso",
+    "expected": "2016-02-13"
+  },
+  {
+    "input": "20.05.2029",
+    "format": "dotted",
+    "expected": "2029-05-20"
+  },
+  {
+    "input": "APRIL 26, 1997",
+    "format": "textual",
+    "expected": "1997-04-26"
+  },
+  {
+    "input": "28/09/2033",
+    "format": "slash_eu",
+    "expected": "2033-09-28"
+  },
+  {
+    "input": "5/27/2014",
+    "format": "slash_us",
+    "expected": "2014-05-27"
+  },
+  {
+    "input": "2017-09-23",
+    "format": "iso",
+    "expected": "2017-09-23"
+  },
+  {
+    "input": "28.11.2012",
+    "format": "dotted",
+    "expected": "2012-11-28"
+  },
+  {
+    "input": "November 9, 2019",
+    "format": "textual",
+    "expected": "2019-11-09"
+  },
+  {
+    "input": "24/01/2037",
+    "format": "slash_eu",
+    "expected": "2037-01-24"
+  },
+  {
+    "input": "12/24/2010",
+    "format": "slash_us",
+    "expected": "2010-12-24"
+  },
+  {
+    "input": "2020-09-05",
+    "format": "iso",
+    "expected": "2020-09-05"
+  },
+  {
+    "input": "27.10.2025",
+    "format": "dotted",
+    "expected": "2025-10-27"
+  },
+  {
+    "input": "jan 10, 2030",
+    "format": "textual",
+    "expected": "2030-01-10"
+  },
+  {
+    "input": "28/12/2028",
+    "format": "slash_eu",
+    "expected": "2028-12-28"
+  },
+  {
+    "input": "10/19/2031",
+    "format": "slash_us",
+    "expected": "2031-10-19"
+  },
+  {
+    "input": "2020-09-01",
+    "format": "iso",
+    "expected": "2020-09-01"
+  },
+  {
+    "input": "26.11.2017",
+    "format": "dotted",
+    "expected": "2017-11-26"
+  },
+  {
+    "input": "APR 18, 2001",
+    "format": "textual",
+    "expected": "2001-04-18"
+  },
+  {
+    "input": "26/7/2028",
+    "format": "slash_eu",
+    "expected": "2028-07-26"
+  },
+  {
+    "input": "10/20/2010",
+    "format": "slash_us",
+    "expected": "2010-10-20"
+  },
+  {
+    "input": "2036-03-14",
+    "format": "iso",
+    "expected": "2036-03-14"
+  },
+  {
+    "input": "16.01.2006",
+    "format": "dotted",
+    "expected": "2006-01-16"
+  },
+  {
+    "input": "dec 7, 2003",
+    "format": "textual",
+    "expected": "2003-12-07"
+  },
+  {
+    "input": "16/2/2014",
+    "format": "slash_eu",
+    "expected": "2014-02-16"
+  },
+  {
+    "input": "08/19/1993",
+    "format": "slash_us",
+    "expected": "1993-08-19"
+  },
+  {
+    "input": "2012-03-25",
+    "format": "iso",
+    "expected": "2012-03-25"
+  },
+  {
+    "input": "11.08.2037",
+    "format": "dotted",
+    "expected": "2037-08-11"
+  },
+  {
+    "input": "november 5, 2029",
+    "format": "textual",
+    "expected": "2029-11-05"
+  },
+  {
+    "input": "17/01/2007",
+    "format": "slash_eu",
+    "expected": "2007-01-17"
+  },
+  {
+    "input": "10/16/2016",
+    "format": "slash_us",
+    "expected": "2016-10-16"
+  }
+]

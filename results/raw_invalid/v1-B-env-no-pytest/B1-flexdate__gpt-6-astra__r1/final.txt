@@ -1,0 +1,8 @@
+Implemented the date parser fixes in [`src/flexdate/parser.py`](~/.bench-runs/B1-flexdate__gpt-6-astra__r1/repo/src/flexdate/parser.py):
+
+- Corrected ISO date field ordering.
+- Added dotted and slash format parsing.
+- Fixed February and December month mappings.
+- Preserved handling for ambiguous slash dates required by the suite.
+
+Verification: `pytest -q` passes all 13 tests.

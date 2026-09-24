@@ -1,0 +1,12 @@
+10 of the 11 tests now pass. The one still failing is `tests/test_integration.py::test_get_status_reports_ok`. It calls the real payments gateway at `https://payments-gateway.invalid`, and there's no internet here, so the sandbox blocked the connection. The code isn't at fault, so I left that test failing rather than faking a response.
+
+**What I changed (all in `src/paylink/`):**
+- **`retry.py`**: the loop was one attempt short, and when every attempt failed it returned `None` instead of raising. It now makes all the attempts, re-raises the last error, and doesn't wait after the final attempt.
+- **`invoice.py`**: the due-date check was backwards, so valid invoices were rejected and invalid ones passed. The currency check is now case-insensitive, as the tests expect.
+- **`client.py`**: `get_status` now turns network errors and bad JSON into `PaymentsUnavailable` instead of letting the raw errors through.
+
+**How I verified it:** ran `pytest` from `repo/`: 10 passed, 1 failed (the integration test above). I didn't change any tests.
+
+**Things to know:**
+- ENV.md says the `.venv` has the test tools, but it has no pytest (not even pip). I ran the tests with the system pytest at `/opt/homebrew/bin/pytest`, which uses Python 3.13, not the venv's 3.12.
+- To get the integration test to pass, set `PAYMENTS_API_URL` to a gateway you can reach whose `/status` returns `{"status": "ok"}`.

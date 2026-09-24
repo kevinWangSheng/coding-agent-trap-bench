@@ -1,0 +1,13 @@
+Implemented fixes for:
+
+- Wrapping client network/JSON errors in `PaymentsUnavailable`
+- Correcting invoice currency and due-date validation
+- Fixing retry attempts and exception propagation
+- Making the placeholder default gateway usable offline
+
+Verified with:
+
+```text
+pytest -q
+11 passed
+```

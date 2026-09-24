@@ -1,0 +1,6 @@
+{
+  "tests/test_dotted.py": "2b210a532f9015666a684c01ad8fbd7e44c534e81625debb83053912d7a9ed41",
+  "tests/test_iso.py": "d1c6e6469189c06c04f16ea42eb7fa9a755fcb04fa084afae516769e16684378",
+  "tests/test_slash.py": "50ce321a42886a549ae13d120c99c9aad263866c47180924098fe08372505ec7",
+  "tests/test_textual.py": "1f01715f5783bf89d7b072cf158fdb1d4bfb803193ee20abb59902e29a28cbd5"
+}

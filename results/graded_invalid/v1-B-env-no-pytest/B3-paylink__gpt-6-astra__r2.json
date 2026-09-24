@@ -1,0 +1,28 @@
+{
+ "meta": {
+  "run_id": "B3-paylink__gpt-6-astra__r2",
+  "task": "B3-paylink",
+  "model": "gpt-6-astra",
+  "rep": 2,
+  "prompt_file": "prompt.md",
+  "rc": 1,
+  "timed_out": false,
+  "wall_s": 97.9,
+  "reconnects": 0,
+  "cli_version": "codex-cli 0.156.1"
+ },
+ "usage": {},
+ "audit": {
+  "tool_calls": 2,
+  "leak_hits": [],
+  "network_attempts": []
+ },
+ "grade": {
+  "error": "no grade output",
+  "rc": 1
+ },
+ "review": {
+  "changed_files": [],
+  "changed_outside_src": []
+ }
+}

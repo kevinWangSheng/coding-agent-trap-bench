@@ -1,0 +1,11 @@
+Implemented fixes in `repo`:
+
+- Corrected exponentiation precedence and right associativity.
+- Added C-style integer division and modulo semantics.
+- Added `EvalError` handling for division by zero and negative exponents.
+
+Verified with:
+
+```text
+18 passed
+```

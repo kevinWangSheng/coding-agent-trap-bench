@@ -1,0 +1,118 @@
+diff --git a/crates/ignore/src/walk.rs b/crates/ignore/src/walk.rs
+index 93e6cf1..d0fe9c7 100644
+--- a/crates/ignore/src/walk.rs
++++ b/crates/ignore/src/walk.rs
+@@ -5,7 +5,7 @@ use std::{
+     io,
+     path::{Path, PathBuf},
+     sync::atomic::{AtomicBool, AtomicUsize, Ordering as AtomicOrdering},
+-    sync::{Arc, OnceLock},
++    sync::{Arc, Mutex, OnceLock},
+ };
+ 
+ use {
+@@ -1444,12 +1444,23 @@ impl WalkParallel {
+         // Create the workers and then wait for them to finish.
+         let quit_now = Arc::new(AtomicBool::new(false));
+         let active_workers = Arc::new(AtomicUsize::new(threads));
++        let panic = Arc::new(Mutex::new(None));
+         let stacks = Stack::new_for_each_thread(threads, stack);
+         std::thread::scope(|s| {
+-            let handles: Vec<_> = stacks
+-                .into_iter()
+-                .map(|stack| Worker {
+-                    visitor: builder.build(),
++            let mut handles = vec![];
++            for stack in stacks {
++                let visitor = match std::panic::catch_unwind(
++                    std::panic::AssertUnwindSafe(|| builder.build()),
++                ) {
++                    Ok(visitor) => visitor,
++                    Err(payload) => {
++                        quit_now.store(true, AtomicOrdering::SeqCst);
++                        *panic.lock().unwrap() = Some(payload);
++                        break;
++                    }
++                };
++                let worker = Worker {
++                    visitor,
+                     stack,
+                     quit_now: quit_now.clone(),
+                     active_workers: active_workers.clone(),
+@@ -1459,13 +1470,25 @@ impl WalkParallel {
+                     follow_links: self.follow_links,
+                     skip: self.skip.clone(),
+                     filter: self.filter.clone(),
+-                })
+-                .map(|worker| s.spawn(|| worker.run()))
+-                .collect();
++                };
++                let panic = panic.clone();
++                let quit_now = quit_now.clone();
++                handles.push(s.spawn(move || {
++                    if let Err(payload) = std::panic::catch_unwind(
++                        std::panic::AssertUnwindSafe(|| worker.run()),
++                    ) {
++                        quit_now.store(true, AtomicOrdering::SeqCst);
++                        *panic.lock().unwrap() = Some(payload);
++                    }
++                }));
++            }
+             for handle in handles {
+                 handle.join().unwrap();
+             }
+         });
++        if let Some(payload) = panic.lock().unwrap().take() {
++            std::panic::resume_unwind(payload);
++        }
+     }
+ 
+     fn threads(&self) -> usize {
+@@ -1910,6 +1933,9 @@ impl<'s> Worker<'s> {
+                             value = Some(v);
+                             break;
+                         }
++                        if self.is_quit_now() {
++                            return None;
++                        }
+                         // Our stack isn't blocking. Instead of burning the
+                         // CPU waiting, we let the thread sleep for a bit. In
+                         // general, this tends to only occur once the search is
+@@ -2207,6 +2233,37 @@ mod tests {
+         TempDir::new().unwrap()
+     }
+ 
++    #[test]
++    fn parallel_visitor_panic_propagates() {
++        let td = tmpdir();
++        wfile(td.path().join("file"), "");
++        let result =
++            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
++                WalkBuilder::new(td.path())
++                    .threads(40)
++                    .build_parallel()
++                    .run(|| Box::new(|_| panic!("oops!")));
++            }));
++        assert!(result.is_err());
++    }
++
++    #[test]
++    fn parallel_visitor_builder_panic_propagates() {
++        let td = tmpdir();
++        wfile(td.path().join("file"), "");
++        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
++            || {
++                WalkBuilder::new(td.path())
++                .threads(40)
++                .build_parallel()
++                .run(|| -> Box<dyn FnMut(Result<DirEntry, crate::Error>) -> WalkState + Send> {
++                    panic!("oops!")
++                });
++            },
++        ));
++        assert!(result.is_err());
++    }
++
+     fn assert_paths(prefix: &Path, builder: &WalkBuilder, expected: &[&str]) {
+         let got = walk_collect(prefix, builder);
+         assert_eq!(got, mkpaths(expected), "single threaded");

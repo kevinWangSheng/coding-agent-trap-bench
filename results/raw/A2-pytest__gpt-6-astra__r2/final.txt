@@ -1,0 +1,11 @@
+Implemented the fix in [`monkeypatch.py`](~/.bench-runs/A2-pytest__gpt-6-astra__r2/repo/src/_pytest/monkeypatch.py) and added regression tests in [`test_monkeypatch.py`](~/.bench-runs/A2-pytest__gpt-6-astra__r2/repo/testing/test_monkeypatch.py).
+
+`undo()` now removes temporary instance attributes created over inherited attributes, preserving descriptor dynamic lookup and original instance state.
+
+Verified with:
+
+- `python -m pytest testing/test_monkeypatch.py -q`
+- Result: **41 passed, 1 skipped**
+- `git diff --check`
+
+Nothing could not be completed.

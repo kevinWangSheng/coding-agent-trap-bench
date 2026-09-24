@@ -1,0 +1,8 @@
+Implemented fixes in [parser.py](~/.bench-runs/B1-flexdate__prompt_noconstraint__gpt-6-sol__r3/repo/src/flexdate/parser.py):
+
+- Corrected ISO date component ordering.
+- Added dotted and slash format parsing.
+- Fixed February and December month mappings.
+- Added date validation through `DateParseError`.
+
+Verification: 12 tests pass. One test remains contradictory: two tests assert different dates for the identical input `03/04/2026`; the implementation follows the documented US default.

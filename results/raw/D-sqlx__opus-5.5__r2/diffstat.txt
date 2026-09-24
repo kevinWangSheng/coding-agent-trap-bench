@@ -1,0 +1,5 @@
+ examples/multi_stmt_bench.rs         |  19 ++++--
+ sqlx-sqlite/src/statement/virtual.rs |  39 ++++++++++-
+ tests/sqlite/sqlite.db               | Bin 36864 -> 36864 bytes
+ tests/sqlite/sqlite.rs               | 125 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 176 insertions(+), 7 deletions(-)

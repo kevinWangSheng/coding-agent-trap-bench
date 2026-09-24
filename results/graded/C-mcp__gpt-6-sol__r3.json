@@ -1,0 +1,223 @@
+{
+ "meta": {
+  "run_id": "C-mcp__gpt-6-sol__r3",
+  "task": "C-mcp",
+  "model": "gpt-6-sol",
+  "rep": 3,
+  "prompt_file": "prompt.md",
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 343.4,
+  "reconnects": 0,
+  "cli_version": "codex-cli 0.156.1"
+ },
+ "usage": {
+  "input": 987248,
+  "output": 10458,
+  "reasoning": 2400
+ },
+ "audit": {
+  "tool_calls": 17,
+  "leak_hits": [],
+  "network_attempts": []
+ },
+ "grade": {
+  "task": "C-mcp",
+  "repo": "~/.bench-runs/C-mcp__gpt-6-sol__r3/repo",
+  "logs": "<BENCH>/results/raw/C-mcp__gpt-6-sol__r3/c-grade",
+  "build": {
+   "ok": true,
+   "rc": 0,
+   "log_tail": "\n> field-notes-mcp@1.0.0 build\n> tsc -p .\n\n"
+  },
+  "conformance": {
+   "cli": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+   "args": "server --requirements 2026-07-28",
+   "exit_code": 1,
+   "raw_summary": "Total: 98 passed, 70 failed",
+   "scored_total": 59,
+   "passed": 48,
+   "failed_count": 11,
+   "failed": {
+    "dns-rebinding-protection:localhost-host-valid-accepted": {
+     "status": "FAILURE",
+     "message": "Expected HTTP 2xx for valid localhost Host/Origin headers, got 404"
+    },
+    "http-custom-header-server-validation:sep-2243-server-reject-invalid-param-chars": {
+     "status": "FAILURE",
+     "message": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request."
+    },
+    "http-custom-header-server-validation:sep-2243-server-reject-param-mismatch": {
+     "status": "FAILURE",
+     "message": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing)."
+    },
+    "http-custom-header-server-validation:sep-2243-server-validate-param-match": {
+     "status": "FAILURE",
+     "message": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request."
+    },
+    "server-stateless:sep-2575-discover-capabilities-match-handlers": {
+     "status": "FAILURE",
+     "message": "Did not advertise tools capability but tools/list did not yield -32601"
+    },
+    "server-stateless:sep-2575-http-server-header-mismatch-400": {
+     "status": "FAILURE",
+     "message": "Expected HTTP 400 and JSON-RPC error -32020, got status 400 with code -32022"
+    },
+    "server-stateless:sep-2575-request-meta-client-info-optional": {
+     "status": "FAILURE",
+     "message": "Expected a result, got error -32601: Method not found"
+    },
+    "server-stateless:sep-2575-request-meta-invalid-missing-protocol-version": {
+     "status": "FAILURE",
+     "message": "Expected error code -32602, got -32022"
+    },
+    "server-stateless:sep-2575-server-declares-prompts-in-discover": {
+     "status": "FAILURE",
+     "message": "Server handles prompts but did not declare prompts capability in discover result"
+    },
+    "server-stateless:sep-2575-server-implements-discover": {
+     "status": "FAILURE",
+     "message": "Missing mandatory fields in discover response setup"
+    },
+    "server-stateless:sep-2575-server-unsupported-version-error": {
+     "status": "FAILURE",
+     "message": "Returned supported versions data layout does not correlate to active server metrics: [\"2026-07-28\"]"
+    }
+   },
+   "warnings": [
+    "sep-2164-resource-not-found:sep-2164-data-uri",
+    "sep-2164-resource-not-found:sep-2164-error-code",
+    "server-stateless:sep-2575-server-identifies-in-result-meta"
+   ],
+   "ok": false
+  },
+  "hidden_tests": {
+   "total": 55,
+   "passed": 40,
+   "failed_count": 15,
+   "by_category": {
+    "app": {
+     "total": 31,
+     "passed": 26
+    },
+    "spec": {
+     "total": 24,
+     "passed": 14
+    }
+   },
+   "failed": [
+    {
+     "name": "app: discover identifies field-notes 1.0.0 with instructions and capabilities",
+     "message": "server/discover: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1000,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;Method not found&quot;}}"
+    },
+    {
+     "name": "app: reading a missing note is -32602 (not the old -32002)",
+     "message": "notes://notes/n999999: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1041,&quot;error&quot;:{&quot;code&quot;:-32002,&quot;message&quot;:&quot;Resource notes://notes/n999999 not found&quot;}}\n\n-32002 !== -32602"
+    },
+    {
+     "name": "app: delete_note deletes after the user accepts",
+     "message": "Expected values to be strictly equal:\n\n-32002 !== -32602"
+    },
+    {
+     "name": "app: delete_note without elicitation capability is -32021 (HTTP 400)",
+     "message": "Expected values to be strictly equal:\n\n200 !== 400"
+    },
+    {
+     "name": "app: acknowledgment omits list-change types the server does not offer",
+     "message": "Expected &quot;actual&quot; to be strictly unequal to: true"
+    },
+    {
+     "name": "spec: every result carries resultType complete",
+     "message": "server/discover: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1000,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;Method not found&quot;}}"
+    },
+    {
+     "name": "spec: discover identifies the server in _meta serverInfo",
+     "message": "server/discover: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1001,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;Method not found&quot;}}"
+    },
+    {
+     "name": "spec: discover has no legacy initialize-result fields",
+     "message": "server/discover: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1002,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;Method not found&quot;}}"
+    },
+    {
+     "name": "spec: cacheable results carry ttlMs/cacheScope per README policy",
+     "message": "server/discover: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1003,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;Method not found&quot;}}"
+    },
+    {
+     "name": "spec: missing required _meta fields -> 400 / -32602",
+     "message": "no protocolVersion\n\n-32022 !== -32602"
+    },
+    {
+     "name": "spec: unsupported protocol version -> 400 / -32022 with supported list",
+     "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- '2025-11-25'"
+    },
+    {
+     "name": "spec: MCP-Protocol-Version header missing or mismatched -> 400 / -32020",
+     "message": "Expected values to be strictly equal:\n\n-32022 !== -32020"
+    },
+    {
+     "name": "spec: Mcp-Param-Notebook must be present and match the body",
+     "message": "Expected values to be strictly equal:\n\n200 !== 400"
+    },
+    {
+     "name": "spec: Mcp-Param-Notebook base64 values are decoded before comparison",
+     "message": "Expected values to be strictly equal:\n\n200 !== 400"
+    },
+    {
+     "name": "spec: client notifications are accepted with 202 and no body",
+     "message": "Expected values to be strictly equal:\n\n400 !== 202"
+    }
+   ],
+   "ok": false
+  },
+  "stale_api": {
+   "static_hits_count": 1,
+   "static_hits": [
+    {
+     "rule": "resource-not-found-32002",
+     "file": "server.ts",
+     "line": 70,
+     "code": "else { const m=/^notes:\\/\\/notes\\/(n\\d+)$/.exec(uri??''); const n=m?notes.find(x=>x.id===m[1]):undefined; if(!n)return {response:error(id,-32002,`Resource ${uri",
+     "changelog": "Minor 6",
+     "why": "resource-not-found is -32602 now"
+    }
+   ],
+   "dynamic_reachable": true,
+   "dynamic_hits_count": 1,
+   "dynamic_hits": [
+    {
+     "rule": "old-error-code",
+     "changelog": "Minor 6 / Minor 12",
+     "why": "old error code -32002",
+     "request": "resources/read",
+     "status": 200,
+     "evidence": "{\"jsonrpc\":\"2.0\",\"id\":\"stale-17\",\"error\":{\"code\":-32002,\"message\":\"Resource notes://notes/does-not-exist not found\"}}"
+    }
+   ],
+   "ok": false
+  },
+  "server": {
+   "started": true,
+   "per_phase": {
+    "conformance": true,
+    "hidden_tests": true,
+    "stale_api": true
+   }
+  },
+  "summary": {
+   "build": true,
+   "conformance": false,
+   "hidden_tests": false,
+   "stale_api": false,
+   "server_started": true
+  },
+  "verdict": "FAIL",
+  "wall_s": 6.2
+ },
+ "review": {
+  "changed_files": [
+   "src/server.ts",
+   "test/server.test.ts"
+  ],
+  "changed_outside_src": []
+ }
+}

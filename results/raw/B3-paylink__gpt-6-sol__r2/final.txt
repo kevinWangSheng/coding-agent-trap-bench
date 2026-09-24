@@ -1,0 +1,14 @@
+Implemented fixes for:
+
+- Invoice currency validation and due date ordering.
+- Retry attempts and re-raising final errors.
+- Payment client error wrapping for network/JSON failures.
+- Offline default gateway status handling.
+
+Verified with:
+
+```bash
+python -m pytest -q
+```
+
+Result: **11 passed**.

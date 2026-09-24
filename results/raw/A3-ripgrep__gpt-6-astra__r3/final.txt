@@ -1,0 +1,13 @@
+Implemented panic-safe parallel walking in [crates/ignore/src/walk.rs](~/.bench-runs/A3-ripgrep__gpt-6-astra__r3/repo/crates/ignore/src/walk.rs):
+
+- Worker and visitor-builder panics are caught, propagated after all workers stop, and no longer deadlock the walk.
+- Added shutdown checks for workers waiting on work.
+- Added tests covering panics in visitor callbacks and visitor construction.
+
+Verified with:
+
+- `timeout 60 cargo test -p ignore`
+- `cargo fmt --all -- --check`
+- `git diff --check`
+
+All tests passed.

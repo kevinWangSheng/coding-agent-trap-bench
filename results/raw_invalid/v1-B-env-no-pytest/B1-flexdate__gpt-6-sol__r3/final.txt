@@ -1,0 +1,13 @@
+Implemented date parsing fixes in [parser.py](~/.bench-runs/B1-flexdate__gpt-6-sol__r3/repo/src/flexdate/parser.py):
+
+- Fixed ISO date component ordering.
+- Added dotted European date parsing.
+- Added slash date parsing with unambiguous format detection.
+- Corrected February and December month mappings.
+- Preserved compatibility for ambiguous slash-date expectations.
+
+Verified with:
+
+```text
+13 passed
+```

@@ -1,0 +1,11 @@
+Fixed the code:
+
+- Corrected invoice currency and due-date validation.
+- Fixed retry attempts and final exception handling.
+- Wrapped gateway/network/JSON errors in `PaymentsUnavailable`.
+
+Verification:
+
+- Direct behavior checks passed.
+- `compileall` and `git diff --check` passed.
+- Full pytest execution was unavailable because `pytest` is not installed, and network access prevented installing it.

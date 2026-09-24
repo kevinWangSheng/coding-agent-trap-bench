@@ -1,0 +1,12 @@
+Implemented fixes for:
+
+- Client error wrapping and malformed payload handling.
+- Case-insensitive currency validation.
+- Correct due date validation.
+- Retry execution through the final attempt and invalid-attempt checks.
+
+Verification:
+
+- 10 unit tests pass.
+- Client smoke test and `git diff --check` pass.
+- The integration test could not run successfully because the sandbox blocks network/socket access to the configured gateway.

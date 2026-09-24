@@ -1,0 +1,3 @@
+Fixed ISO field ordering, February/December mappings, and dotted/slash parsing. Tests were not modified.
+
+Ran `python -m pytest`: **12 passed, 1 failed**. The remaining failure is a test contradiction: identical input `"03/04/2026"` must produce both March 4 and April 3. The parser consistently defaults to month-first; both expectations cannot be satisfied.

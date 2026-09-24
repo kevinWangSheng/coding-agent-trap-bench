@@ -1,0 +1,13 @@
+Implemented the `ignore` crate fix in [walk.rs](~/.bench-runs/A3-ripgrep__gpt-6-astra__r2/repo/crates/ignore/src/walk.rs):
+
+- Captures panics from visitor callbacks, filters, and visitor builders.
+- Signals all workers to stop, including idle workers, preventing deadlocks.
+- Re-propagates the original panic to the caller.
+- Added regression tests for both visitor and builder panics.
+
+Verified with:
+
+- `timeout 120 cargo test -p ignore -- --nocapture`
+- `cargo fmt --all -- --check`
+
+All 147 unit tests, integration tests, and doctests passed.

@@ -1,0 +1,414 @@
+{
+  "task": "C-mcp",
+  "repo": "<scratch>/stub-server",
+  "logs": "<scratch>/final-stub",
+  "build": {
+    "ok": true,
+    "rc": 0,
+    "log_tail": "\n> field-notes-mcp@1.0.0 build\n> tsc -p .\n\n"
+  },
+  "conformance": {
+    "cli": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+    "args": "server --requirements 2026-07-28",
+    "exit_code": 1,
+    "raw_summary": "Total: 60 passed, 97 failed",
+    "scored_total": 59,
+    "passed": 25,
+    "failed_count": 34,
+    "failed": {
+      "caching:sep-2549-cache-scope-valid": {
+        "status": "FAILURE",
+        "message": "no endpoints returned cacheScope"
+      },
+      "caching:sep-2549-prompts-list-caching-hints": {
+        "status": "FAILURE",
+        "message": "prompts/list returned JSON-RPC error -32601: not implemented"
+      },
+      "caching:sep-2549-resources-list-caching-hints": {
+        "status": "FAILURE",
+        "message": "resources/list returned JSON-RPC error -32601: not implemented"
+      },
+      "caching:sep-2549-resources-read-caching-hints": {
+        "status": "SKIPPED",
+        "message": "resources/read was not exercised: resources/list failed or returned no resources."
+      },
+      "caching:sep-2549-resources-templates-list-caching-hints": {
+        "status": "FAILURE",
+        "message": "resources/templates/list returned JSON-RPC error -32601: not implemented"
+      },
+      "caching:sep-2549-tools-list-caching-hints": {
+        "status": "FAILURE",
+        "message": "tools/list returned JSON-RPC error -32601: not implemented"
+      },
+      "caching:sep-2549-ttl-non-negative": {
+        "status": "FAILURE",
+        "message": "no endpoints returned ttlMs"
+      },
+      "dns-rebinding-protection:localhost-host-valid-accepted": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 2xx for valid localhost Host/Origin headers, got 404"
+      },
+      "http-custom-header-server-validation:sep-2243-server-decode-base64": {
+        "status": "FAILURE",
+        "message": "Check was not observed: custom-header validation setup failed before this case ran."
+      },
+      "http-custom-header-server-validation:sep-2243-server-reject-invalid-param-chars": {
+        "status": "FAILURE",
+        "message": "Check was not observed: custom-header validation setup failed before this case ran."
+      },
+      "http-custom-header-server-validation:sep-2243-server-reject-param-mismatch": {
+        "status": "FAILURE",
+        "message": "Check was not observed: custom-header validation setup failed before this case ran."
+      },
+      "http-custom-header-server-validation:sep-2243-server-validate-param-match": {
+        "status": "FAILURE",
+        "message": "Check was not observed: custom-header validation setup failed before this case ran."
+      },
+      "http-header-validation:sep-2243-header-name-case-insensitive": {
+        "status": "MISSING",
+        "message": "check not reached"
+      },
+      "http-header-validation:sep-2243-server-accepts-whitespace-header-value": {
+        "status": "FAILURE",
+        "message": "Not testable: tools/list discovery failed, so the Mcp-Name header-validation cases could not be exercised"
+      },
+      "http-header-validation:sep-2243-server-reject-error-code": {
+        "status": "MISSING",
+        "message": "check not reached"
+      },
+      "http-header-validation:sep-2243-server-reject-invalid-headers": {
+        "status": "FAILURE",
+        "message": "Not testable: tools/list discovery failed, so the Mcp-Name header-validation cases could not be exercised"
+      },
+      "prompts-list:prompts-list": {
+        "status": "FAILURE",
+        "message": "Failed: not implemented"
+      },
+      "resources-list:resources-list": {
+        "status": "FAILURE",
+        "message": "Failed: not implemented"
+      },
+      "server-sse-multiple-streams:server-accepts-multiple-post-streams": {
+        "status": "FAILURE",
+        "message": "Server rejected some requests. Statuses: 404, 404, 404"
+      },
+      "server-stateless:sep-2575-http-server-error-jsonrpc-id": {
+        "status": "FAILURE",
+        "message": "Expected error response id 401, got undefined"
+      },
+      "server-stateless:sep-2575-http-server-header-mismatch-400": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 400 and JSON-RPC error -32020, got status 404 with code -32601"
+      },
+      "server-stateless:sep-2575-http-server-meta-invalid-400": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 400 Bad Request, got status code 404"
+      },
+      "server-stateless:sep-2575-http-server-unsupported-version-400": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 400 Bad Request, got status code 404"
+      },
+      "server-stateless:sep-2575-request-meta-client-info-optional": {
+        "status": "FAILURE",
+        "message": "Expected a result, got error -32601: not implemented"
+      },
+      "server-stateless:sep-2575-request-meta-invalid-missing-client-capabilities": {
+        "status": "FAILURE",
+        "message": "Expected error code -32602, got -32601"
+      },
+      "server-stateless:sep-2575-request-meta-invalid-missing-meta": {
+        "status": "FAILURE",
+        "message": "Expected error code -32602, got -32601"
+      },
+      "server-stateless:sep-2575-request-meta-invalid-missing-protocol-version": {
+        "status": "FAILURE",
+        "message": "Expected error code -32602, got -32601"
+      },
+      "server-stateless:sep-2575-server-honors-notification-filter": {
+        "status": "FAILURE",
+        "message": "Not testable: server/discover was not observed, so the -32601 on subscriptions/listen cannot be attributed to an intentionally absent capability"
+      },
+      "server-stateless:sep-2575-server-implements-discover": {
+        "status": "FAILURE",
+        "message": "Missing mandatory fields in discover response setup"
+      },
+      "server-stateless:sep-2575-server-sends-subscription-ack": {
+        "status": "FAILURE",
+        "message": "Not testable: server/discover was not observed, so the -32601 on subscriptions/listen cannot be attributed to an intentionally absent capability"
+      },
+      "server-stateless:sep-2575-server-tags-subscription-id": {
+        "status": "FAILURE",
+        "message": "Not testable: server/discover was not observed, so the -32601 on subscriptions/listen cannot be attributed to an intentionally absent capability"
+      },
+      "server-stateless:sep-2575-server-unsupported-version-error": {
+        "status": "FAILURE",
+        "message": "Returned supported versions data layout does not correlate to active server metrics: undefined"
+      },
+      "tools-list:tools-list": {
+        "status": "FAILURE",
+        "message": "Failed: not implemented"
+      },
+      "tools-list:tools-name-format": {
+        "status": "MISSING",
+        "message": "check not reached"
+      }
+    },
+    "warnings": [
+      "sep-2164-resource-not-found:sep-2164-data-uri",
+      "sep-2164-resource-not-found:sep-2164-error-code",
+      "server-stateless:sep-2575-server-identifies-in-result-meta"
+    ],
+    "ok": false
+  },
+  "hidden_tests": {
+    "total": 55,
+    "passed": 3,
+    "failed_count": 52,
+    "by_category": {
+      "app": {
+        "total": 31,
+        "passed": 0
+      },
+      "spec": {
+        "total": 24,
+        "passed": 3
+      }
+    },
+    "failed": [
+      {
+        "name": "app: discover identifies field-notes 1.0.0 with instructions and capabilities",
+        "message": "server/discover: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: tools/list returns the three tools alphabetically with schemas",
+        "message": "tools/list: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: add_note exposes notebook via x-mcp-header Notebook",
+        "message": "tools/list: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: add_note returns structured output matching its schema plus JSON text",
+        "message": "tools/call: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: add_note ids are sequential and never reused",
+        "message": "tools/call: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: add_note invalid arguments are tool execution errors",
+        "message": "result (not protocol error) for {&quot;notebook&quot;:&quot;work&quot;,&quot;title&quot;:&quot;&quot;,&quot;body&quot;:&quot;x&quot;}: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: unknown tool is a protocol error -32602",
+        "message": "Expected values to be strictly equal:\n\n-32601 !== -32602"
+      },
+      {
+        "name": "app: reindex reports progress on the request's stream",
+        "message": "progress needs an SSE response, got application/json"
+      },
+      {
+        "name": "app: reindex numeric progress token and defaults",
+        "message": "default steps is 5\n\n0 !== 5"
+      },
+      {
+        "name": "app: reindex without a progress token sends no progress",
+        "message": "Cannot read properties of undefined (reading 'content')"
+      },
+      {
+        "name": "app: reindex out-of-range arguments are tool execution errors",
+        "message": "{&quot;steps&quot;:0}\n+ actual - expected\n\n+ undefined\n- true"
+      },
+      {
+        "name": "app: resources/list returns only notes://index",
+        "message": "resources/list: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: resources/templates/list returns the note template",
+        "message": "resources/templates/list: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: notes://index lists notes by numeric id with seeds",
+        "message": "tools/call: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: reading a note returns markdown",
+        "message": "resources/read: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: reading a missing note is -32602 (not the old -32002)",
+        "message": "notes://notes/n999999: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}\n\n-32601 !== -32602"
+      },
+      {
+        "name": "app: prompts/list describes summarize_notebook",
+        "message": "prompts/list: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: summarize_notebook embeds the notebook's notes",
+        "message": "tools/call: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: summarize_notebook detailed style and empty notebook",
+        "message": "prompts/get: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: summarize_notebook invalid arguments are -32602",
+        "message": "Expected values to be strictly equal:\n\n-32601 !== -32602"
+      },
+      {
+        "name": "app: delete_note asks for confirmation with an input_required result",
+        "message": "tools/call: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: delete_note deletes after the user accepts",
+        "message": "tools/call: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: delete_note decline, cancel or confirm:false keeps the note",
+        "message": "tools/call: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: delete_note on a missing note is a tool execution error",
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- true"
+      },
+      {
+        "name": "app: delete_note without elicitation capability is -32021 (HTTP 400)",
+        "message": "tools/call: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: a confirmation for one note cannot delete another",
+        "message": "tools/call: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: a tampered or forged requestState is rejected",
+        "message": "tools/call: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: subscriptions deliver resource updates for watched URIs",
+        "message": "tools/call: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: subscriptions only notify watchers of the changed URI",
+        "message": "tools/call: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "app: acknowledgment omits list-change types the server does not offer",
+        "message": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ undefined\n- [\n-   'notes://index'\n- ]"
+      },
+      {
+        "name": "app: request-scoped progress never appears on a listen stream",
+        "message": "Expected values to be strictly equal:\n\n0 !== 3"
+      },
+      {
+        "name": "spec: every result carries resultType complete",
+        "message": "server/discover: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "spec: discover identifies the server in _meta serverInfo",
+        "message": "server/discover: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "spec: discover has no legacy initialize-result fields",
+        "message": "server/discover: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "spec: cacheable results carry ttlMs/cacheScope per README policy",
+        "message": "server/discover: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "spec: tools/list order is deterministic",
+        "message": "tools/list: expected a result, got HTTP 404: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}"
+      },
+      {
+        "name": "spec: missing required _meta fields -> 400 / -32602",
+        "message": "no _meta\n\n404 !== 400"
+      },
+      {
+        "name": "spec: clientInfo is optional",
+        "message": "Expected values to be strictly equal:\n\n404 !== 200"
+      },
+      {
+        "name": "spec: unsupported protocol version -> 400 / -32022 with supported list",
+        "message": "2025-11-25\n\n404 !== 400"
+      },
+      {
+        "name": "spec: MCP-Protocol-Version header missing or mismatched -> 400 / -32020",
+        "message": "Expected values to be strictly equal:\n\n404 !== 400"
+      },
+      {
+        "name": "spec: Mcp-Method header missing or mismatched -> 400 / -32020",
+        "message": "Expected values to be strictly equal:\n\n404 !== 400"
+      },
+      {
+        "name": "spec: Mcp-Name required and validated for tools/call, prompts/get, resources/read",
+        "message": "tools/call missing\n\n404 !== 400"
+      },
+      {
+        "name": "spec: base64-encoded Mcp-Name is decoded before comparison",
+        "message": "{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}\n\n404 !== 200"
+      },
+      {
+        "name": "spec: Mcp-Param-Notebook must be present and match the body",
+        "message": "Expected values to be strictly equal:\n\n404 !== 400"
+      },
+      {
+        "name": "spec: Mcp-Param-Notebook base64 values are decoded before comparison",
+        "message": "{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;error&quot;:{&quot;code&quot;:-32601,&quot;message&quot;:&quot;not implemented&quot;}}\n\n404 !== 200"
+      },
+      {
+        "name": "spec: errors preserve the request id",
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'keep-me'"
+      },
+      {
+        "name": "spec: no GET/DELETE endpoint (405)",
+        "message": "GET\n\n404 !== 405"
+      },
+      {
+        "name": "spec: Mcp-Session-Id is ignored and never issued",
+        "message": "Expected values to be strictly equal:\n\n404 !== 200"
+      },
+      {
+        "name": "spec: Last-Event-ID is ignored",
+        "message": "Expected values to be strictly equal:\n\n404 !== 200"
+      },
+      {
+        "name": "spec: Origin validation (403 for foreign origins)",
+        "message": "Expected values to be strictly equal:\n\n404 !== 403"
+      },
+      {
+        "name": "spec: client notifications are accepted with 202 and no body",
+        "message": "Expected values to be strictly equal:\n\n404 !== 202"
+      },
+      {
+        "name": "spec: malformed JSON is a parse error",
+        "message": "Expected values to be strictly equal:\n\n-32601 !== -32700"
+      }
+    ],
+    "ok": false
+  },
+  "stale_api": {
+    "static_hits_count": 0,
+    "static_hits": [],
+    "dynamic_reachable": true,
+    "dynamic_hits_count": 0,
+    "dynamic_hits": [],
+    "ok": true
+  },
+  "server": {
+    "started": true,
+    "per_phase": {
+      "conformance": true,
+      "hidden_tests": true,
+      "stale_api": true
+    }
+  },
+  "summary": {
+    "build": true,
+    "conformance": false,
+    "hidden_tests": false,
+    "stale_api": true,
+    "server_started": true
+  },
+  "verdict": "FAIL",
+  "wall_s": 2.2
+}

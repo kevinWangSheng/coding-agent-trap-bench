@@ -1,0 +1,8 @@
+Implemented nested transaction quota accounting.
+
+- Recursively includes nested `Txn` operations in quota cost calculations for both success and failure branches.
+- Added unit tests covering nested and deeply nested transactions.
+- Verified with:
+  - `go test ./storage ./etcdserver/api/v3rpc` from `repo/server`
+  - `git diff --check`
+

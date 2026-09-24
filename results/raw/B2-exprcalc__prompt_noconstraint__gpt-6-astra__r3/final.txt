@@ -1,0 +1,11 @@
+Implemented fixes in:
+
+- [parser.py](~/.bench-runs/B2-exprcalc__prompt_noconstraint__gpt-6-astra__r3/repo/src/exprcalc/parser.py): right-associative exponentiation and correct unary-minus precedence.
+- [evaluator.py](~/.bench-runs/B2-exprcalc__prompt_noconstraint__gpt-6-astra__r3/repo/src/exprcalc/evaluator.py): C-style division/modulo semantics, plus `EvalError` handling for division by zero and negative exponents.
+
+Verified with:
+
+```text
+18 passed
+```
+

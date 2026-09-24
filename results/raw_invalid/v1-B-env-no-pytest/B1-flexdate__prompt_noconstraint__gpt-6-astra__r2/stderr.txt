@@ -1,0 +1,7 @@
+Reading additional input from stdin...
+2026-09-23T18:07:58.467873Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T18:07:58.469671Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T18:08:03.485376Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+2026-09-23T18:08:22.781869Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T18:10:51.403547Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in ~/.bench-runs/B1-flexdate__prompt_noconstraint__gpt-6-astra__r2/repo/src/flexdate/parser.py:
+    "feb": 2, "february": 3,

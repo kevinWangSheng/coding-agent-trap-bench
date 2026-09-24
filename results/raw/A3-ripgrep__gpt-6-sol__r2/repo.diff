@@ -1,0 +1,161 @@
+diff --git a/crates/ignore/src/walk.rs b/crates/ignore/src/walk.rs
+index 93e6cf1..fb4c099 100644
+--- a/crates/ignore/src/walk.rs
++++ b/crates/ignore/src/walk.rs
+@@ -5,7 +5,7 @@ use std::{
+     io,
+     path::{Path, PathBuf},
+     sync::atomic::{AtomicBool, AtomicUsize, Ordering as AtomicOrdering},
+-    sync::{Arc, OnceLock},
++    sync::{Arc, Mutex, OnceLock},
+ };
+ 
+ use {
+@@ -1444,12 +1444,25 @@ impl WalkParallel {
+         // Create the workers and then wait for them to finish.
+         let quit_now = Arc::new(AtomicBool::new(false));
+         let active_workers = Arc::new(AtomicUsize::new(threads));
++        let panic = Arc::new(Mutex::new(None));
+         let stacks = Stack::new_for_each_thread(threads, stack);
+         std::thread::scope(|s| {
+-            let handles: Vec<_> = stacks
+-                .into_iter()
+-                .map(|stack| Worker {
+-                    visitor: builder.build(),
++            let mut handles = Vec::with_capacity(threads);
++            for stack in stacks {
++                let visitor = match std::panic::catch_unwind(
++                    std::panic::AssertUnwindSafe(|| builder.build()),
++                ) {
++                    Ok(visitor) => visitor,
++                    Err(payload) => {
++                        *panic.lock().unwrap() = Some(payload);
++                        quit_now.store(true, AtomicOrdering::SeqCst);
++                        break;
++                    }
++                };
++                let panic = panic.clone();
++                let quit_now = quit_now.clone();
++                let worker = Worker {
++                    visitor,
+                     stack,
+                     quit_now: quit_now.clone(),
+                     active_workers: active_workers.clone(),
+@@ -1459,13 +1472,23 @@ impl WalkParallel {
+                     follow_links: self.follow_links,
+                     skip: self.skip.clone(),
+                     filter: self.filter.clone(),
+-                })
+-                .map(|worker| s.spawn(|| worker.run()))
+-                .collect();
++                };
++                handles.push(s.spawn(move || {
++                    if let Err(payload) = std::panic::catch_unwind(
++                        std::panic::AssertUnwindSafe(|| worker.run()),
++                    ) {
++                        *panic.lock().unwrap() = Some(payload);
++                        quit_now.store(true, AtomicOrdering::SeqCst);
++                    }
++                }));
++            }
+             for handle in handles {
+                 handle.join().unwrap();
+             }
+         });
++        if let Some(payload) = panic.lock().unwrap().take() {
++            std::panic::resume_unwind(payload);
++        }
+     }
+ 
+     fn threads(&self) -> usize {
+@@ -1905,6 +1928,9 @@ impl<'s> Worker<'s> {
+                     }
+                     // Wait for next `Work` or `Quit` message.
+                     loop {
++                        if self.is_quit_now() {
++                            return None;
++                        }
+                         if let Some(v) = self.recv() {
+                             self.activate_worker();
+                             value = Some(v);
+@@ -2121,7 +2147,10 @@ mod tests {
+     use std::path::Path;
+     use std::sync::{Arc, Mutex};
+ 
+-    use super::{DirEntry, WalkBuilder, WalkState};
++    use super::{
++        DirEntry, ParallelVisitor, ParallelVisitorBuilder, WalkBuilder,
++        WalkState,
++    };
+     use crate::tests::TempDir;
+ 
+     fn wfile<P: AsRef<Path>>(path: P, contents: &str) {
+@@ -2197,6 +2226,68 @@ mod tests {
+         dents.to_vec()
+     }
+ 
++    #[test]
++    fn parallel_run_panic_propagates() {
++        let td = tmpdir();
++        wfile(td.path().join("file"), "");
++        let result =
++            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
++                WalkBuilder::new(td.path())
++                    .threads(4)
++                    .build_parallel()
++                    .run(|| Box::new(|_| panic!("visitor panic")));
++            }));
++        let panic = result.expect_err("parallel callback should panic");
++        assert_eq!(panic.downcast_ref::<&str>(), Some(&"visitor panic"));
++    }
++
++    #[test]
++    fn parallel_visit_panic_propagates() {
++        struct Builder;
++        struct Visitor;
++
++        impl<'s> ParallelVisitorBuilder<'s> for Builder {
++            fn build(&mut self) -> Box<dyn ParallelVisitor + 's> {
++                Box::new(Visitor)
++            }
++        }
++        impl ParallelVisitor for Visitor {
++            fn visit(
++                &mut self,
++                _: Result<DirEntry, crate::Error>,
++            ) -> WalkState {
++                panic!("visitor panic")
++            }
++        }
++
++        let td = tmpdir();
++        wfile(td.path().join("file"), "");
++        let result =
++            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
++                let mut builder = Builder;
++                WalkBuilder::new(td.path())
++                    .threads(4)
++                    .build_parallel()
++                    .visit(&mut builder);
++            }));
++        let panic = result.expect_err("parallel visitor should panic");
++        assert_eq!(panic.downcast_ref::<&str>(), Some(&"visitor panic"));
++    }
++
++    #[test]
++    fn parallel_builder_panic_propagates() {
++        let td = tmpdir();
++        wfile(td.path().join("file"), "");
++        let result =
++            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
++                WalkBuilder::new(td.path()).threads(4).build_parallel().run(
++                    || -> super::FnVisitor<'_> { panic!("builder panic") },
++                );
++            }));
++        let panic = result.expect_err("parallel builder should panic");
++        assert_eq!(panic.downcast_ref::<&str>(), Some(&"builder panic"));
++    }
++
+     fn mkpaths(paths: &[&str]) -> Vec<String> {
+         let mut paths: Vec<_> = paths.iter().map(|s| s.to_string()).collect();
+         paths.sort();

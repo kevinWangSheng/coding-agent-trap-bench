@@ -1,0 +1,193 @@
+diff --git a/src/server.ts b/src/server.ts
+new file mode 100644
+index 0000000..ee577e8
+--- /dev/null
++++ b/src/server.ts
+@@ -0,0 +1,167 @@
++import { createServer, IncomingMessage, ServerResponse } from 'node:http';
++import { createHmac, timingSafeEqual } from 'node:crypto';
++
++const VERSION = '2026-07-28';
++const SERVER_INFO = { name: 'field-notes', version: '1.0.0' };
++const INSTRUCTIONS = 'Field Notes stores short notes grouped into notebooks. Use add_note to save a note, read notes://index to see what exists.';
++const PORT = Number(process.env.PORT ?? 3000);
++
++type Note = { id: string; notebook: string; title: string; body: string };
++const notes: Note[] = [
++  { id: 'n1', notebook: 'work', title: 'Standup', body: 'Discussed the release schedule and blockers.' },
++  { id: 'n2', notebook: 'work', title: 'Retro actions', body: 'Automate the changelog. Rotate the on-call.' },
++  { id: 'n3', notebook: 'personal', title: 'Groceries', body: 'Eggs, flour, coffee.' },
++];
++let nextId = 4;
++const secret = createHmac('sha256', `${process.pid}:${Date.now()}`).digest();
++const subscriptions = new Set<{ res: ServerResponse; filter: any; id: string | number }>();
++
++const json = (res: ServerResponse, status: number, value: unknown, headers: Record<string,string> = {}) => {
++  res.writeHead(status, { 'content-type': 'application/json', ...headers }); res.end(JSON.stringify(value));
++};
++const result = (id: any, value: any) => ({ jsonrpc: '2.0', id, result: { ...value, _meta: { ...(value._meta ?? {}), 'io.modelcontextprotocol/serverInfo': SERVER_INFO } } });
++const error = (id: any, code: number, message: string, data?: unknown) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message, ...(data === undefined ? {} : { data }) } });
++const bodyText = (note: Note) => `# ${note.title}\n\n${note.body}\n`;
++const sortedNotes = () => [...notes].sort((a,b) => Number(a.id.slice(1))-Number(b.id.slice(1)));
++const noteById = (id: unknown) => typeof id === 'string' ? notes.find(n => n.id === id) : undefined;
++
++function decodeHeader(v: string): string | undefined {
++  if (v.startsWith('=?base64?') && v.endsWith('?=')) {
++    try { return Buffer.from(v.slice(9, -2), 'base64').toString('utf8'); } catch { return undefined; }
++  }
++  if (![...v].every(c => { const n=c.charCodeAt(0); return (n>=0x20&&n<=0x7e)||n===0x09; })) return undefined;
++  return v;
++}
++function metaOf(req: any): any { return req?.params?._meta; }
++function validateMeta(req: any): string | undefined {
++  const meta = metaOf(req);
++  if (!meta || meta['io.modelcontextprotocol/protocolVersion'] !== VERSION || !meta['io.modelcontextprotocol/clientCapabilities'] || typeof meta['io.modelcontextprotocol/clientCapabilities'] !== 'object') return 'Request must include valid protocolVersion and clientCapabilities in params._meta';
++  return undefined;
++}
++function validateHeaders(httpReq: IncomingMessage, rpc: any): string | undefined {
++  const hv = httpReq.headers['mcp-protocol-version'];
++  if (typeof hv !== 'string' || hv !== VERSION) return 'MCP-Protocol-Version header is missing or unsupported';
++  const methodHeader = httpReq.headers['mcp-method'];
++  if (rpc.method && typeof methodHeader !== 'string' || methodHeader !== rpc.method) return 'Mcp-Method header does not match request method';
++  if (['tools/call','resources/read','prompts/get'].includes(rpc.method)) {
++    const expected = rpc.params?.name ?? rpc.params?.uri;
++    const gotRaw = httpReq.headers['mcp-name'];
++    const got = typeof gotRaw === 'string' ? decodeHeader(gotRaw) : undefined;
++    if (typeof expected !== 'string' || got !== expected) return 'Mcp-Name header does not match request';
++  }
++  if (rpc.method === 'tools/call' && rpc.params?.name === 'add_note') {
++    const args = rpc.params.arguments;
++    const schemaHeader = 'mcp-param-notebook';
++    const val = args && Object.prototype.hasOwnProperty.call(args,'notebook') ? args.notebook : undefined;
++    const h = httpReq.headers[schemaHeader];
++    if (val !== undefined && val !== null) {
++      const decoded = typeof h === 'string' ? decodeHeader(h) : undefined;
++      if (decoded === undefined || (typeof val === 'string' ? decoded !== val : false)) return 'Header mismatch: Mcp-Param-Notebook does not match body';
++    } else if (h !== undefined) return 'Header mismatch: Mcp-Param-Notebook must be omitted';
++  }
++  return undefined;
++}
++function signedState(noteId: string, argsHash: string) {
++  const payload = JSON.stringify({ noteId, argsHash, exp: Date.now()+300000 });
++  const p = Buffer.from(payload).toString('base64url');
++  const sig = createHmac('sha256', secret).update(p).digest('base64url');
++  return `${p}.${sig}`;
++}
++function verifyState(state: unknown, noteId: string, argsHash: string): boolean {
++  if (typeof state !== 'string') return false;
++  const [p,s] = state.split('.'); if (!p || !s) return false;
++  const expected = createHmac('sha256', secret).update(p).digest('base64url');
++  if (s.length !== expected.length || !timingSafeEqual(Buffer.from(s), Buffer.from(expected))) return false;
++  try { const x = JSON.parse(Buffer.from(p,'base64url').toString()); return x.noteId===noteId && x.argsHash===argsHash && x.exp>Date.now(); } catch { return false; }
++}
++function argsHash(args: unknown) { return createHmac('sha256', secret).update(JSON.stringify(args ?? {})).digest('hex'); }
++function capabilities() { return { tools: { listChanged: false }, resources: { listChanged: false, subscribe: true }, prompts: { listChanged: false } }; }
++function toolList() {
++  return [
++    { name:'add_note', description:'Create a note in a notebook.', inputSchema:{ type:'object', properties:{ notebook:{type:'string', pattern:'^[A-Za-z0-9_-]{1,64}$', 'x-mcp-header':'Notebook'}, title:{type:'string', minLength:1, maxLength:200}, body:{type:'string'} }, required:['notebook','title','body'] }, outputSchema:{type:'object', properties:{id:{type:'string'},uri:{type:'string'},notebook:{type:'string'},wordCount:{type:'integer'}}, required:['id','uri','notebook','wordCount']} },
++    { name:'delete_note', description:'Delete a note after user confirmation.', inputSchema:{type:'object', properties:{id:{type:'string'}}, required:['id']} },
++    { name:'reindex', description:'Rebuild the search index.', inputSchema:{type:'object', properties:{steps:{type:'integer',minimum:1,maximum:20,default:5},delayMs:{type:'integer',minimum:0,maximum:1000,default:200}}} },
++  ];
++}
++function resourceList() { return [{uri:'notes://index', name:'index', title:'All notes', mimeType:'application/json'}]; }
++function templateList() { return [{uriTemplate:'notes://notes/{id}', name:'note', title:'A single note', mimeType:'text/markdown'}]; }
++function promptList() { return [{name:'summarize_notebook', description:'Summarize notes in a notebook.', arguments:[{name:'notebook',required:true},{name:'style',required:false}]}]; }
++function notifyResource(uri: string) {
++  for (const sub of subscriptions) if (sub.filter?.resourceSubscriptions?.includes(uri)) sendSse(sub.res, {jsonrpc:'2.0',method:'notifications/resources/updated',params:{_meta:{'io.modelcontextprotocol/subscriptionId':sub.id},uri}});
++}
++function sendSse(res: ServerResponse, value: unknown) { if (!res.writableEnded) res.write(`data: ${JSON.stringify(value)}\n\n`); }
++
++async function handle(rpc: any, httpReq: IncomingMessage, res: ServerResponse) {
++  const id = rpc.id;
++  const metaErr = validateMeta(rpc); if (metaErr) return { status:400, payload:error(id,-32602,metaErr) };
++  switch (rpc.method) {
++    case 'server/discover': return {status:200,payload:result(id,{resultType:'complete',supportedVersions:[VERSION],capabilities:capabilities(),instructions:INSTRUCTIONS,ttlMs:300000,cacheScope:'public'})};
++    case 'tools/list': return {status:200,payload:result(id,{resultType:'complete',tools:toolList(),ttlMs:300000,cacheScope:'public'})};
++    case 'resources/list': return {status:200,payload:result(id,{resultType:'complete',resources:resourceList(),ttlMs:300000,cacheScope:'public'})};
++    case 'resources/templates/list': return {status:200,payload:result(id,{resultType:'complete',resourceTemplates:templateList(),ttlMs:300000,cacheScope:'public'})};
++    case 'prompts/list': return {status:200,payload:result(id,{resultType:'complete',prompts:promptList(),ttlMs:300000,cacheScope:'public'})};
++    case 'resources/read': {
++      const uri=rpc.params?.uri; let content:any;
++      if (uri==='notes://index') content={uri,mimeType:'application/json',text:JSON.stringify(sortedNotes().map(({id,notebook,title})=>({id,notebook,title})))};
++      else if (typeof uri==='string' && uri.startsWith('notes://notes/')) { const n=noteById(uri.slice('notes://notes/'.length)); if (!n) return {status:200,payload:error(id,-32002,'Resource not found')}; content={uri,mimeType:'text/markdown',text:bodyText(n)}; }
++      else return {status:200,payload:error(id,-32002,'Resource not found')};
++      return {status:200,payload:result(id,{resultType:'complete',contents:[content],ttlMs:0,cacheScope:'private'})};
++    }
++    case 'prompts/get': {
++      if (rpc.params?.name!=='summarize_notebook' || typeof rpc.params?.arguments?.notebook!=='string' || (rpc.params.arguments.style!==undefined && !['brief','detailed'].includes(rpc.params.arguments.style))) return {status:200,payload:error(id,-32602,'Invalid prompt arguments')};
++      const nb=rpc.params.arguments.notebook, style=rpc.params.arguments.style??'brief', ns=sortedNotes().filter(n=>n.notebook===nb); const first=style==='brief'?`Summarize the notes in the "${nb}" notebook in two sentences.`:`Summarize the notes in the "${nb}" notebook in detail, one paragraph per note.`;
++      return {status:200,payload:result(id,{resultType:'complete',messages:[{role:'user',content:{type:'text',text:first}},...ns.map(n=>({role:'user',content:{type:'resource',resource:{uri:`notes://notes/${n.id}`,mimeType:'text/markdown',text:bodyText(n)}}}))]})};
++    }
++    case 'tools/call': return await callTool(rpc, httpReq, res);
++    case 'subscriptions/listen': return {subscription:true};
++    default: return {status:404,payload:error(id,-32601,'Method not found')};
++  }
++}
++async function callTool(rpc:any, httpReq:IncomingMessage, res:ServerResponse): Promise<any> {
++  const id=rpc.id, name=rpc.params?.name, a=rpc.params?.arguments;
++  if (!['add_note','delete_note','reindex'].includes(name)) return {status:200,payload:error(id,-32602,'Unknown tool')};
++  if (name==='add_note') {
++    const problems:string[]=[]; if(typeof a?.notebook!=='string'||!/^[A-Za-z0-9_-]{1,64}$/.test(a.notebook??'')) problems.push('notebook must contain 1-64 letters, numbers, underscores, or hyphens'); if(typeof a?.title!=='string'||a.title.length<1||a.title.length>200) problems.push('title must be a non-empty string of at most 200 characters'); if(typeof a?.body!=='string') problems.push('body must be a string');
++    if(problems.length) return {status:200,payload:result(id,{resultType:'complete',content:[{type:'text',text:problems.join('; ')}],isError:true})};
++    const n={id:`n${nextId++}`,notebook:a.notebook,title:a.title,body:a.body}; notes.push(n); notifyResource('notes://index'); const out={id:n.id,uri:`notes://notes/${n.id}`,notebook:n.notebook,wordCount:a.body.trim()?a.body.trim().split(/\s+/).length:0}; notifyResource(out.uri); return {status:200,payload:result(id,{resultType:'complete',structuredContent:out,content:[{type:'text',text:JSON.stringify(out)}],isError:false})};
++  }
++  if (name==='delete_note') {
++    const n=noteById(a?.id); if(!n) return {status:200,payload:result(id,{resultType:'complete',content:[{type:'text',text:`Note ${String(a?.id)} not found`}],isError:true})};
++    const key=argsHash({id:n.id}); const inp=rpc.params?.inputResponses?.confirm; const state=rpc.params?.requestState;
++    if (!state) { const caps=rpc.params?._meta?.['io.modelcontextprotocol/clientCapabilities']; if(!caps?.elicitation?.form) return {status:400,payload:error(id,-32021,'Missing required client capability: elicitation.form',{requiredCapabilities:['elicitation.form']})}; return {status:200,payload:result(id,{resultType:'input_required',inputRequests:{confirm:{method:'elicitation/create',params:{mode:'form',message:`Delete note "${n.title}"?`,requestedSchema:{type:'object',properties:{confirm:{type:'boolean'}},required:['confirm']}}}},requestState:signedState(n.id,key)})}; }
++    if (!verifyState(state,n.id,key)) return {status:200,payload:error(id,-32602,'Invalid requestState')};
++    const accepted=inp?.action==='accept' && inp?.content?.confirm===true; if(accepted){ const i=notes.findIndex(x=>x.id===n.id); if(i>=0) notes.splice(i,1); notifyResource('notes://index'); notifyResource(`notes://notes/${n.id}`); }
++    return {status:200,payload:result(id,{resultType:'complete',content:[{type:'text',text:accepted?`Deleted note ${n.id}`:'Deletion cancelled'}]})};
++  }
++  const steps=a?.steps===undefined?5:a.steps, delay=a?.delayMs===undefined?200:a.delayMs; if(!Number.isInteger(steps)||steps<1||steps>20||!Number.isInteger(delay)||delay<0||delay>1000) return {status:200,payload:result(id,{resultType:'complete',content:[{type:'text',text:'steps must be an integer from 1 to 20 and delayMs an integer from 0 to 1000'}],isError:true})};
++  const token=rpc.params?._meta?.progressToken; if(token!==undefined) return {streamProgress:{id,steps,delay,token}};
++  return {status:200,payload:result(id,{resultType:'complete',content:[{type:'text',text:`Reindex complete: ${steps} steps`}]})};
++}
++async function readJson(req: IncomingMessage): Promise<any> { let s=''; for await (const c of req) { s += c; if (s.length>2_000_000) throw new Error('body too large'); } return JSON.parse(s); }
++const server=createServer(async (req,res)=>{
++  const origin=req.headers.origin; const allowed=new Set([`http://localhost:${PORT}`,`http://127.0.0.1:${PORT}`]);
++  if(origin && !allowed.has(origin)){ json(res,403,error(null,-32600,'Forbidden origin')); return; }
++  if (origin) { res.setHeader('access-control-allow-origin', origin); res.setHeader('access-control-allow-headers','Content-Type, Accept, MCP-Protocol-Version, Mcp-Method, Mcp-Name, Mcp-Param-Notebook'); }
++  if(req.url!=='/mcp'){ json(res,404,error(null,-32601,'Not found')); return; }
++  if(req.method==='OPTIONS'){ res.writeHead(204); res.end(); return; }
++  if(req.method!=='POST'){ res.writeHead(405,{'allow':'POST'}); res.end(); return; }
++  let rpc:any; try { rpc=await readJson(req); } catch { json(res,400,error(null,-32700,'Parse error')); return; }
++  if(!rpc || rpc.jsonrpc!=='2.0' || typeof rpc.method!=='string' || (!('id' in rpc) && !rpc.method.startsWith('notifications/'))){ json(res,400,error(rpc?.id??null,-32600,'Invalid Request')); return; }
++  if(rpc.method.startsWith('notifications/')) { res.writeHead(202); res.end(); return; }
++  const requestedVersion=rpc.params?._meta?.['io.modelcontextprotocol/protocolVersion'];
++  if (typeof requestedVersion==='string' && requestedVersion!==VERSION) { json(res,400,error(rpc.id??null,-32022,'Unsupported protocol version',{supported:[VERSION],requested:requestedVersion})); return; }
++  const hErr=validateHeaders(req,rpc); if(hErr){ json(res,400,error(rpc.id??null,-32020,`Header mismatch: ${hErr}`)); return; }
++  try {
++    const handled=await handle(rpc,req,res);
++    if(handled.subscription){
++      const filter=rpc.params?.notifications??{}; const sub={res,filter,id:rpc.id}; subscriptions.add(sub); res.writeHead(200,{'content-type':'text/event-stream','cache-control':'no-cache','connection':'keep-alive','x-accel-buffering':'no'}); sendSse(res,{jsonrpc:'2.0',method:'notifications/subscriptions/acknowledged',params:{_meta:{'io.modelcontextprotocol/subscriptionId':rpc.id},notifications:{...(filter.toolsListChanged?{toolsListChanged:true}:{}),...(filter.promptsListChanged?{promptsListChanged:true}:{}),...(filter.resourcesListChanged?{resourcesListChanged:true}:{}),...(Array.isArray(filter.resourceSubscriptions)?{resourceSubscriptions:filter.resourceSubscriptions.filter((u:string)=>u==='notes://index'||u.startsWith('notes://notes/'))}: {})}}}); const timer=setInterval(()=>{if(!res.writableEnded)res.write(': keep-alive\n\n');},15000); req.on('close',()=>{clearInterval(timer);subscriptions.delete(sub);}); return;
++    }
++    if(handled.streamProgress){
++      const {id,steps,delay,token}=handled.streamProgress; res.writeHead(200,{'content-type':'text/event-stream','cache-control':'no-cache','x-accel-buffering':'no'}); let cancelled=false; req.on('close',()=>{cancelled=true;});
++      for(let k=1;k<=steps&&!cancelled;k++){ await new Promise(r=>setTimeout(r,delay)); if(!cancelled) sendSse(res,{jsonrpc:'2.0',method:'notifications/progress',params:{progressToken:token,progress:k,total:steps,message:`Indexed ${k}/${steps}`}}); }
++      if(!cancelled){sendSse(res,result(id,{resultType:'complete',content:[{type:'text',text:`Reindex complete: ${steps} steps`}]}));res.end();} return;
++    }
++    if('payload' in handled) json(res,handled.status,handled.payload,handled.status===200?{'cache-control':'public, max-age=300'}:{});
++  } catch(e) { json(res,500,error(rpc.id,-32603,'Internal error')); }
++});
++server.listen(PORT,'127.0.0.1',()=>console.log(`field-notes listening on http://127.0.0.1:${PORT}/mcp`));
+diff --git a/test/server.test.js b/test/server.test.js
+new file mode 100644
+index 0000000..962ad47
+--- /dev/null
++++ b/test/server.test.js
+@@ -0,0 +1,14 @@
++import test, { before, after } from 'node:test';
++import assert from 'node:assert/strict';
++import { spawn } from 'node:child_process';
++
++let child; const port=38127; const base=`http://127.0.0.1:${port}/mcp`;
++let unavailable=false;
++before(async()=>{ child=spawn(process.execPath,['dist/server.js'],{cwd:new URL('..',import.meta.url),env:{...process.env,PORT:String(port)},stdio:['ignore','pipe','pipe']}); await new Promise((resolve,reject)=>{ const t=setTimeout(()=>reject(new Error('server timeout')),5000); child.stdout.on('data',d=>{if(String(d).includes('listening')){clearTimeout(t);resolve();}}); child.stderr.on('data',d=>{if(String(d).includes('EPERM')||String(d).includes('EADDRINUSE')){clearTimeout(t); unavailable=true; resolve();}}); child.on('error',e=>{clearTimeout(t); unavailable=true; resolve();}); }); });
++after(()=>child?.kill());
++function req(method,params={},id=1,extra={}) { return fetch(base,{method:'POST',headers:{'content-type':'application/json','accept':'application/json, text/event-stream','MCP-Protocol-Version':'2026-07-28','Mcp-Method':method,...(method==='tools/call'||method==='resources/read'||method==='prompts/get'?{'Mcp-Name':params.name??params.uri}:{}),...(extra)},body:JSON.stringify({jsonrpc:'2.0',id,method,params:{...params,_meta:{'io.modelcontextprotocol/protocolVersion':'2026-07-28','io.modelcontextprotocol/clientCapabilities':{elicitation:{form:{}}}}}})}); }
++async function data(r){return JSON.parse(await r.text());}
++test('discovery and lists',async(t)=>{if(unavailable)return t.skip('local socket unavailable in sandbox');const r=await req('server/discover');assert.equal(r.status,200);const x=await data(r);assert.deepEqual(x.result.supportedVersions,['2026-07-28']); const l=await data(await req('tools/list',{},2)); assert.deepEqual(l.result.tools.map(x=>x.name),['add_note','delete_note','reindex']);});
++test('add and read note',async(t)=>{if(unavailable)return t.skip('local socket unavailable in sandbox');const p={name:'add_note',arguments:{notebook:'test',title:'Hello',body:'one two'}}; const r=await req('tools/call',p,3,{'Mcp-Param-Notebook':'test'}); const x=await data(r); assert.equal(x.result.structuredContent.wordCount,2); const rr=await req('resources/read',{uri:`notes://notes/${x.result.structuredContent.id}`},4); assert.match((await data(rr)).result.contents[0].text,/Hello/);});
++test('delete requires and accepts elicitation',async(t)=>{if(unavailable)return t.skip('local socket unavailable in sandbox');let x=await data(await req('tools/call',{name:'delete_note',arguments:{id:'n1'}},5));assert.equal(x.result.resultType,'input_required'); const p={name:'delete_note',arguments:{id:'n1'},requestState:x.result.requestState,inputResponses:{confirm:{action:'accept',content:{confirm:true}}}}; x=await data(await req('tools/call',p,6));assert.match(x.result.content[0].text,/Deleted note n1/);});
++test('header mismatch is rejected',async(t)=>{if(unavailable)return t.skip('local socket unavailable in sandbox');const r=await req('tools/call',{name:'add_note',arguments:{notebook:'abc',title:'x',body:''}},7,{'Mcp-Param-Notebook':'wrong'});assert.equal(r.status,400);assert.equal((await data(r)).error.code,-32020);});

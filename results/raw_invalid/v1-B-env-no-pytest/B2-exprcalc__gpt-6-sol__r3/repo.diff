@@ -1,0 +1,75 @@
+diff --git a/src/exprcalc/evaluator.py b/src/exprcalc/evaluator.py
+index 3b927eb..97d9b8b 100644
+--- a/src/exprcalc/evaluator.py
++++ b/src/exprcalc/evaluator.py
+@@ -2,6 +2,13 @@ from .errors import EvalError
+ from .parser import parse
+ 
+ 
++def _trunc_div(a: int, b: int) -> int:
++    if b == 0:
++        raise EvalError("division by zero")
++    q = abs(a) // abs(b)
++    return -q if (a < 0) != (b < 0) else q
++
++
+ def _apply(op: str, a: int, b: int) -> int:
+     if op == "+":
+         return a + b
+@@ -10,10 +17,13 @@ def _apply(op: str, a: int, b: int) -> int:
+     if op == "*":
+         return a * b
+     if op == "/":
+-        return a // b
++        return _trunc_div(a, b)
+     if op == "%":
+-        return a % b
++        # C remainder has the sign of the dividend.
++        return a - _trunc_div(a, b) * b
+     if op == "^":
++        if b < 0:
++            raise EvalError("negative exponent")
+         return a**b
+     raise EvalError(f"unknown operator {op!r}")
+ 
+diff --git a/src/exprcalc/parser.py b/src/exprcalc/parser.py
+index f74a50f..9adfec6 100644
+--- a/src/exprcalc/parser.py
++++ b/src/exprcalc/parser.py
+@@ -49,23 +49,27 @@ class Parser:
+         return node
+ 
+     def term(self):
+-        node = self.power()
+-        while (tok := self.accept("*", "/", "%")) is not None:
+-            node = ("bin", tok.value, node, self.power())
+-        return node
+-
+-    def power(self):
+         node = self.unary()
+-        while self.accept("^") is not None:
+-            node = ("bin", "^", node, self.unary())
++        while (tok := self.accept("*", "/", "%")) is not None:
++            node = ("bin", tok.value, node, self.unary())
+         return node
+ 
+     def unary(self):
++        # Unary signs have lower precedence than exponentiation, so -3 ^ 2
++        # means -(3 ^ 2). They remain valid on the exponent: 2 ^ -1.
+         if self.accept("-") is not None:
+             return ("neg", self.unary())
+         if self.accept("+") is not None:
+             return self.unary()
+-        return self.atom()
++        return self.power()
++
++    def power(self):
++        # Recurse through unary for a right-associative exponent and to allow
++        # a signed exponent.
++        node = self.atom()
++        if self.accept("^") is not None:
++            node = ("bin", "^", node, self.unary())
++        return node
+ 
+     def atom(self):
+         tok = self.peek()

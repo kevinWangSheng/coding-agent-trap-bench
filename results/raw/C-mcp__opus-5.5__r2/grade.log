@@ -1,0 +1,89 @@
+{
+  "task": "C-mcp",
+  "repo": "~/.bench-runs/C-mcp__opus-5.5__r2/repo",
+  "logs": "<BENCH>/results/raw/C-mcp__opus-5.5__r2/c-grade",
+  "build": {
+    "ok": true,
+    "rc": 0,
+    "log_tail": "\n> field-notes-mcp@1.0.0 build\n> tsc -p .\n\n"
+  },
+  "conformance": {
+    "cli": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+    "args": "server --requirements 2026-07-28",
+    "exit_code": 1,
+    "raw_summary": "Total: 114 passed, 61 failed",
+    "scored_total": 59,
+    "passed": 58,
+    "failed_count": 1,
+    "failed": {
+      "server-stateless:sep-2575-http-server-method-not-found-404-initialize": {
+        "status": "FAILURE",
+        "message": "Expected HTTP 404 and code -32601 for removed methods, got HTTP 400 and code -32022"
+      }
+    },
+    "warnings": [],
+    "ok": false
+  },
+  "hidden_tests": {
+    "total": 55,
+    "passed": 53,
+    "failed_count": 2,
+    "by_category": {
+      "app": {
+        "total": 31,
+        "passed": 31
+      },
+      "spec": {
+        "total": 24,
+        "passed": 22
+      }
+    },
+    "failed": [
+      {
+        "name": "spec: MCP-Protocol-Version header missing or mismatched -> 400 / -32020",
+        "message": "Expected values to be strictly equal:\n\n-32022 !== -32020"
+      },
+      {
+        "name": "spec: removed methods are unknown (404 / -32601)",
+        "message": "initialize\n\n400 !== 404"
+      }
+    ],
+    "ok": false
+  },
+  "stale_api": {
+    "static_hits_count": 1,
+    "static_hits": [
+      {
+        "rule": "initialize-handshake",
+        "file": "http.ts",
+        "line": 262,
+        "code": "if (method === \"initialize\") {",
+        "changelog": "Major 2",
+        "why": "initialize/notifications/initialized handshake removed"
+      }
+    ],
+    "dynamic_reachable": true,
+    "dynamic_hits_count": 0,
+    "dynamic_hits": [],
+    "ok": true
+  },
+  "server": {
+    "started": true,
+    "per_phase": {
+      "conformance": true,
+      "hidden_tests": true,
+      "stale_api": true
+    }
+  },
+  "summary": {
+    "build": true,
+    "conformance": false,
+    "hidden_tests": false,
+    "stale_api": true,
+    "server_started": true
+  },
+  "verdict": "FAIL",
+  "wall_s": 5.9
+}
+
+--- stderr

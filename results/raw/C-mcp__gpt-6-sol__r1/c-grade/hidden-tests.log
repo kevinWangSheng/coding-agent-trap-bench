@@ -1,0 +1,121 @@
+✔ app: discover identifies field-notes 1.0.0 with instructions and capabilities (26.053042ms)
+✔ app: tools/list returns the three tools alphabetically with schemas (2.251875ms)
+✔ app: add_note exposes notebook via x-mcp-header Notebook (2.38025ms)
+✔ app: add_note returns structured output matching its schema plus JSON text (5.879375ms)
+✔ app: add_note ids are sequential and never reused (13.647875ms)
+✔ app: add_note invalid arguments are tool execution errors (11.828042ms)
+✖ app: unknown tool is a protocol error -32602 (1013.979708ms)
+✔ app: reindex reports progress on the request's stream (90.512208ms)
+✔ app: reindex numeric progress token and defaults (13.645083ms)
+✔ app: reindex without a progress token sends no progress (10.7745ms)
+✔ app: reindex out-of-range arguments are tool execution errors (13.558708ms)
+✔ app: resources/list returns only notes://index (2.397417ms)
+✔ app: resources/templates/list returns the note template (0.923625ms)
+✔ app: notes://index lists notes by numeric id with seeds (27.856042ms)
+✔ app: reading a note returns markdown (7.44725ms)
+✔ app: reading a missing note is -32602 (not the old -32002) (7.2595ms)
+✔ app: prompts/list describes summarize_notebook (3.6055ms)
+✔ app: summarize_notebook embeds the notebook's notes (8.443458ms)
+✔ app: summarize_notebook detailed style and empty notebook (4.046375ms)
+✔ app: summarize_notebook invalid arguments are -32602 (8.184042ms)
+✔ app: delete_note asks for confirmation with an input_required result (4.911042ms)
+✔ app: delete_note deletes after the user accepts (11.012208ms)
+✔ app: delete_note decline, cancel or confirm:false keeps the note (24.978292ms)
+✔ app: delete_note on a missing note is a tool execution error (2.134667ms)
+✔ app: delete_note without elicitation capability is -32021 (HTTP 400) (6.821042ms)
+✔ app: a confirmation for one note cannot delete another (14.632375ms)
+✔ app: a tampered or forged requestState is rejected (9.973333ms)
+✔ app: subscriptions deliver resource updates for watched URIs (13.490667ms)
+✔ app: subscriptions only notify watchers of the changed URI (311.390917ms)
+✔ app: acknowledgment omits list-change types the server does not offer (2.0805ms)
+✔ app: request-scoped progress never appears on a listen stream (239.917583ms)
+✔ spec: every result carries resultType complete (40.229417ms)
+✔ spec: discover identifies the server in _meta serverInfo (2.239334ms)
+✔ spec: discover has no legacy initialize-result fields (3.580666ms)
+✔ spec: cacheable results carry ttlMs/cacheScope per README policy (20.02ms)
+✔ spec: tools/list order is deterministic (4.747583ms)
+✖ spec: missing required _meta fields -> 400 / -32602 (2.893917ms)
+✔ spec: clientInfo is optional (1.631417ms)
+✔ spec: unsupported protocol version -> 400 / -32022 with supported list (4.81325ms)
+✔ spec: MCP-Protocol-Version header missing or mismatched -> 400 / -32020 (3.518708ms)
+✔ spec: Mcp-Method header missing or mismatched -> 400 / -32020 (3.354292ms)
+✔ spec: Mcp-Name required and validated for tools/call, prompts/get, resources/read (10.729708ms)
+✔ spec: base64-encoded Mcp-Name is decoded before comparison (1.865458ms)
+✔ spec: Mcp-Param-Notebook must be present and match the body (4.950875ms)
+✖ spec: Mcp-Param-Notebook base64 values are decoded before comparison (3.423166ms)
+✔ spec: removed methods are unknown (404 / -32601) (8.486834ms)
+✔ spec: errors preserve the request id (3.514041ms)
+✔ spec: no GET/DELETE endpoint (405) (3.326417ms)
+✔ spec: Mcp-Session-Id is ignored and never issued (3.704833ms)
+✔ spec: Last-Event-ID is ignored (1.92825ms)
+✔ spec: Origin validation (403 for foreign origins) (4.67275ms)
+✔ spec: client notifications are accepted with 202 and no body (0.421667ms)
+✔ spec: no log notifications without a requested logLevel (4.364833ms)
+✔ spec: server sends no JSON-RPC requests on response streams (4.217958ms)
+✔ spec: malformed JSON is a parse error (2.2295ms)
+ℹ tests 55
+ℹ suites 0
+ℹ pass 52
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2231.473125
+
+✖ failing tests:
+
+test at app.test.ts:121:1
+✖ app: unknown tool is a protocol error -32602 (1013.979708ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - -32602
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/app.test.ts:123:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: -32602,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:57:1
+✖ spec: missing required _meta fields -> 400 / -32602 (2.893917ms)
+  AssertionError [ERR_ASSERTION]: no protocolVersion
+  
+  -32020 !== -32602
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:66:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: -32020,
+    expected: -32602,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at protocol.test.ts:141:1
+✖ spec: Mcp-Param-Notebook base64 values are decoded before comparison (3.423166ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 400
+  
+      at TestContext.<anonymous> (file://<BENCH>/tasks/C-new-spec/C-mcp/hidden/tests/protocol.test.ts:158:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

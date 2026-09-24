@@ -1,0 +1,18 @@
+`MonkeyPatch.setattr` now leaves a non-class object exactly as it was after `undo()`. The new regression tests pass, fail without the fix, and the fix causes no new failures in the full suite.
+
+**What I changed**
+- **The fix** (`src/_pytest/monkeypatch.py`): for non-class targets, `setattr` now checks whether the name is already in the object's own `__dict__` before patching. If it wasn't there before (because it's inherited from the class or comes from `__getattr__`) but the patch put it there, `undo()` now deletes that entry. Before, it wrote back the value it had looked up, which is how a descriptor's result got frozen in place. Attributes that really are in the object's `__dict__`, properties with setters, and `__slots__` objects behave as before.
+- **Tests** (`testing/test_monkeypatch.py`), six new ones covering:
+  - an inherited plain class attribute
+  - an inherited `__get__` descriptor (it must still recompute after undo)
+  - a property with a setter
+  - an attribute the object already had in its own `__dict__`
+  - a `__getattr__` fallback
+  - `__slots__`
+- **Changelog**: I added `changelog/13456.bugfix.rst`. The issue number 13456 is a placeholder I made up, so rename the file to the real issue or PR number.
+
+**How I verified it**
+- `testing/test_monkeypatch.py`: 45 passed, 1 skipped. With the fix removed, 3 of the new tests fail (inherited attribute, descriptor, `__getattr__`), so they do catch the bug.
+- Full `testing/` suite: about 40 tests fail with or without my change, and they are the same tests both times. The ones I looked at are environment errors (no pty available, `PermissionError`), for example `test_debugging.py` and `test_capture.py::test_libedit_workaround`.
+
+**What I couldn't do:** because of those environment failures, the full suite couldn't be fully green here.

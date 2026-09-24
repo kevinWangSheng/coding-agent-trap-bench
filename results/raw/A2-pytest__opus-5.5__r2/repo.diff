@@ -1,0 +1,127 @@
+diff --git a/changelog/+monkeypatch-inherited-attr.bugfix.rst b/changelog/+monkeypatch-inherited-attr.bugfix.rst
+new file mode 100644
+index 0000000..eabf2cc
+--- /dev/null
++++ b/changelog/+monkeypatch-inherited-attr.bugfix.rst
+@@ -0,0 +1 @@
++:meth:`MonkeyPatch.setattr <pytest.MonkeyPatch.setattr>` no longer leaves a new entry in the instance ``__dict__`` after undo when patching an inherited attribute of a non-class object -- previously this could freeze the result of a ``__get__`` descriptor.
+diff --git a/src/_pytest/monkeypatch.py b/src/_pytest/monkeypatch.py
+index 9ae9e2b..e1cffb4 100644
+--- a/src/_pytest/monkeypatch.py
++++ b/src/_pytest/monkeypatch.py
+@@ -110,6 +110,15 @@ def derive_importpath(import_path: str, raising: bool) -> tuple[str, object]:
+     return attr, target
+ 
+ 
++def _has_own_attr(obj: object, name: str) -> bool:
++    """Return whether ``name`` is present in the instance ``__dict__`` of ``obj``."""
++    try:
++        return name in vars(obj)
++    except TypeError:
++        # Object has no ``__dict__`` (e.g. uses ``__slots__``).
++        return False
++
++
+ @final
+ class MonkeyPatch:
+     """Helper to conveniently monkeypatch attributes/items/environment
+@@ -244,7 +253,17 @@ class MonkeyPatch:
+         # avoid class descriptors like staticmethod/classmethod
+         if inspect.isclass(target):
+             oldval = target.__dict__.get(name, NOTSET)
+-        setattr(target, name, value)
++            setattr(target, name, value)
++        else:
++            had_own_attr = _has_own_attr(target, name)
++            setattr(target, name, value)
++            # If the attribute was inherited (e.g. from the class) and setting
++            # it created a new entry in the instance ``__dict__``, undo must
++            # delete that entry instead of storing the old value there, which
++            # would leave the target in a different state (and freeze the
++            # result of any ``__get__`` descriptor).
++            if not had_own_attr and _has_own_attr(target, name):
++                oldval = NOTSET
+         self._setattr.append((target, name, oldval))
+ 
+     def delattr(
+diff --git a/testing/test_monkeypatch.py b/testing/test_monkeypatch.py
+index 63e145c..91b4a70 100644
+--- a/testing/test_monkeypatch.py
++++ b/testing/test_monkeypatch.py
+@@ -52,6 +52,76 @@ def test_setattr() -> None:
+         monkeypatch.setattr(A, "y")  # type: ignore[call-overload]
+ 
+ 
++def test_setattr_inherited_attribute_on_instance() -> None:
++    class A:
++        x = 1
++
++    a = A()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(a, "x", 2)
++    assert a.x == 2
++    monkeypatch.setattr(a, "x", 3)
++    assert a.x == 3
++    monkeypatch.undo()
++    assert a.x == 1
++    assert "x" not in vars(a)
++
++
++def test_setattr_inherited_descriptor_on_instance() -> None:
++    class Counter:
++        """Non-data descriptor returning a new value on every lookup."""
++
++        def __init__(self) -> None:
++            self.count = 0
++
++        def __get__(self, obj: object, owner: type | None = None) -> int:
++            self.count += 1
++            return self.count
++
++    class A:
++        dyn = Counter()
++
++    a = A()
++    first = a.dyn
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(a, "dyn", 100)
++    assert a.dyn == 100
++    monkeypatch.undo()
++    assert "dyn" not in vars(a)
++    # The descriptor is still consulted dynamically after undo.
++    second = a.dyn
++    assert a.dyn == second + 1
++    assert second > first
++
++
++def test_setattr_own_attribute_on_instance() -> None:
++    class A:
++        x = 1
++
++    a = A()
++    a.x = 5
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(a, "x", 2)
++    assert a.x == 2
++    monkeypatch.undo()
++    assert vars(a) == {"x": 5}
++
++
++def test_setattr_inherited_attribute_on_slotted_instance() -> None:
++    class A:
++        __slots__ = ("x",)
++
++        def __init__(self) -> None:
++            self.x = 1
++
++    a = A()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(a, "x", 2)
++    assert a.x == 2
++    monkeypatch.undo()
++    assert a.x == 1
++
++
+ class TestSetattrWithImportPath:
+     def test_string_expression(self, monkeypatch: MonkeyPatch) -> None:
+         with monkeypatch.context() as mp:

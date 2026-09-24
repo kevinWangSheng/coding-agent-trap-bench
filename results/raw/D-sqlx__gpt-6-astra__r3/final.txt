@@ -1,0 +1,16 @@
+Implemented a SQLite multi-statement preparation optimization in [virtual.rs](~/.bench-runs/D-sqlx__gpt-6-astra__r3/repo/sqlx-sqlite/src/statement/virtual.rs).
+
+- SQLite now prepares a bounded 4 KiB prefix first, falling back to the full remaining SQL only when necessary.
+- Preserves parsing, results, affected-row counts, and error behavior.
+- Finalizes discarded bounded preparations safely.
+
+Benchmark results:
+
+- Before: 32,000 statements — **984 ms**
+- After: 32,000 statements — **176 ms**
+- After: 64,000 statements — **473 ms**
+
+Verification:
+
+- Full requested SQLite test suite passed: **all 209 executed tests passed**.
+- `cargo fmt` and `git diff --check` passed.

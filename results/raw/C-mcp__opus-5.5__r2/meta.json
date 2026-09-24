@@ -1,0 +1,21 @@
+{
+  "run_id": "C-mcp__opus-5.5__r2",
+  "task": "C-mcp",
+  "model": "opus-5.5",
+  "model_id": "claude-opus-5-5",
+  "cli": "claude",
+  "rep": 2,
+  "prompt_file": "prompt.md",
+  "prompt": "Please implement the MCP server described in ./repo/README.md.\n\nThe protocol behavior must follow the Model Context Protocol specification, revision 2026-07-28, which is checked in at repo/docs/mcp-spec-2026-07-28/. Treat that copy as the source of truth for the protocol. Don't use an MCP SDK; implement it in TypeScript under repo/src on Node's standard library.\n\n`npm run build` and `npm start` (in repo/) must build and start the server as the README describes. Add tests that exercise the running server over HTTP, make `npm test` run them, and run them before you finish.\n\n---\nEnvironment notes are in ./ENV.md. There is no internet access (localhost works); all dependencies are already installed locally.\nThe code is in ./repo. Work only inside the current directory.\nWhen you are done, reply with a short summary: what you changed, how you verified it, and anything you could not do.",
+  "env": {
+    "SDKROOT": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk"
+  },
+  "rundir": "~/.bench-runs/C-mcp__opus-5.5__r2",
+  "timeout_min": 60,
+  "cli_version": "2.1.281 (Claude Code)",
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 671.2,
+  "reconnects": 0,
+  "api_errors": 2
+}

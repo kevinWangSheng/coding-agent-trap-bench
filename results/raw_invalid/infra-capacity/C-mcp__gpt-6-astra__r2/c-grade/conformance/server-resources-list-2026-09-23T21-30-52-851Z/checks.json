@@ -1,0 +1,72 @@
+[
+  {
+    "id": "resources-list",
+    "name": "ResourcesList",
+    "description": "Server lists available resources with valid structure",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:30:52.859Z",
+    "specReferences": [
+      {
+        "id": "MCP-Resources-List",
+        "url": "https://modelcontextprotocol.io/specification/2025-06-18/server/resources#listing-resources"
+      }
+    ],
+    "details": {
+      "resourceCount": 1,
+      "resources": [
+        "notes://index"
+      ]
+    }
+  },
+  {
+    "id": "wire-schema-valid",
+    "name": "WireSchemaValid",
+    "description": "Every JSON-RPC message the implementation sent is valid per the spec JSON schema for the negotiated spec version",
+    "status": "FAILURE",
+    "timestamp": "2026-09-23T21:30:52.859Z",
+    "specReferences": [
+      {
+        "id": "MCP-Schema",
+        "url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/schema/draft/schema.json"
+      }
+    ],
+    "details": {
+      "messagesValidated": 2,
+      "violations": [
+        {
+          "origin": "implementation",
+          "specVersion": "2026-07-28",
+          "context": "response to 'resources/list'",
+          "errors": [
+            "ListResourcesResult: must have required property 'resultType' (result of 'resources/list')"
+          ],
+          "message": {
+            "jsonrpc": "2.0",
+            "id": 10,
+            "result": {
+              "resources": [
+                {
+                  "uri": "notes://index",
+                  "name": "index",
+                  "title": "All notes",
+                  "mimeType": "application/json",
+                  "description": "All notes"
+                }
+              ],
+              "instructions": "Field Notes stores short notes grouped into notebooks. Use add_note to save a note, read notes://index to see what exists.",
+              "ttlMs": 300000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "field-notes",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "errorMessage": "[implementation] response to 'resources/list' (spec 2026-07-28): ListResourcesResult: must have required property 'resultType' (result of 'resources/list') — message: {\"jsonrpc\":\"2.0\",\"id\":10,\"result\":{\"resources\":[{\"uri\":\"notes://index\",\"name\":\"index\",\"title\":\"All notes\",\"mimeType\":\"application/json\",\"description\":\"All notes\"}],\"instructions\":\"Field Notes stores short notes grouped into notebooks. Use add_note to save a note, read notes://index to see what exists.\",\"ttlMs\":300000,\"cacheScope\":\"public\",\"_meta\":{\"io.modelcontextprotocol/serverInfo\":{\"name\":\"field-notes\",\"version\":\"1.0.0\"}}}}"
+  }
+]

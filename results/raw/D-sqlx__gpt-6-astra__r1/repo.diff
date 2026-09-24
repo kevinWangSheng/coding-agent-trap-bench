@@ -1,0 +1,101 @@
+diff --git a/sqlx-sqlite/src/connection/execute.rs b/sqlx-sqlite/src/connection/execute.rs
+index f26a540..b937214 100644
+--- a/sqlx-sqlite/src/connection/execute.rs
++++ b/sqlx-sqlite/src/connection/execute.rs
+@@ -126,6 +126,13 @@ impl Iterator for ExecuteIter<'_> {
+ 
+                 self.goto_next = true;
+ 
++                // `raw_sql()` uses non-persistent statements. Release each VM
++                // as soon as it finishes instead of retaining the entire
++                // multi-statement script until the iterator is dropped.
++                if !self.statement.is_persistent() {
++                    self.statement.discard_completed();
++                }
++
+                 Some(Ok(Either::Left(done)))
+             }
+             Err(e) => Some(Err(e.into())),
+diff --git a/sqlx-sqlite/src/statement/virtual.rs b/sqlx-sqlite/src/statement/virtual.rs
+index b25aa69..5444441 100644
+--- a/sqlx-sqlite/src/statement/virtual.rs
++++ b/sqlx-sqlite/src/statement/virtual.rs
+@@ -119,6 +119,10 @@ impl VirtualStatement {
+         Ok(self.current())
+     }
+ 
++    pub(crate) fn is_persistent(&self) -> bool {
++        self.persistent
++    }
++
+     pub fn current(&mut self) -> Option<PreparedStatement<'_>> {
+         self.index
+             .filter(|&idx| idx < self.handles.len())
+@@ -139,6 +143,19 @@ impl VirtualStatement {
+ 
+         Ok(())
+     }
++
++    /// Discard all prepared statements that have completed execution.
++    ///
++    /// Non-persistent statements are only used for one execution, so retaining
++    /// every VM until the whole multi-statement query finishes needlessly grows
++    /// memory usage and makes SQLite's allocator increasingly expensive.
++    pub(crate) fn discard_completed(&mut self) {
++        debug_assert!(!self.persistent);
++        self.index = None;
++        self.handles.clear();
++        self.columns.clear();
++        self.column_names.clear();
++    }
+ }
+ 
+ fn prepare(
+@@ -164,7 +181,11 @@ fn prepare(
+         let mut tail: *const c_char = null();
+ 
+         let query_ptr = query.as_ptr() as *const c_char;
+-        let query_len = i32::try_from(query.len()).map_err(|_| {
++        // SQLite only prepares the first statement, but passing the complete
++        // remaining script makes it inspect an ever-growing buffer for every
++        // statement. Bound the input to a modest window; if the first
++        // statement does not fit, retry with the complete tail below.
++        let query_len = i32::try_from(query.len().min(4 * 1024)).map_err(|_| {
+             err_protocol!(
+                 "query string too large for SQLite3 API ({} bytes); \
+                  try breaking it into smaller chunks (< 2 GiB), executed separately",
+@@ -185,7 +206,33 @@ fn prepare(
+         };
+ 
+         if status != SQLITE_OK {
+-            return Err(unsafe { SqliteError::new(conn).into() });
++            // A statement longer than the window may be reported as
++            // incomplete. Retry with the full remaining script so its normal
++            // error and tail behavior are preserved.
++            if query_len as usize != query.len() {
++                let query_len = i32::try_from(query.len()).map_err(|_| {
++                    err_protocol!(
++                        "query string too large for SQLite3 API ({} bytes); \
++                         try breaking it into smaller chunks (< 2 GiB), executed separately",
++                        query.len()
++                    )
++                })?;
++                let status = unsafe {
++                    sqlite3_prepare_v3(
++                        conn,
++                        query_ptr,
++                        query_len,
++                        flags,
++                        &mut statement_handle,
++                        &mut tail,
++                    )
++                };
++                if status != SQLITE_OK {
++                    return Err(unsafe { SqliteError::new(conn).into() });
++                }
++            } else {
++                return Err(unsafe { SqliteError::new(conn).into() });
++            }
+         }
+ 
+         // tail should point to the first byte past the end of the first SQL

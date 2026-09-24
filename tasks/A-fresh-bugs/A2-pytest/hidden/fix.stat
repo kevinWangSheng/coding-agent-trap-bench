@@ -1,0 +1,5 @@
+ AUTHORS                     |   1 +
+ changelog/10644.bugfix.rst  |   3 +
+ src/_pytest/monkeypatch.py  |  24 ++++++++
+ testing/test_monkeypatch.py | 137 ++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 165 insertions(+)

@@ -1,0 +1,48 @@
+{
+ "meta": {
+  "run_id": "A1-etcd__opus-5.5__r2",
+  "task": "A1-etcd",
+  "model": "opus-5.5",
+  "rep": 2,
+  "prompt_file": "prompt.md",
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 80.7,
+  "reconnects": 0,
+  "cli_version": "2.1.280 (Claude Code)"
+ },
+ "usage": {
+  "input": 191183,
+  "output": 4399,
+  "cost_usd": 0.2583784,
+  "turns": 10,
+  "is_error": false
+ },
+ "audit": {
+  "tool_calls": 9,
+  "leak_hits": [],
+  "network_attempts": []
+ },
+ "grade": {
+  "hidden_pass": true,
+  "hidden": {
+   "rc": 0,
+   "out": "=== RUN   TestCostTxn\n=== RUN   TestCostTxn/flat_put\n=== RUN   TestCostTxn/nested_txn_put_in_success_branch_must_be_counted\n=== RUN   TestCostTxn/nested_txn_put_in_failure_branch_must_be_counted\n--- PASS: TestCostTxn (0.00s)\n    --- PASS: TestCostTxn/flat_put (0.00s)\n    --- PASS: TestCostTxn/nested_txn_put_in_success_branch_must_be_counted (0.00s)\n    --- PASS: TestCostTxn/nested_txn_put_in_failure_branch_must_be_counted (0.00s)\nPASS\nok  \tgo.etcd.io/etcd/server/v3/storage\t0.538s\n",
+   "secs": 15.6
+  },
+  "regress_pass": true,
+  "regress": {
+   "rc": 0,
+   "out": "ok  \tgo.etcd.io/etcd/server/v3/storage\t0.648s\nok  \tgo.etcd.io/etcd/server/v3/etcdserver\t10.940s\n?   \tgo.etcd.io/etcd/server/v3/etcdserver/api\t[no test files]\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/api/etcdhttp\t2.118s\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/api/etcdhttp/types\t0.989s\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/api/membership\t2.430s\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/api/rafthttp\t2.133s\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/api/snap\t2.956s\n?   \tgo.etcd.io/etcd/server/v3/etcdserver/api/snap/snappb\t[no test files]\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/api/v2error\t3.315s\n?   \tgo.etcd.io/etcd/server/v3/etcdserver/api/v2stats\t[no test files]\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/api/v2store\t4.755s\n?   \tgo.etcd.io/etcd/server/v3/etcdserver/api/v3alarm\t[no test files]\n?   \tgo.etcd.io/etcd/server/v3/etcdserver/api/v3client\t[no test files]\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/api/v3compactor\t6.484s\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/api/v3discovery\t22.299s\n?   \tgo.etcd.io/etcd/server/v3/etcdserver/api/v3election\t[no test files]\n?   \tgo.etcd.io/etcd/server/v3/etcdserver/api/v3election/v3electionpb\t[no test files]\n?   \tgo.etcd.io/etcd/server/v3/etcdserver/api/v3election/v3electionpb/gw\t[no test files]\n?   \tgo.etcd.io/etcd/server/v3/etcdserver/api/v3lock\t[no test files]\n?   \tgo.etcd.io/etcd/server/v3/etcdserver/api/v3lock/v3lockpb\t[no test files]\n?   \tgo.etcd.io/etcd/server/v3/etcdserver/api/v3lock/v3lockpb/gw\t[no test files]\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/api/v3rpc\t4.325s\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/apply\t6.244s\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/cindex\t4.358s\n?   \tgo.etcd.io/etcd/server/v3/etcdserver/errors\t[no test files]\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/read\t6.085s\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/txn\t5.905s\nok  \tgo.etcd.io/etcd/server/v3/etcdserver/version\t4.159s\n",
+   "secs": 29.2
+  },
+  "pass": true
+ },
+ "review": {
+  "changed_files": [
+   "server/storage/quota.go",
+   "server/storage/quota_test.go"
+  ],
+  "changed_outside_src": []
+ }
+}

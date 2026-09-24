@@ -1,0 +1,17 @@
+All 18 tests pass now; before the fix, 13 were failing. I didn't touch the tests.
+
+**What I changed**
+
+In `src/exprcalc/parser.py` I fixed operator precedence:
+- A leading minus now applies after `^`, so `-3 ^ 2` is `-9`.
+- `^` now groups right to left, so `2 ^ 3 ^ 2` is `512`.
+
+In `src/exprcalc/evaluator.py` I made the maths match the C-style rules in the README:
+- `/` rounds toward zero, so `-7 / 2` is `-3`.
+- The result of `%` takes the sign of the left number, so `-17 % 5` is `-2`.
+- Dividing by zero, with either `/` or `%`, now raises `EvalError` instead of Python's own `ZeroDivisionError`.
+- A negative exponent, like `2 ^ -1`, now raises `EvalError`.
+
+**How I checked it:** I ran `python -m pytest` in `repo`.
+
+**Not done:** nothing.

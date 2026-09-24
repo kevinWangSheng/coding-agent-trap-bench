@@ -1,0 +1,11 @@
+Implemented the `ignore` crate fix in [walk.rs](~/.bench-runs/A3-ripgrep__gpt-6-astra__r1/repo/crates/ignore/src/walk.rs):
+
+- Worker panics now signal all workers to stop, allowing every thread to join safely.
+- The original panic is rethrown to the caller.
+- Visitor builders are created before worker threads start, so builder panics cannot strand workers.
+- Added regression tests for panics in both visitor callbacks and visitor builders.
+
+Verification:
+
+- `timeout 60 cargo test -p ignore`
+- All 147 unit tests, integration tests, and doctests passed.

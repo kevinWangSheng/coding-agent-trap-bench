@@ -1,0 +1,23 @@
+{
+  "run_id": "D-sqlx__opus-5.5__r3",
+  "task": "D-sqlx",
+  "model": "opus-5.5",
+  "model_id": "claude-opus-5-5",
+  "cli": "claude",
+  "rep": 3,
+  "prompt_file": "prompt.md",
+  "prompt": "Performance problem in the sqlx repository in ./repo (the SQLite driver, crates `sqlx-sqlite` / `sqlx-core`).\n\nWe apply database setup and data-migration scripts by executing them as one multi-statement SQL string, e.g. `sqlx::raw_sql(script).execute(&mut conn)`. Small scripts are fine, but the cost per statement keeps climbing as the script gets bigger: a script with a few thousand statements runs in milliseconds, yet one with tens of thousands of statements takes seconds, far more than the statement count alone would explain. Splitting the same script into separate smaller calls makes it fast again, which is not a workaround we want to push onto every caller.\n\nThere is a small benchmark you can use to reproduce and measure it:\n\n```\ncd repo && cargo run --release --example multi_stmt_bench --features sqlite,runtime-tokio\n```\n\n(pass statement counts as arguments to try other sizes). The SQLite test suite runs locally without docker:\n\n```\ncd repo && DATABASE_URL=sqlite:tests/sqlite/sqlite.db cargo test --no-default-features \\\n  --features any,macros,migrate,sqlite,_unstable-all-types,runtime-tokio -- --test-threads=1 --skip rustsec_2024_0363\n```\n\n(`rustsec_2024_0363` builds a 4 GiB query string; CI runs it in isolation, skip it locally). Please make executing large multi-statement strings scale well. Observable behavior must not change: the same statements run with the same results, rows-affected counts and errors as before. Keep the existing SQLite tests passing, add tests where appropriate, and report the before/after numbers you measured.\n\n---\nEnvironment notes are in ./ENV.md. There is no internet access (localhost works); all dependencies are already installed locally.\nThe code is in ./repo. Work only inside the current directory.\nWhen you are done, reply with a short summary: what you changed, how you verified it, and anything you could not do.",
+  "env": {
+    "SDKROOT": "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+    "CARGO_HOME": "~/.bench-runs/D-sqlx__opus-5.5__r3/.cache/cargo",
+    "CARGO_NET_OFFLINE": "true"
+  },
+  "rundir": "~/.bench-runs/D-sqlx__opus-5.5__r3",
+  "timeout_min": 45,
+  "cli_version": "2.1.281 (Claude Code)",
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 331.0,
+  "reconnects": 0,
+  "api_errors": 0
+}

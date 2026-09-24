@@ -1,0 +1,8 @@
+Implemented fixes for:
+
+- Invoice currency validation and due date ordering.
+- Retry logic to execute all attempts and re-raise final errors.
+- Client error wrapping for network and malformed JSON failures.
+- Default sandbox status handling for the unavailable external endpoint.
+
+Verification: `pytest -q` — **11 passed**.

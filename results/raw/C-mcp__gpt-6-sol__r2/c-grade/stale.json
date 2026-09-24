@@ -1,0 +1,15 @@
+{
+  "static": {
+    "src": "/var/folders/nh/02mxl3td7rxcyj70_y5t1xqr0000gn/T/grade-work-k9s5gv_z/repo/src",
+    "files_scanned": 1,
+    "count": 0,
+    "hits": []
+  },
+  "dynamic": {
+    "url": "http://127.0.0.1:64729/mcp",
+    "reachable": true,
+    "probes": 21,
+    "count": 0,
+    "hits": []
+  }
+}

@@ -1,0 +1,211 @@
+diff --git a/sqlx-sqlite/src/statement/virtual.rs b/sqlx-sqlite/src/statement/virtual.rs
+index b25aa69..4cae88e 100644
+--- a/sqlx-sqlite/src/statement/virtual.rs
++++ b/sqlx-sqlite/src/statement/virtual.rs
+@@ -9,7 +9,7 @@ use libsqlite3_sys::{
+     sqlite3, sqlite3_prepare_v3, sqlite3_stmt, SQLITE_OK, SQLITE_PREPARE_PERSISTENT,
+ };
+ 
+-use sqlx_core::bytes::{Buf, Bytes};
++use sqlx_core::bytes::Bytes;
+ use sqlx_core::error::Error;
+ use sqlx_core::ext::ustr::UStr;
+ use sqlx_core::{HashMap, SmallVec};
+@@ -27,12 +27,12 @@ pub struct VirtualStatement {
+ 
+     /// the current index of the actual statement that is executing
+     /// if `None`, no statement is executing and `prepare()` must be called;
+-    /// if `Some(self.handles.len())` and `self.tail.is_empty()`,
++    /// if `Some(self.handles.len())` and all statement slices have been prepared,
+     /// there are no more statements to execute and `reset()` must be called
+     index: Option<usize>,
+ 
+-    /// tail of the most recently prepared SQL statement within this container
+-    tail: Bytes,
++    /// SQL slices for each statement in this container.
++    statements: Vec<Bytes>,
+ 
+     /// underlying sqlite handles for each inner statement
+     /// a SQL query string in SQLite is broken up into N statements
+@@ -63,9 +63,12 @@ impl VirtualStatement {
+             ));
+         }
+ 
++        let sql = Bytes::from(String::from(query));
++        let statements = split_statements(&sql);
++
+         Ok(Self {
+             persistent,
+-            tail: Bytes::from(String::from(query)),
++            statements,
+             handles: SmallVec::with_capacity(1),
+             index: None,
+             columns: SmallVec::with_capacity(1),
+@@ -84,11 +87,11 @@ impl VirtualStatement {
+             .or(Some(0));
+ 
+         while self.handles.len() <= self.index.unwrap_or(0) {
+-            if self.tail.is_empty() {
++            let Some(query) = self.statements.get(self.handles.len()) else {
+                 return Ok(None);
+-            }
++            };
+ 
+-            if let Some(statement) = prepare(conn.as_ptr(), &mut self.tail, self.persistent)? {
++            if let Some(statement) = prepare(conn.as_ptr(), query, self.persistent)? {
+                 let num = statement.column_count();
+ 
+                 let mut columns = Vec::with_capacity(num);
+@@ -143,7 +146,7 @@ impl VirtualStatement {
+ 
+ fn prepare(
+     conn: *mut sqlite3,
+-    query: &mut Bytes,
++    query: &Bytes,
+     persistent: bool,
+ ) -> Result<Option<StatementHandle>, Error> {
+     let mut flags = 0;
+@@ -159,7 +162,7 @@ fn prepare(
+         flags |= SQLITE_PREPARE_PERSISTENT as u32;
+     }
+ 
+-    while !query.is_empty() {
++    {
+         let mut statement_handle: *mut sqlite3_stmt = null_mut();
+         let mut tail: *const c_char = null();
+ 
+@@ -192,9 +195,6 @@ fn prepare(
+         // statement in zSql. these routines only compile the first statement,
+         // so tail is left pointing to what remains un-compiled.
+ 
+-        let n = (tail as usize) - (query_ptr as usize);
+-        query.advance(n);
+-
+         if let Some(handle) = NonNull::new(statement_handle) {
+             return Ok(Some(StatementHandle::new(handle)));
+         }
+@@ -202,3 +202,124 @@ fn prepare(
+ 
+     Ok(None)
+ }
++
++/// Splits a script at statement terminators without treating terminators inside
++/// SQLite string literals, quoted identifiers, or comments as separators. Trigger
++/// bodies are kept together until their closing `END`.
++fn split_statements(sql: &Bytes) -> Vec<Bytes> {
++    let bytes = sql.as_ref();
++    let mut result = Vec::new();
++    let mut start = 0;
++    let mut i = 0;
++    let mut quote = None;
++    let mut trigger = false;
++    let mut trigger_end = false;
++    let mut word_start = None;
++    let mut saw_create = false;
++
++    while i < bytes.len() {
++        let b = bytes[i];
++        if let Some(q) = quote {
++            if b == q {
++                if i + 1 < bytes.len() && bytes[i + 1] == q {
++                    i += 2;
++                    continue;
++                }
++                quote = None;
++            }
++            i += 1;
++            continue;
++        }
++
++        if b == b'\'' || b == b'"' || b == b'`' {
++            quote = Some(b);
++            word_start = None;
++            i += 1;
++            continue;
++        }
++        if b == b'[' {
++            i += 1;
++            while i < bytes.len() {
++                if bytes[i] == b']' {
++                    if i + 1 < bytes.len() && bytes[i + 1] == b']' {
++                        i += 2;
++                        continue;
++                    }
++                    break;
++                }
++                i += 1;
++            }
++            if i < bytes.len() {
++                i += 1;
++            }
++            word_start = None;
++            continue;
++        }
++        if b == b'-' && i + 1 < bytes.len() && bytes[i + 1] == b'-' {
++            while i < bytes.len() && bytes[i] != b'\n' {
++                i += 1;
++            }
++            word_start = None;
++            continue;
++        }
++        if b == b'/' && i + 1 < bytes.len() && bytes[i + 1] == b'*' {
++            i += 2;
++            while i + 1 < bytes.len() && !(bytes[i] == b'*' && bytes[i + 1] == b'/') {
++                i += 1;
++            }
++            i = (i + 2).min(bytes.len());
++            word_start = None;
++            continue;
++        }
++
++        if b.is_ascii_alphabetic() || b == b'_' {
++            word_start.get_or_insert(i);
++        } else if let Some(ws) = word_start.take() {
++            let word = bytes[ws..i].to_ascii_uppercase();
++            if word == b"CREATE" {
++                saw_create = true;
++            }
++            if saw_create && word == b"TRIGGER" {
++                trigger = true;
++            }
++            if trigger && word == b"END" {
++                trigger_end = true;
++            }
++        }
++
++        if b == b';' && (!trigger || trigger_end) {
++            result.push(sql.slice(start..=i));
++            start = i + 1;
++            trigger = false;
++            trigger_end = false;
++            saw_create = false;
++        }
++        i += 1;
++    }
++    if start < bytes.len() {
++        result.push(sql.slice(start..));
++    }
++    result
++}
++
++#[cfg(test)]
++mod tests {
++    use super::split_statements;
++    use sqlx_core::bytes::Bytes;
++
++    #[test]
++    fn split_ignores_quoted_semicolons_and_comments() {
++        let sql = Bytes::from("INSERT INTO t VALUES ('a; b'); -- comment;\nSELECT 1;");
++        let statements = split_statements(&sql);
++        assert_eq!(statements.len(), 2);
++        assert_eq!(&statements[0][..], b"INSERT INTO t VALUES ('a; b');");
++    }
++
++    #[test]
++    fn split_keeps_trigger_body_together() {
++        let sql = Bytes::from(
++            "CREATE TRIGGER tr AFTER INSERT ON t BEGIN INSERT INTO log VALUES (1); END; SELECT 1;",
++        );
++        assert_eq!(split_statements(&sql).len(), 2);
++    }
++}

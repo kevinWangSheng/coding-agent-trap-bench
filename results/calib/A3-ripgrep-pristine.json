@@ -1,0 +1,37 @@
+{
+ "hidden_pass": false,
+ "hidden_runs": [
+  {
+   "rc": 124,
+   "secs": 120.0
+  },
+  {
+   "rc": 124,
+   "secs": 120.0
+  },
+  {
+   "rc": 124,
+   "secs": 120.0
+  },
+  {
+   "rc": 124,
+   "secs": 120.0
+  },
+  {
+   "rc": 124,
+   "secs": 120.0
+  }
+ ],
+ "hidden": {
+  "rc": 124,
+  "out": "\nrunning 2 tests\ntest walk::bench_hidden_tests::panic_in_parallel has been running for over 60 seconds\ntest walk::bench_hidden_tests::panic_in_parallel_builder has been running for over 60 seconds\n",
+  "secs": 120.0
+ },
+ "regress_pass": false,
+ "regress": {
+  "rc": 124,
+  "out": "\nrunning 147 tests\n....................................................................................... 87/147\n..........................................................test walk::bench_hidden_tests::panic_in_parallel has been running for over 60 seconds\ntest walk::bench_hidden_tests::panic_in_parallel_builder has been running for over 60 seconds\n",
+  "secs": 599.9
+ },
+ "pass": false
+}

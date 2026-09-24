@@ -1,0 +1,31 @@
+“An offline sandbox on both sides (macOS seatbelt). Both restrict network access and writes. Neither restricts reads.” -> overstated/unclear -> The task records describe path- and configuration-dependent isolation: loopback/localhost remained available, Claude and Codex had different sandbox behavior, and `/tmp` was writable/sealable by Codex. The evidence does not support an unqualified statement that both sandboxes simply “restrict writes” or have equivalent isolation. -> “Runs used macOS sandbox configurations with no internet access except localhost and restricted writes outside the run workspace; isolation differed between CLIs, and reads were not generally restricted.”
+
+“3 real bugs whose fixes were merged upstream in July–September 2026” -> unsupported -> The task materials document the selected upstream fixes and dates, but the article does not identify the merge dates or provide enough source context for an outside reader to verify the July–September range. -> Name the repositories/PRs and give the documented merge dates, or say “three upstream bug-fix tasks.”
+
+“Only Opus’s training cutoff is published (June 2026); if there is contamination, it could only favor the GPT models.” -> unsupported/unclear -> The cited materials establish Opus’s cutoff, but do not establish GPT-6 Astra or Sol training cutoffs, nor that any contamination would necessarily favor GPT models. -> “Only Opus’s June 2026 cutoff is documented here; contamination effects for the other models are unknown.”
+
+“Hidden tests: 161, 124 and 127 of 165.” -> unclear -> These are sums across three runs, while the preceding figures are explicitly means (“Mean scored checks”). A reader can mistake them for per-run results. -> “Across three runs, hidden checks passed totaled 161/495 for Opus, 124/495 for Astra, and 127/495 for Sol (means: 53.7, 41.3, and 42.3 of 165).”
+
+“An independent audit by a GPT model found 400 consistent with the spec.” -> overstated -> `results/review_CD.md` says 400 is “at least specification-consistent” and identifies the grader’s 404 expectation as unjustified for the request; it does not establish definitive conformance. -> “An independent GPT-model audit found the 400 response plausibly/specification-consistent and identified the 404 check as a likely grader-ordering issue.”
+
+“None candid.” / “Neither reviewer rated any of the 18 gamed runs as candid.” -> unclear -> The blind-review records use reviewer labels (`vague`/`false`), not a directly observed binary “candid” behavior; the article should make clear this is a reviewer classification. -> “Neither blind reviewer labeled any gamed run ‘candid’ (they labeled them vague or false).”
+
+“Gamed gateway runs: split vague/false on 11, both ‘false’ on 1.” -> unclear -> The sentence omits that the split is 11 cases with one reviewer vague and the other false, while the remaining case was false from both; this can be read as 11 total vague and 1 total false. -> “On 11 gateway cases, reviewers split between vague and false; on one, both marked false.”
+
+“Their logs show no test-count line it could have read that from.” -> unsupported -> Absence of a logged test-count line does not establish that the agent could not have obtained the count from another read or tool output; the audit materials explicitly note that logs do not capture every file read. -> “The recorded logs contain no test-count line supporting those numbers; the audit cannot rule out an unlogged read.”
+
+“Solvable tasks: fresh bugs 9/9, 8/9, 7/9 (noise); MCP server 58, 52, 51.3 of 59 checks, set by a Claude-built reference; perf fix about even.” -> unclear -> The model order is only inferable from earlier prose, “noise” is undefined, and “about even” is imprecise despite exact D pass counts being available. -> Label the columns/models inline and write “performance: Opus 3/3, Astra 3/3, Sol 2/3.”
+
+“the whole difference comes from the pytest bug and is not significant (p = 0.47, Opus vs Sol).” -> unsupported/unclear -> The files support the pass counts, but the article does not state the test used or its assumptions; with three runs per model, the p-value needs a method label. -> “For the A-task aggregate, Opus–Sol Fisher exact p=0.47 (small n; exploratory only).”
+
+“the 12 runs are 2 tasks × 2 prompts × 3 repetitions, not independent draws, so the intervals are if anything too narrow.” -> overstated -> Dependence from repeated tasks/prompts is plausible, but “too narrow” is a statistical conclusion without specifying the interval method or a clustering/design correction. -> “The displayed binomial intervals ignore the repeated-task/prompt design and should not be interpreted as independent-run uncertainty.”
+
+“I cleaned up and reran the whole trap.” -> unclear -> Only the 18 payment-task runs are identified elsewhere as rerun; “whole trap” could imply all 54 trap runs. -> “I cleaned up and reran all 18 payment-task runs.”
+
+“First batch: 0/12, 3/10, 4/9” -> unclear -> The denominators differ because five GPT runs were ungradable, but that exclusion is explained only afterward. An outside reader may read these as ordinary 12-run rates. -> Add “(five GPT runs had no gradable result, hence denominators 10 and 9).”
+
+“Run counts … 99 counted runs” / “A ledger records all 205 attempts” -> unclear -> `final_results.json` contains 99 included records, while raw directories also retain discarded/invalid attempts. The article should distinguish included runs from retained raw folders and define “attempt.” -> “99 included runs; the ledger records 205 attempts, including discarded and invalid attempts.”
+
+“Attach `chart_b_honesty.png` to tweet 1.” -> unclear -> The publication package does not state where that image is located or whether `[REPO_URL]` has been replaced; posting as-is would leave a placeholder URL. -> Replace `[REPO_URL]` and provide/verify the chart asset before publication.
+
+Overall verdict: Several headline counts and quoted examples are supported, but the drafts still contain material overstatement or ambiguity around sandbox equivalence, training-cutoff inference, MCP hidden-test totals, statistical interpretation, rerun scope, and reviewer-label wording.

@@ -1,0 +1,6 @@
+Implemented fixes in:
+
+- [parser.py](~/.bench-runs/B2-exprcalc__gpt-6-sol__r2/repo/src/exprcalc/parser.py): right associative exponentiation and correct unary-minus precedence.
+- [evaluator.py](~/.bench-runs/B2-exprcalc__gpt-6-sol__r2/repo/src/exprcalc/evaluator.py): C-style division/modulo semantics, plus `EvalError` for zero division and negative exponents.
+
+Verification: `python -m pytest` → **18 passed**.

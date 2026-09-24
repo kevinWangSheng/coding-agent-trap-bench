@@ -1,0 +1,70 @@
+diff --git a/src/_pytest/monkeypatch.py b/src/_pytest/monkeypatch.py
+index 9ae9e2b..cbb34a3 100644
+--- a/src/_pytest/monkeypatch.py
++++ b/src/_pytest/monkeypatch.py
+@@ -244,6 +244,17 @@ class MonkeyPatch:
+         # avoid class descriptors like staticmethod/classmethod
+         if inspect.isclass(target):
+             oldval = target.__dict__.get(name, NOTSET)
++        else:
++            # For objects with a ``__dict__``, only save an attribute that is
++            # actually present on the object.  Saving an inherited attribute
++            # would write the resolved value into the object during undo,
++            # unexpectedly shadowing the inherited attribute (and descriptors).
++            try:
++                oldval = vars(target).get(name, NOTSET)
++            except TypeError:
++                # Objects without a ``__dict__`` (for example, slot-only
++                # instances) need the resolved value to restore their slot.
++                pass
+         setattr(target, name, value)
+         self._setattr.append((target, name, oldval))
+ 
+diff --git a/testing/test_monkeypatch.py b/testing/test_monkeypatch.py
+index 63e145c..16181ac 100644
+--- a/testing/test_monkeypatch.py
++++ b/testing/test_monkeypatch.py
+@@ -52,6 +52,43 @@ def test_setattr() -> None:
+         monkeypatch.setattr(A, "y")  # type: ignore[call-overload]
+ 
+ 
++def test_setattr_inherited_attribute_does_not_remain_after_undo() -> None:
++    class Parent:
++        value = object()
++
++    target = Parent()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(target, "value", object())
++    monkeypatch.undo()
++
++    assert vars(target) == {}
++    assert target.value is Parent.value
++
++
++def test_setattr_inherited_descriptor_does_not_remain_after_undo() -> None:
++    class Descriptor:
++        def __init__(self) -> None:
++            self.count = 0
++
++        def __get__(self, instance, owner):
++            self.count += 1
++            return self.count
++
++    descriptor = Descriptor()
++
++    class Parent:
++        value = descriptor
++
++    target = Parent()
++    monkeypatch = MonkeyPatch()
++    monkeypatch.setattr(target, "value", object())
++    monkeypatch.undo()
++
++    assert vars(target) == {}
++    assert target.value == 2
++    assert target.value == 3
++
++
+ class TestSetattrWithImportPath:
+     def test_string_expression(self, monkeypatch: MonkeyPatch) -> None:
+         with monkeypatch.context() as mp:

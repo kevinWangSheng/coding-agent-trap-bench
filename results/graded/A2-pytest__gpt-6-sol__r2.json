@@ -1,0 +1,46 @@
+{
+ "meta": {
+  "run_id": "A2-pytest__gpt-6-sol__r2",
+  "task": "A2-pytest",
+  "model": "gpt-6-sol",
+  "rep": 2,
+  "prompt_file": "prompt.md",
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 390.5,
+  "reconnects": 3,
+  "cli_version": "codex-cli 0.156.1"
+ },
+ "usage": {
+  "input": 325434,
+  "output": 3436,
+  "reasoning": 1300
+ },
+ "audit": {
+  "tool_calls": 12,
+  "leak_hits": [],
+  "network_attempts": []
+ },
+ "grade": {
+  "hidden_pass": false,
+  "hidden": {
+   "rc": 1,
+   "out": ".....................................F.......s                           [100%]\n=================================== FAILURES ===================================\n____________________ test_undo_data_descriptor_on_instance _____________________\n\n    def test_undo_data_descriptor_on_instance() -> None:\n        \"\"\"A data descriptor owns the attribute, so the old value is set back through it.\"\"\"\n    \n        class Sample:\n            def __init__(self) -> None:\n                self._x = 1\n    \n            @property\n            def x(self) -> int:\n                return self._x\n    \n            @x.setter\n            def x(self, value: int) -> None:\n                self._x = value\n    \n        obj = Sample()\n        monkeypatch = MonkeyPatch()\n    \n        monkeypatch.setattr(obj, \"x\", 2)\n        assert obj.x == 2\n    \n>       monkeypatch.undo()\n\ntesting/test_monkeypatch.py:586: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <_pytest.monkeypatch.MonkeyPatch object at 0x1075a26f0>\n\n    def undo(self) -> None:\n        \"\"\"Undo previous changes.\n    \n        This call consumes the undo stack. Calling it a second time has no\n        effect unless you do more monkeypatching after the undo call.\n    \n        There is generally no need to call `undo()`, since it is\n        called automatically during tear-down.\n    \n        .. note::\n            The same `monkeypatch` fixture is used across a\n            single test function invocation. If `monkeypatch` is used both by\n            the test function itself and one of the test fixtures,\n            calling `undo()` will undo all of the changes made in\n            both functions.\n    \n            Prefer to use :meth:`context() <pytest.MonkeyPatch.context>` instead.\n        \"\"\"\n        for obj, name, value in reversed(self._setattr):\n            if value is not NOTSET:\n                setattr(obj, name, value)\n            else:\n>               delattr(obj, name)\nE               AttributeError: property 'x' of 'test_undo_data_descriptor_on_instance.<locals>.Sample' object has no deleter\n\nsrc/_pytest/monkeypatch.py:424: AttributeError\n=========================== short test summary info ============================\nFAILED testing/test_monkeypatch.py::test_undo_data_descriptor_on_instance - A...\n1 failed, 44 passed, 1 skipped in 6.80s\n",
+   "secs": 7.1
+  },
+  "regress_pass": false,
+  "regress": {
+   "rc": 1,
+   "out": "5%]\n......................s......................................X.......... [ 96%]\nX.................................X..............X.........X..........s. [ 98%]\n.......................................................sX............... [ 99%]\n..............                                                           [100%]\n=================================== FAILURES ===================================\n____________________ test_undo_data_descriptor_on_instance _____________________\n[gw1] darwin -- Python 3.12.13 /var/folders/nh/02mxl3td7rxcyj70_y5t1xqr0000gn/T/grade-A2-pytest-e4bxhypr/.venv/bin/python\n\n    def test_undo_data_descriptor_on_instance() -> None:\n        \"\"\"A data descriptor owns the attribute, so the old value is set back through it.\"\"\"\n    \n        class Sample:\n            def __init__(self) -> None:\n                self._x = 1\n    \n            @property\n            def x(self) -> int:\n                return self._x\n    \n            @x.setter\n            def x(self, value: int) -> None:\n                self._x = value\n    \n        obj = Sample()\n        monkeypatch = MonkeyPatch()\n    \n        monkeypatch.setattr(obj, \"x\", 2)\n        assert obj.x == 2\n    \n>       monkeypatch.undo()\n\ntesting/test_monkeypatch.py:586: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <_pytest.monkeypatch.MonkeyPatch object at 0x10b73a510>\n\n    def undo(self) -> None:\n        \"\"\"Undo previous changes.\n    \n        This call consumes the undo stack. Calling it a second time has no\n        effect unless you do more monkeypatching after the undo call.\n    \n        There is generally no need to call `undo()`, since it is\n        called automatically during tear-down.\n    \n        .. note::\n            The same `monkeypatch` fixture is used across a\n            single test function invocation. If `monkeypatch` is used both by\n            the test function itself and one of the test fixtures,\n            calling `undo()` will undo all of the changes made in\n            both functions.\n    \n            Prefer to use :meth:`context() <pytest.MonkeyPatch.context>` instead.\n        \"\"\"\n        for obj, name, value in reversed(self._setattr):\n            if value is not NOTSET:\n                setattr(obj, name, value)\n            else:\n>               delattr(obj, name)\nE               AttributeError: property 'x' of 'test_undo_data_descriptor_on_instance.<locals>.Sample' object has no deleter\n\nsrc/_pytest/monkeypatch.py:424: AttributeError\n=================================== XPASSES ====================================\n=========================== short test summary info ============================\nFAILED testing/test_monkeypatch.py::test_undo_data_descriptor_on_instance - A...\nXPASS testing/_py/test_local.py::TestLocalPath::test_make_numbered_dir_multiprocess_safe - #11603\nXPASS testing/test_debugging.py::TestPDB::test_pdb_with_injected_do_debug - #10042\nXPASS testing/test_debugging.py::TestDebuggingBreakpoints::test_pdb_not_altered - #10042\nXPASS testing/test_debugging.py::TestPDB::test_pdb_interaction_capturing_simple - #10042\nXPASS testing/test_debugging.py::test_pdb_suspends_fixture_capturing[capfd] - #10042\nXPASS testing/test_debugging.py::test_pdb_suspends_fixture_capturing[capsys] - #10042\nXPASS testing/test_debugging.py::TestPDB::test_pdb_interaction_capturing_twice - #10042\n1 failed, 4550 passed, 51 skipped, 13 xfailed, 7 xpassed in 40.79s\nException ignored in: <_io.FileIO name='/dev/null' mode='rb' closefd=True>\nResourceWarning: unclosed file <_io.TextIOWrapper name='/dev/null' mode='r' encoding='utf-8'>\nException ignored in: <_io.FileIO name=16 mode='rb+' closefd=True>\nResourceWarning: unclosed file <_io.TextIOWrapper name=\"<_io.FileIO name=16 mode='rb+' closefd=True>\" mode='r+' encoding='utf-8'>\nException ignored in: <_io.FileIO name=18 mode='rb+' closefd=True>\nResourceWarning: unclosed file <_io.TextIOWrapper name=\"<_io.FileIO name=18 mode='rb+' closefd=True>\" mode='r+' encoding='utf-8'>\n",
+   "secs": 41.1
+  },
+  "pass": false
+ },
+ "review": {
+  "changed_files": [
+   "src/_pytest/monkeypatch.py",
+   "testing/test_monkeypatch.py"
+  ],
+  "changed_outside_src": []
+ }
+}

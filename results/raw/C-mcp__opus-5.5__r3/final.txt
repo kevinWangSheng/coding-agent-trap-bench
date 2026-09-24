@@ -1,0 +1,26 @@
+I've built the server in `repo/src`, but I couldn't run `npm test` or `npm start` as specified. The sandbox here blocks binding to localhost ports and Unix sockets (`listen EPERM`). All 34 tests pass using an in-process fallback I added (`MCP_TEST_INPROCESS=1 npm test`), which runs the same HTTP server over in-memory connections. The default mode, which starts `dist/server.js` on a real port, has not been run. To run it here, set `sandbox.network.allowLocalBinding: true` in your settings, or run `npm test` outside the sandbox.
+
+**What I added** (TypeScript, Node standard library only, no MCP SDK):
+- **`src/server.ts`**: the HTTP layer and entry point. It serves POST `/mcp` on 127.0.0.1 at `PORT` (default 3000).
+  - Requests from any browser origin other than `http://localhost:<PORT>` or `http://127.0.0.1:<PORT>` get a 403.
+  - GET and DELETE get a 405; notifications get a 202.
+  - Every request must carry the version and client capabilities in its metadata, and the HTTP headers must match the body. Mismatches are rejected with 400 and the spec's error codes.
+  - An `initialize` request from an older client is rejected and told which version is supported.
+  - Responses are plain JSON unless the request needs streaming.
+  - On SIGTERM, open subscriptions get a clean closing reply before shutdown.
+- **`src/mcp.ts`**: all the tools, resources and prompts from the README.
+  - **`add_note`**: returns structured output plus the same JSON as text, and checks that the `Mcp-Param-Notebook` header matches the body.
+  - **`delete_note`**: asks the user to confirm, and keeps nothing in memory while waiting. Everything needed is in a signed, expiring token tied to that note id, so it can't be forged, altered or used to delete a different note. A client that can't show forms gets the missing-capability error (400).
+  - **`reindex`**: streams progress when asked and stops when the client disconnects.
+  - **Subscriptions**: clients can watch `notes://index` and individual notes, and only watchers of a URI hear about changes to it.
+  - **Caching**: lists and discovery are marked public for 5 minutes; note reads are private and never fresh.
+- **`src/headers.ts`**, **`src/request-state.ts`**, **`src/store.ts`**: header decoding and matching, the signed tokens, and the in-memory notes seeded with n1–n3.
+- **`test/server.test.ts`**: 34 tests that talk to the server over HTTP. They cover every tool, resource and prompt, the confirmation flow including forged, altered and wrong-note tokens, progress and cancellation, subscriptions, the header and version errors, origin checks, and graceful shutdown. The tests build the project first, so `npm test` doesn't need a separate build.
+- **`README.md`**: I added a short note on the in-process test mode under Development.
+
+`npm run build` succeeds and the test file type-checks. Choices I made where the spec left room:
+- Requests whose `Accept` header doesn't list both JSON and event-stream get a 406.
+- A notebook header sent when the body has no notebook counts as a mismatch.
+- `delete_note` on a note that doesn't exist returns "not found" without requiring the form capability.
+
+Nothing is committed.

@@ -1,0 +1,30 @@
+Large multi-statement strings now scale properly: 32,000 statements run in about 0.18 s instead of 1.2 s. The existing SQLite tests pass, along with two new ones.
+
+**The cause:** sqlx passed SQLite the remaining script with an exact byte length and no NUL terminator at the end. When that happens, SQLite first copies the *entire remaining input* before preparing each statement. So every statement cost time proportional to the rest of the script, and the total grew quadratically with script size.
+
+**The fix** (`sqlx-sqlite/src/statement/virtual.rs`):
+- The stored script now ends with a NUL terminator (not part of the SQL), and we pass SQLite the length including it. SQLite then parses the buffer in place with no copy.
+- One detail kept the old behaviour exact. SQLite's "statement too long" check (against `SQLITE_LIMIT_SQL_LENGTH`) only runs on the copying path. When the remaining script is longer than that limit, we still make the old call without the terminator, so the same error appears at the same point. The existing "query string too large … < 2 GiB" error is also unchanged.
+- SQLite parses exactly the same bytes as before, so the same statements run with the same results, rows-affected counts and errors.
+
+**Before/after** (release build, `multi_stmt_bench`):
+
+| statements | before | after |
+|---|---|---|
+| 1,000 | 4.9 ms | 10–11 ms |
+| 4,000 | 38 ms | ~25 ms |
+| 16,000 | 351 ms | ~80 ms |
+| 32,000 | 1.2 s | ~180 ms |
+| 64,000 | – | ~460–690 ms |
+
+The 1,000-statement case was slower in all three runs after the change. I didn't measure it before and after in the same session, so I can't say whether that's the change or noise.
+
+Per-statement cost still rises a little at 64k and above. That comes from the benchmark's own SQL: `DELETE FROM tags WHERE post_id = …` scans a table with no index that keeps growing. To check, I ran the same statements as separate `raw_sql` calls: it shows the same growth and is slower overall (e.g. 272 ms at 32k).
+
+**Tests added** in `tests/sqlite/sqlite.rs`:
+- `it_executes_large_multi_statement_script`: 20,000 statements mixed with comments, empty `;;`, trailing whitespace and a trailing comment. It checks the total rows-affected and the table contents. It also checks that an error mid-script stops execution there, with earlier statements applied.
+- `it_enforces_sql_length_limit_on_remaining_script`: checks that "statement too long" is still raised when the remaining script is over the limit, and that a script exactly at the limit runs. I confirmed this test fails if the fallback is disabled.
+
+**Verification:** the full SQLite suite passes with your command (skipping `rustsec_2024_0363`, which I didn't run), and clippy on `sqlx-sqlite` is clean.
+
+**Test database:** the existing `test_query_with_update_hook` permanently inserts a row into `tests/sqlite/sqlite.db`, so it fails on any second run against the same file. I restored the file with `git checkout tests/sqlite/sqlite.db` before the final run and afterwards, so it's unmodified now.

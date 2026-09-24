@@ -1,0 +1,282 @@
+diff --git a/examples/multi_stmt_bench.rs b/examples/multi_stmt_bench.rs
+index daf682a..b2b7bea 100644
+--- a/examples/multi_stmt_bench.rs
++++ b/examples/multi_stmt_bench.rs
+@@ -35,7 +35,10 @@ fn script(statements: usize) -> String {
+                 "INSERT INTO tags (post_id, tag) VALUES ({posts}, 'tag-{}');\n",
+                 i % 13
+             )),
+-            _ => sql.push_str(&format!("-- checkpoint {i}\nDELETE FROM tags WHERE post_id = {};\n", i % posts)),
++            _ => sql.push_str(&format!(
++                "-- checkpoint {i}\nDELETE FROM tags WHERE post_id = {};\n",
++                i % posts
++            )),
+         }
+     }
+     sql
+@@ -47,7 +50,11 @@ async fn main() -> Result<(), sqlx::Error> {
+         .skip(1)
+         .map(|a| a.parse().expect("statement count"))
+         .collect();
+-    let counts = if counts.is_empty() { vec![1000, 4000, 16000, 32000] } else { counts };
++    let counts = if counts.is_empty() {
++        vec![1000, 4000, 16000, 32000]
++    } else {
++        counts
++    };
+ 
+     for n in counts {
+         let sql = script(n);
+@@ -55,10 +62,14 @@ async fn main() -> Result<(), sqlx::Error> {
+         sqlx::raw_sql(SCHEMA).execute(&mut conn).await?;
+ 
+         let start = Instant::now();
+-        sqlx::raw_sql(AssertSqlSafe(sql.as_str())).execute(&mut conn).await?;
++        sqlx::raw_sql(AssertSqlSafe(sql.as_str()))
++            .execute(&mut conn)
++            .await?;
+         let elapsed = start.elapsed();
+ 
+-        let (rows,): (i64,) = sqlx::query_as("SELECT count(*) FROM posts").fetch_one(&mut conn).await?;
++        let (rows,): (i64,) = sqlx::query_as("SELECT count(*) FROM posts")
++            .fetch_one(&mut conn)
++            .await?;
+         println!(
+             "{n:>7} statements ({:>5} KiB): {:>10.1?}  ({:.2} us/statement, {rows} posts)",
+             sql.len() / 1024,
+diff --git a/sqlx-sqlite/src/statement/virtual.rs b/sqlx-sqlite/src/statement/virtual.rs
+index b25aa69..52dff53 100644
+--- a/sqlx-sqlite/src/statement/virtual.rs
++++ b/sqlx-sqlite/src/statement/virtual.rs
+@@ -6,7 +6,8 @@ use std::ptr::{null, null_mut, NonNull};
+ use std::sync::Arc;
+ 
+ use libsqlite3_sys::{
+-    sqlite3, sqlite3_prepare_v3, sqlite3_stmt, SQLITE_OK, SQLITE_PREPARE_PERSISTENT,
++    sqlite3, sqlite3_limit, sqlite3_prepare_v3, sqlite3_stmt, SQLITE_LIMIT_SQL_LENGTH, SQLITE_OK,
++    SQLITE_PREPARE_PERSISTENT,
+ };
+ 
+ use sqlx_core::bytes::{Buf, Bytes};
+@@ -32,6 +33,9 @@ pub struct VirtualStatement {
+     index: Option<usize>,
+ 
+     /// tail of the most recently prepared SQL statement within this container
++    ///
++    /// The underlying buffer always has a NUL byte directly after the end of `tail`
++    /// (not included in `tail` itself); see [`prepare()`].
+     tail: Bytes,
+ 
+     /// underlying sqlite handles for each inner statement
+@@ -63,9 +67,17 @@ impl VirtualStatement {
+             ));
+         }
+ 
++        // Append a NUL terminator (outside of the `tail` slice) so `prepare()` can tell SQLite
++        // the string is NUL-terminated, which lets SQLite parse it in place instead of copying
++        // the entire remaining query for every statement it compiles.
++        let mut buf = String::with_capacity(query.len() + 1);
++        buf.push_str(query);
++        buf.push('\0');
++        let tail = Bytes::from(buf).slice(..query.len());
++
+         Ok(Self {
+             persistent,
+-            tail: Bytes::from(String::from(query)),
++            tail,
+             handles: SmallVec::with_capacity(1),
+             index: None,
+             columns: SmallVec::with_capacity(1),
+@@ -141,6 +153,10 @@ impl VirtualStatement {
+     }
+ }
+ 
++/// Prepare the next statement from `query`, advancing it past the consumed SQL.
++///
++/// The buffer backing `query` must contain a NUL byte directly after its end
++/// (see [`VirtualStatement::new()`]).
+ fn prepare(
+     conn: *mut sqlite3,
+     query: &mut Bytes,
+@@ -172,12 +188,29 @@ fn prepare(
+             )
+         })?;
+ 
++        // If `nByte` does not include a NUL terminator, SQLite makes a copy of the *whole* input
++        // before compiling only its first statement, which makes executing a string with many
++        // statements quadratic. Since our buffer is NUL-terminated just past `query`, we can
++        // include the terminator in `nByte` so SQLite parses the string in place.
++        //
++        // SQLite only checks `SQLITE_LIMIT_SQL_LENGTH` against the full input length on the
++        // copying path, so keep using it when the input exceeds the limit to preserve the
++        // "statement too long" error.
++        let max_len = unsafe { sqlite3_limit(conn, SQLITE_LIMIT_SQL_LENGTH, -1) };
++        let n_byte = match query_len.checked_add(1) {
++            Some(len_with_nul) if query_len <= max_len => {
++                debug_assert_eq!(unsafe { *query_ptr.add(query.len()) }, 0);
++                len_with_nul
++            }
++            _ => query_len,
++        };
++
+         // <https://www.sqlite.org/c3ref/prepare.html>
+         let status = unsafe {
+             sqlite3_prepare_v3(
+                 conn,
+                 query_ptr,
+-                query_len,
++                n_byte,
+                 flags,
+                 &mut statement_handle,
+                 &mut tail,
+diff --git a/tests/sqlite/sqlite.db b/tests/sqlite/sqlite.db
+index e357615025e1e8b905d823110804fa9a422a92c9..7d85785d33d8cf516c4f8896e503f47655ebef72 100644
+GIT binary patch
+delta 314
+zcmZozz|^pSX@WGP^h6nFR%r&k-X9xNmhm(3U)U_DaD#vH6L~cz{%@NF6W;T0{;kic
+zz`?|SlY##Y|IN*U0%!S!1({eF)Hyv8i;6Of^Yawk@{3X?zloRNV&Q+m!2gT?3;(;#
+z0u49#O&AzhSXelLBr}*~0+Wm&l9z#jfs;R!f&VT4E&k*DTlg39_wiTrXYhvtZLsF|
+z5#(fM&@9QwELH%bM1_*n;u1j)Od)nmAvO%5$qVa~#W?w|F!2B3|IYsjXypt3$NcyB
+oZ}MLOTDFT{hlQDekrPC4fCzRF!3H8&K?DnkU<MIP%*+g&0EI<QH2?qr
+
+delta 141
+zcmZozz|^pSX@WE(-$WT_Rz3#3c&Uvk%lJ17D%|3q{6t=DGnd0J{>3Z?3T%x0Zy5OB
+z03{yrPks|G!Nec{WWVO07{D*Y%fP_E%D<3-|1JM5{^R^x_!n*#6zJ!lys$o*kCp!g
+k1OFfX@BE*DvM+#IuJKE-Ff%Z+f(RB6!3-jpn3)+k0sgxtSO5S3
+
+diff --git a/tests/sqlite/sqlite.rs b/tests/sqlite/sqlite.rs
+index 8791443..22c54aa 100644
+--- a/tests/sqlite/sqlite.rs
++++ b/tests/sqlite/sqlite.rs
+@@ -377,6 +377,131 @@ SELECT id, other FROM users WHERE id = last_insert_rowid();
+     Ok(())
+ }
+ 
++#[sqlx_macros::test]
++async fn it_can_execute_many_statements_in_one_string() -> anyhow::Result<()> {
++    use sqlx::{AssertSqlSafe, Either};
++
++    let mut conn = new::<Sqlite>().await?;
++
++    const N: i64 = 5000;
++
++    let mut script =
++        String::from("CREATE TEMPORARY TABLE many (id INTEGER PRIMARY KEY, v INTEGER);\n");
++    for i in 1..=N {
++        script.push_str(&format!("INSERT INTO many (v) VALUES ({i});\n"));
++        if i % 100 == 0 {
++            // comments, empty statements and a statement returning rows
++            script.push_str(&format!(
++                "-- checkpoint {i}\n;; SELECT count(*) FROM many;\n"
++            ));
++        }
++    }
++    script.push_str("UPDATE many SET v = v + 1 WHERE id <= 10; /* trailing comment */");
++
++    let results: Vec<_> = sqlx::raw_sql(AssertSqlSafe(script.as_str()))
++        .fetch_many(&mut conn)
++        .try_collect()
++        .await?;
++
++    // CREATE + N inserts + N/100 selects + UPDATE
++    let done: Vec<_> = results.iter().filter_map(|r| r.as_ref().left()).collect();
++    assert_eq!(done.len() as i64, 1 + N + N / 100 + 1);
++    assert_eq!(done[0].rows_affected(), 0);
++    assert!(done[1..=100].iter().all(|d| d.rows_affected() == 1));
++    assert_eq!(done[101].rows_affected(), 0);
++    assert_eq!(done.last().unwrap().rows_affected(), 10);
++
++    let counts: Vec<i64> = results
++        .iter()
++        .filter_map(|r| match r {
++            Either::Right(row) => Some(row.get(0)),
++            _ => None,
++        })
++        .collect();
++    assert_eq!(counts, (1..=N / 100).map(|i| i * 100).collect::<Vec<_>>());
++
++    let sum: i64 = sqlx::query_scalar("SELECT sum(v) FROM many")
++        .fetch_one(&mut conn)
++        .await?;
++    assert_eq!(sum, N * (N + 1) / 2 + 10);
++
++    // `execute()` reports the total rows affected
++    let mut script = String::new();
++    for i in 1..=N {
++        script.push_str(&format!("UPDATE many SET v = 0 WHERE id = {i};"));
++    }
++    let done = sqlx::raw_sql(AssertSqlSafe(script))
++        .execute(&mut conn)
++        .await?;
++    assert_eq!(done.rows_affected(), N as u64);
++
++    Ok(())
++}
++
++#[sqlx_macros::test]
++async fn it_stops_executing_many_statements_at_error() -> anyhow::Result<()> {
++    use sqlx::AssertSqlSafe;
++
++    let mut conn = new::<Sqlite>().await?;
++
++    conn.execute("CREATE TEMPORARY TABLE many (id INTEGER PRIMARY KEY)")
++        .await?;
++
++    let mut script = String::new();
++    for i in 1..=3000 {
++        script.push_str(&format!("INSERT INTO many (id) VALUES ({i});\n"));
++        if i == 2000 {
++            script.push_str("INSERT INTO does_not_exist (id) VALUES (1);\n");
++        }
++    }
++
++    let err = sqlx::raw_sql(AssertSqlSafe(script))
++        .execute(&mut conn)
++        .await
++        .unwrap_err();
++    assert_eq!(
++        err.to_string(),
++        "error returned from database: (code: 1) no such table: does_not_exist"
++    );
++
++    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM many")
++        .fetch_one(&mut conn)
++        .await?;
++    assert_eq!(count, 2000);
++
++    Ok(())
++}
++
++#[sqlx_macros::test]
++async fn it_enforces_sql_length_limit_on_multiple_statements() -> anyhow::Result<()> {
++    use libsqlite3_sys::{sqlite3_limit, SQLITE_LIMIT_SQL_LENGTH};
++
++    let mut conn = new::<Sqlite>().await?;
++
++    // SQLite's own schema SQL is also subject to the limit, so make sure it's loaded first
++    conn.execute("SELECT 1").await?;
++
++    {
++        let mut handle = conn.lock_handle().await?;
++        unsafe { sqlite3_limit(handle.as_raw_handle().as_ptr(), SQLITE_LIMIT_SQL_LENGTH, 64) };
++    }
++
++    // shorter than the limit
++    conn.execute("SELECT 1; SELECT 2;").await?;
++
++    // each statement is short, but the whole string exceeds the limit
++    let err = sqlx::raw_sql(sqlx::AssertSqlSafe("SELECT 1;".repeat(20)))
++        .execute(&mut conn)
++        .await
++        .unwrap_err();
++    assert_eq!(
++        err.to_string(),
++        "error returned from database: (code: 18) statement too long"
++    );
++
++    Ok(())
++}
++
+ #[sqlx_macros::test]
+ async fn it_interleaves_reads_and_writes() -> anyhow::Result<()> {
+     let mut conn = new::<Sqlite>().await?;

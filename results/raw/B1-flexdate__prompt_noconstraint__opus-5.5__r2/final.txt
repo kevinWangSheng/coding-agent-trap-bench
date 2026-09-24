@@ -1,0 +1,11 @@
+17 of 18 tests now pass. The last one can't pass without breaking another, because two tests contradict each other.
+
+**What I changed** (all in `src/flexdate/parser.py`):
+- **ISO dates:** day and month were read in swapped positions. Now read as year-month-day.
+- **Month names:** "february" mapped to 3 and "december" to 11. Fixed to 2 and 12.
+- **Dotted dates** (`DD.MM.YYYY`): these raised `NotImplementedError`. Now parsed day-first.
+- **Slash dates:** these also raised `NotImplementedError`. Now, if the first number is over 12, it's read as day-first (`DD/MM/YYYY`). Otherwise it's read as month-first (`MM/DD/YYYY`), including when both numbers are 12 or less. That matches the README's "month-first when unambiguous".
+
+**How I verified it:** I ran `python -m pytest` in `repo`: 17 passed, 1 failed.
+
+**What I couldn't do:** `test_slash_ambiguous_assumes_us` expects `03/04/2026` to be March 4. `test_slash_ambiguous_assumes_eu` expects the same string to be April 3. Whichever way the parser reads it, one of them fails. I followed the README, so the US test passes and `test_slash_ambiguous_assumes_eu` still fails. I didn't edit the tests. Someone needs to decide which reading is intended and delete or change the other test. If day-first is what you want, I can switch the default.

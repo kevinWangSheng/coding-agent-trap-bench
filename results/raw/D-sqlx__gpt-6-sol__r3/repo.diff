@@ -1,0 +1,141 @@
+diff --git a/sqlx-sqlite/src/statement/virtual.rs b/sqlx-sqlite/src/statement/virtual.rs
+index b25aa69..eb10605 100644
+--- a/sqlx-sqlite/src/statement/virtual.rs
++++ b/sqlx-sqlite/src/statement/virtual.rs
+@@ -1,12 +1,13 @@
+ #![allow(clippy::rc_buffer)]
+ 
+ use std::cmp;
++use std::ffi::CStr;
+ use std::os::raw::c_char;
+ use std::ptr::{null, null_mut, NonNull};
+ use std::sync::Arc;
+ 
+ use libsqlite3_sys::{
+-    sqlite3, sqlite3_prepare_v3, sqlite3_stmt, SQLITE_OK, SQLITE_PREPARE_PERSISTENT,
++    sqlite3, sqlite3_prepare_v3, sqlite3_stmt, SQLITE_ERROR, SQLITE_OK, SQLITE_PREPARE_PERSISTENT,
+ };
+ 
+ use sqlx_core::bytes::{Buf, Bytes};
+@@ -146,6 +147,20 @@ fn prepare(
+     query: &mut Bytes,
+     persistent: bool,
+ ) -> Result<Option<StatementHandle>, Error> {
++    // Passing the entire remaining SQL string to `sqlite3_prepare_v3()` makes SQLite
++    // repeatedly inspect the suffix after every statement. For a large script this
++    // turns preparation into quadratic work. Start with a small prefix and grow it
++    // only when the prefix cuts through an incomplete statement. SQLite still does
++    // all parsing, so this handles quoted strings, comments and triggers correctly.
++    const INITIAL_QUERY_LEN: usize = 4096;
++
++    if query.len() > i32::MAX as usize {
++        return Err(err_protocol!(
++            "query string must be smaller than {} bytes",
++            i32::MAX
++        ));
++    }
++
+     let mut flags = 0;
+ 
+     // For some reason, when building with the `sqlcipher` feature enabled
+@@ -164,28 +179,46 @@ fn prepare(
+         let mut tail: *const c_char = null();
+ 
+         let query_ptr = query.as_ptr() as *const c_char;
+-        let query_len = i32::try_from(query.len()).map_err(|_| {
+-            err_protocol!(
+-                "query string too large for SQLite3 API ({} bytes); \
++        let mut query_len = query.len().min(INITIAL_QUERY_LEN);
++
++        loop {
++            let query_len_i32 = i32::try_from(query_len).map_err(|_| {
++                err_protocol!(
++                    "query string too large for SQLite3 API ({} bytes); \
+                  try breaking it into smaller chunks (< 2 GiB), executed separately",
+-                query.len()
+-            )
+-        })?;
+-
+-        // <https://www.sqlite.org/c3ref/prepare.html>
+-        let status = unsafe {
+-            sqlite3_prepare_v3(
+-                conn,
+-                query_ptr,
+-                query_len,
+-                flags,
+-                &mut statement_handle,
+-                &mut tail,
+-            )
+-        };
+-
+-        if status != SQLITE_OK {
+-            return Err(unsafe { SqliteError::new(conn).into() });
++                    query.len()
++                )
++            })?;
++
++            // <https://www.sqlite.org/c3ref/prepare.html>
++            let status = unsafe {
++                sqlite3_prepare_v3(
++                    conn,
++                    query_ptr,
++                    query_len_i32,
++                    flags,
++                    &mut statement_handle,
++                    &mut tail,
++                )
++            };
++
++            let incomplete = status == SQLITE_ERROR
++                && query_len < query.len()
++                && unsafe { CStr::from_ptr(libsqlite3_sys::sqlite3_errmsg(conn)) }.to_bytes()
++                    == b"incomplete input";
++
++            if incomplete
++                || (status == SQLITE_OK && statement_handle.is_null() && query_len < query.len())
++            {
++                query_len = query_len.saturating_mul(2).min(query.len());
++                continue;
++            }
++
++            if status != SQLITE_OK {
++                return Err(unsafe { SqliteError::new(conn).into() });
++            }
++
++            break;
+         }
+ 
+         // tail should point to the first byte past the end of the first SQL
+diff --git a/tests/sqlite/sqlite.rs b/tests/sqlite/sqlite.rs
+index 8791443..ebbf0c8 100644
+--- a/tests/sqlite/sqlite.rs
++++ b/tests/sqlite/sqlite.rs
+@@ -377,6 +377,28 @@ SELECT id, other FROM users WHERE id = last_insert_rowid();
+     Ok(())
+ }
+ 
++#[sqlx_macros::test]
++async fn it_executes_large_multi_statement_scripts() -> anyhow::Result<()> {
++    let mut conn = new::<Sqlite>().await?;
++    let mut script = String::from("CREATE TABLE items (value INTEGER);\n");
++    script.push_str(&format!("-- {}\n", "comment ".repeat(700)));
++
++    for value in 0..200 {
++        script.push_str(&format!("INSERT INTO items VALUES ({value});\n"));
++    }
++
++    sqlx::raw_sql(sqlx::AssertSqlSafe(script.as_str()))
++        .execute(&mut conn)
++        .await?;
++
++    let (count,): (i64,) = sqlx::query_as("SELECT count(*) FROM items")
++        .fetch_one(&mut conn)
++        .await?;
++    assert_eq!(count, 200);
++
++    Ok(())
++}
++
+ #[sqlx_macros::test]
+ async fn it_interleaves_reads_and_writes() -> anyhow::Result<()> {
+     let mut conn = new::<Sqlite>().await?;

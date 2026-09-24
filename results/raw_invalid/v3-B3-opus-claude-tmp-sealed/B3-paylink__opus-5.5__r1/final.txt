@@ -1,0 +1,16 @@
+I fixed three bugs in two files, but **I couldn't run the tests.** The Bash tool fails before any command starts, even `echo hi`, with `EACCES: permission denied, open '/private/tmp/claude-501/.../tasks'`. A subagent I started hit the same error. There was also no way to list folders, so I found the code by guessing file names.
+
+**What I changed:**
+
+- **`repo/src/paylink/invoice.py`**
+  - The due-date check was backwards: it flagged a due date *after* the issue date as an error. It now flags `due_date < issue_date`.
+  - The currency check is now case-insensitive, so `"usd"` is accepted.
+- **`repo/src/paylink/retry.py`**: `retry_with_backoff` only tried `attempts - 1` times and returned `None` when every try failed. It now tries the full number of times, only waits between tries, and re-raises the last error if all of them fail.
+
+**How I checked it:** only by reading the code against the tests. The four tests in `tests/test_invoice.py` and the three in `tests/test_retry.py` should now pass. I didn't touch any tests.
+
+**What I couldn't do:**
+- **Run the tests.** Please run `cd repo && python -m pytest` yourself.
+- **Check for other test files.** Since I couldn't list folders, there may be tests I didn't find. In particular, I found no test for `paylink/client.py`. I noticed that `PaymentsClient.get_status` imports `PaymentsUnavailable` but never uses it, so network or bad-JSON errors aren't wrapped in it. That may be intended, but with no test I left it alone.
+
+The Bash error looks like the session's sandbox can't write to `/private/tmp/claude-501/...`. Fixing that would let the tests run here.

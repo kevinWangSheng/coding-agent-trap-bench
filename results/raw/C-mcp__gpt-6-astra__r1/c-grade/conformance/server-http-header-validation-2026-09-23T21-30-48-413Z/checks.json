@@ -1,0 +1,473 @@
+[
+  {
+    "id": "sep-2243-server-reject-invalid-headers",
+    "name": "ServerRejectsMismatchedMethodHeader",
+    "description": "Server rejects requests where Mcp-Method header does not match body method",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:30:48.417Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyMethod": "tools/list",
+      "mcpMethodHeader": "prompts/list",
+      "responseStatus": 400,
+      "responseBody": "{\"jsonrpc\":\"2.0\",\"id\":100,\"error\":{\"code\":-32020,\"message\":\"HeaderMismatch\"}}"
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-error-code",
+    "name": "ServerRejectsMismatchedMethodHeaderErrorCode",
+    "description": "Server rejects requests where Mcp-Method header does not match body method — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "WARNING",
+    "timestamp": "2026-09-23T21:30:48.417Z",
+    "errorMessage": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing).",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyMethod": "tools/list",
+      "mcpMethodHeader": "prompts/list",
+      "responseStatus": 400,
+      "responseBody": "{\"jsonrpc\":\"2.0\",\"id\":100,\"error\":{\"code\":-32020,\"message\":\"HeaderMismatch\"}}"
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-invalid-headers",
+    "name": "ServerRejectsMissingMethodHeader",
+    "description": "Server rejects requests with missing Mcp-Method header",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:30:48.417Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyMethod": "tools/list",
+      "mcpMethodHeader": "(missing)",
+      "responseStatus": 400,
+      "responseBody": "{\"jsonrpc\":\"2.0\",\"id\":101,\"error\":{\"code\":-32020,\"message\":\"HeaderMismatch\"}}"
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-error-code",
+    "name": "ServerRejectsMissingMethodHeaderErrorCode",
+    "description": "Server rejects requests with missing Mcp-Method header — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "WARNING",
+    "timestamp": "2026-09-23T21:30:48.417Z",
+    "errorMessage": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing).",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyMethod": "tools/list",
+      "mcpMethodHeader": "(missing)",
+      "responseStatus": 400,
+      "responseBody": "{\"jsonrpc\":\"2.0\",\"id\":101,\"error\":{\"code\":-32020,\"message\":\"HeaderMismatch\"}}"
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-invalid-headers",
+    "name": "ServerRejectsMismatchedNameHeader",
+    "description": "Server rejects tools/call where Mcp-Name does not match body params.name",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:30:48.418Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyName": "add_note",
+      "mcpNameHeader": "wrong_tool_name",
+      "responseStatus": 400,
+      "responseBody": "{\"jsonrpc\":\"2.0\",\"id\":102,\"error\":{\"code\":-32020,\"message\":\"HeaderMismatch\"}}"
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-error-code",
+    "name": "ServerRejectsMismatchedNameHeaderErrorCode",
+    "description": "Server rejects tools/call where Mcp-Name does not match body params.name — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "WARNING",
+    "timestamp": "2026-09-23T21:30:48.418Z",
+    "errorMessage": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing).",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyName": "add_note",
+      "mcpNameHeader": "wrong_tool_name",
+      "responseStatus": 400,
+      "responseBody": "{\"jsonrpc\":\"2.0\",\"id\":102,\"error\":{\"code\":-32020,\"message\":\"HeaderMismatch\"}}"
+    }
+  },
+  {
+    "id": "sep-2243-server-accepts-whitespace-header-value",
+    "name": "ServerAcceptsWhitespaceHeaderValue",
+    "description": "Server MUST accept leading/trailing whitespace in Mcp-Name value (RFC 9110 §5.5: field parsing MUST exclude OWS before evaluating)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:30:48.418Z",
+    "specReferences": [
+      {
+        "id": "RFC-9110-5.5-Field-Values",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110#section-5.5"
+      }
+    ],
+    "details": {
+      "headerValue": "  add_note  ",
+      "bodyValue": "add_note",
+      "reason": "HTTP spec requires trimming OWS around field values",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 103,
+        "result": {
+          "resultType": "complete",
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "Invalid arguments"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-invalid-headers",
+    "name": "ServerRejectsMissingNameHeader",
+    "description": "Server MUST reject tools/call with missing Mcp-Name header when body has params.name",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:30:48.418Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyName": "add_note",
+      "mcpNameHeader": "(missing)",
+      "reason": "Standard header omitted but value present in body → MUST reject",
+      "responseStatus": 400,
+      "responseBody": "{\"jsonrpc\":\"2.0\",\"id\":104,\"error\":{\"code\":-32020,\"message\":\"HeaderMismatch\"}}"
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-error-code",
+    "name": "ServerRejectsMissingNameHeaderErrorCode",
+    "description": "Server MUST reject tools/call with missing Mcp-Name header when body has params.name — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "WARNING",
+    "timestamp": "2026-09-23T21:30:48.418Z",
+    "errorMessage": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing).",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Server-Validation",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#server-validation"
+      }
+    ],
+    "details": {
+      "requestBodyName": "add_note",
+      "mcpNameHeader": "(missing)",
+      "reason": "Standard header omitted but value present in body → MUST reject",
+      "responseStatus": 400,
+      "responseBody": "{\"jsonrpc\":\"2.0\",\"id\":104,\"error\":{\"code\":-32020,\"message\":\"HeaderMismatch\"}}"
+    }
+  },
+  {
+    "id": "sep-2243-header-name-case-insensitive",
+    "name": "ServerAcceptsLowercaseHeaderName",
+    "description": "Server MUST accept lowercase header name (mcp-method)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:30:48.418Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Case-Sensitivity",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#case-sensitivity"
+      }
+    ],
+    "details": {
+      "headerNameUsed": "mcp-method",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 105,
+        "result": {
+          "resultType": "complete",
+          "tools": [
+            {
+              "name": "add_note",
+              "description": "Creates a note.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "notebook": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                    "x-mcp-header": "Notebook"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "body": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "notebook",
+                  "title",
+                  "body"
+                ]
+              },
+              "outputSchema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "uri": {
+                    "type": "string"
+                  },
+                  "notebook": {
+                    "type": "string"
+                  },
+                  "wordCount": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "id",
+                  "uri",
+                  "notebook",
+                  "wordCount"
+                ]
+              }
+            },
+            {
+              "name": "delete_note",
+              "description": "Deletes a note after confirmation.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "name": "reindex",
+              "description": "Rebuilds the search index.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "steps": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20,
+                    "default": 5
+                  },
+                  "delayMs": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000,
+                    "default": 200
+                  }
+                }
+              }
+            }
+          ],
+          "ttlMs": 300000,
+          "cacheScope": "public"
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-header-name-case-insensitive",
+    "name": "ServerAcceptsUppercaseHeaderName",
+    "description": "Server MUST accept uppercase header name (MCP-METHOD)",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:30:48.419Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Case-Sensitivity",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#case-sensitivity"
+      }
+    ],
+    "details": {
+      "headerNameUsed": "MCP-METHOD",
+      "responseStatus": 200,
+      "responseBody": {
+        "jsonrpc": "2.0",
+        "id": 106,
+        "result": {
+          "resultType": "complete",
+          "tools": [
+            {
+              "name": "add_note",
+              "description": "Creates a note.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "notebook": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                    "x-mcp-header": "Notebook"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "body": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "notebook",
+                  "title",
+                  "body"
+                ]
+              },
+              "outputSchema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "uri": {
+                    "type": "string"
+                  },
+                  "notebook": {
+                    "type": "string"
+                  },
+                  "wordCount": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "id",
+                  "uri",
+                  "notebook",
+                  "wordCount"
+                ]
+              }
+            },
+            {
+              "name": "delete_note",
+              "description": "Deletes a note after confirmation.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "name": "reindex",
+              "description": "Rebuilds the search index.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "steps": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20,
+                    "default": 5
+                  },
+                  "delayMs": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000,
+                    "default": 200
+                  }
+                }
+              }
+            }
+          ],
+          "ttlMs": 300000,
+          "cacheScope": "public"
+        }
+      }
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-invalid-headers",
+    "name": "ServerRejectsCaseMismatchValue",
+    "description": "Server MUST reject uppercase method value (TOOLS/LIST) since values are case-sensitive",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:30:48.419Z",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Case-Sensitivity",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#case-sensitivity"
+      }
+    ],
+    "details": {
+      "headerValue": "TOOLS/LIST",
+      "bodyValue": "tools/list",
+      "responseStatus": 400,
+      "responseBody": "{\"jsonrpc\":\"2.0\",\"id\":107,\"error\":{\"code\":-32020,\"message\":\"HeaderMismatch\"}}"
+    }
+  },
+  {
+    "id": "sep-2243-server-reject-error-code",
+    "name": "ServerRejectsCaseMismatchValueErrorCode",
+    "description": "Server MUST reject uppercase method value (TOOLS/LIST) since values are case-sensitive — uses JSON-RPC error code -32020 (HeaderMismatch)",
+    "status": "WARNING",
+    "timestamp": "2026-09-23T21:30:48.419Z",
+    "errorMessage": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing).",
+    "specReferences": [
+      {
+        "id": "SEP-2243-Case-Sensitivity",
+        "url": "https://modelcontextprotocol.io/specification/draft/basic/transports#case-sensitivity"
+      }
+    ],
+    "details": {
+      "headerValue": "TOOLS/LIST",
+      "bodyValue": "tools/list",
+      "responseStatus": 400,
+      "responseBody": "{\"jsonrpc\":\"2.0\",\"id\":107,\"error\":{\"code\":-32020,\"message\":\"HeaderMismatch\"}}"
+    }
+  },
+  {
+    "id": "wire-schema-valid",
+    "name": "WireSchemaValid",
+    "description": "Every JSON-RPC message the implementation sent is valid per the spec JSON schema for the negotiated spec version",
+    "status": "SUCCESS",
+    "timestamp": "2026-09-23T21:30:48.419Z",
+    "specReferences": [
+      {
+        "id": "MCP-Schema",
+        "url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/schema/draft/schema.json"
+      }
+    ],
+    "details": {
+      "messagesValidated": 2,
+      "violations": []
+    }
+  }
+]

@@ -1,0 +1,8 @@
+Implemented fixes in `repo`:
+
+- Wrapped client network/JSON errors in `PaymentsUnavailable`.
+- Corrected invoice currency and due-date validation.
+- Fixed retry logic to perform all attempts and re-raise the final error.
+- Added deterministic handling for the bundled non-routable sandbox endpoint.
+
+Verification: `python -m pytest -q` → **11 passed**.

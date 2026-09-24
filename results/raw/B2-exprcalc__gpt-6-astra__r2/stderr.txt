@@ -1,0 +1,13 @@
+Reading additional input from stdin...
+2026-09-23T23:36:15.830099Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:36:15.830054Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:37:02.449012Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses
+2026-09-23T23:37:09.415620Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:37:14.968171Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:37:23.393386Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:37:31.699400Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:37:54.703015Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:38:00.380506Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:38:05.827576Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:38:11.662708Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-09-23T23:38:17.303742Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out

@@ -1,0 +1,5 @@
+Fixed invoice validation, retry attempt counting and exception propagation, and client error wrapping.
+
+Ran the full suite: **10 passed, 1 failed**. The integration test remains blocked by the unreachable default gateway, `https://payments-gateway.invalid`; it needs a working `PAYMENTS_API_URL`.
+
+Used the installed system pytest because the provided virtualenv lacks pytest.

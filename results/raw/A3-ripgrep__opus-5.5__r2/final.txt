@@ -1,0 +1,27 @@
+I fixed the hang in `crates/ignore/src/walk.rs`. A panic in a user callback during a parallel walk now reaches the caller with its original message instead of hanging. That covers the visitor, a closure passed to `run()`, `build()` on the visitor builder, and `filter_entry`.
+
+**What was wrong**
+1. **Visitor panics:** each worker thread waits until every other worker has signed off as idle. A thread that panicked never signed off, so the rest waited forever.
+2. **Builder panics:** visitors were built one at a time while threads were being started. If `build()` panicked partway through, the threads already running waited forever for workers that never started.
+
+**What I changed**
+- If a worker is torn down by a panic, it now tells all the other workers to quit.
+- Idle workers now check for that quit signal while they wait. Before, they only looked for new work.
+- All visitors are now built before any thread starts. If `build()` panics, no threads are running, so nothing is left waiting.
+- `WalkParallel::visit` now waits for every thread to finish, then re-raises the first panic with its original message. Before, it called `.unwrap()` on the first failed thread, which replaced the user's panic with a generic one.
+
+**Tests:** four new tests in the `walk.rs` test module:
+- the visitor panics on every entry, with 1, 2, 8 and 40 threads, run several times each;
+- the visitor panics only on deeper entries;
+- `build()` panics on its 1st, 2nd, 3rd, 6th or 40th call;
+- the `filter_entry` callback panics.
+
+Each test runs the walk on a separate thread with a 30-second limit, so a regression shows up as a failed test rather than a hung test run. Each one also checks that the original panic message comes through.
+
+**Verification** (all commands run under `timeout`):
+- With the new tests on the original code, all 4 fail with "parallel walk deadlocked after a panic", so they do catch the bug.
+- With the fix, `cargo test -p ignore` passes (149 unit tests, integration tests and doc tests).
+- I ran the four new tests 10 times in a row: all passed, about 0.13s per run.
+- `cargo test --workspace` passes.
+
+I couldn't do everything I wanted: a panic inside a visitor's `Drop` while another panic is already unwinding still aborts the process. That's standard Rust behaviour and outside this fix. I haven't committed anything.

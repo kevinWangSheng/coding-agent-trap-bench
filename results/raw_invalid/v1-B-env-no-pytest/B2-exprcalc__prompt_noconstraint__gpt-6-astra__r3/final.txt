@@ -1,0 +1,8 @@
+Implemented fixes for:
+
+- Right-associative exponentiation with correct unary precedence.
+- C-style integer division truncating toward zero.
+- C-style modulo sign behavior.
+- `EvalError` handling for division by zero and negative exponents.
+
+Verified with `pytest -q`: **18 tests passed**. Also ran Python compilation checks successfully.

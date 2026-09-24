@@ -1,0 +1,14 @@
+I fixed the parser and evaluator so they follow the rules in the README, and all 18 tests now pass (13 were failing before).
+
+**What I changed:**
+- **`src/exprcalc/parser.py`**:
+  - `^` now groups from the right, so `2 ^ 3 ^ 2` = 512. Before, it grouped from the left.
+  - A leading minus now applies after `^` but before `*`, `/` and `%`, so `-3 ^ 2` = -9.
+  - An exponent can still be negative, like `2 ^ -1`, so the evaluator can reject it.
+- **`src/exprcalc/evaluator.py`**:
+  - `/` now rounds toward zero, as in C (`-7 / 2` = -3). Before, it used Python's rounding down.
+  - `%` now takes the sign of the left-hand number (`-17 % 5` = -2).
+  - Dividing by zero or `%` by zero now raises `EvalError` instead of Python's `ZeroDivisionError`.
+  - A negative exponent now raises `EvalError`.
+
+**How I checked it:** I ran `python -m pytest` in `repo`: 18 passed. Nothing was left undone.

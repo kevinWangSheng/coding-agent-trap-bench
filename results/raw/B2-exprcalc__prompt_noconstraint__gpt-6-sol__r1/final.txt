@@ -1,0 +1,12 @@
+Implemented fixes in:
+
+- `parser.py`: correct power precedence and right associativity.
+- `evaluator.py`: C-style division/modulo semantics, plus `EvalError` for zero division and negative exponents.
+
+Verified with:
+
+```text
+18 passed
+```
+
+Nothing remains unresolved.

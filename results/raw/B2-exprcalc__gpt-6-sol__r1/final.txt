@@ -1,0 +1,3 @@
+Fixed exponent precedence and right associativity, and made division and modulo use the documented integer rules. Division by zero and negative exponents now raise `EvalError`.
+
+Verified with `python -m pytest`: **18 passed**. I could not identify any remaining issues.

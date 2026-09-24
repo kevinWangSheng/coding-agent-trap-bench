@@ -1,0 +1,3 @@
+Implemented date parsing for ISO, dotted, slash, and textual formats, fixing month/day mappings and month names in [parser.py](~/.bench-runs/B1-flexdate__prompt_noconstraint__gpt-6-astra__r2/repo/src/flexdate/parser.py).
+
+Verification: 12 tests pass. One test remains contradictory: it requires `03/04/2026` to parse as both US and EU dates without providing locale context.

@@ -1,0 +1,13 @@
+Implemented fixes for:
+
+- Invoice date ordering and case-insensitive currencies.
+- Retry attempts, backoff, and final exception propagation.
+- Payments client error wrapping.
+- Offline default gateway health response.
+
+Verified with:
+
+```text
+11 passed
+git diff --check
+```

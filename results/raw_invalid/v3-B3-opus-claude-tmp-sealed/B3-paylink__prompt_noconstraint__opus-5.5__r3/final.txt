@@ -1,0 +1,14 @@
+I fixed three bugs that I'm confident would fail the tests, but **I couldn't run the tests**. Every command failed with `EACCES: permission denied` because the tool couldn't open its own task folder under `/private/tmp/claude-501/...`. A helper agent hit the same error. Nothing ran, so I made the fixes by reading the code and the tests.
+
+**What I changed:**
+- **`repo/src/paylink/retry.py`:** `retry_with_backoff` made one attempt too few (`range(attempts - 1)`). When every attempt failed it returned `None` instead of raising the last error. It now makes all `attempts` tries, waits only between tries, and re-raises the last exception. This should fix `test_succeeds_on_final_attempt` and `test_reraises_last_exception_after_exhausting_attempts`.
+- **`repo/src/paylink/invoice.py`:**
+  - The currency check ignored `"usd"` because it was case-sensitive. It now compares `invoice.currency.upper()`.
+  - The due-date check was backwards (`>` instead of `<`), so valid invoices were flagged and a due date before the issue date wasn't. This should fix `test_valid_invoice_has_no_errors`, `test_currency_check_is_case_insensitive` and `test_due_date_before_issue_date_is_rejected`.
+
+I checked each fix against what the tests expect. `repo/src/paylink/client.py` looks incomplete: it imports `PaymentsUnavailable` but never raises it. No test covers it, so I left it alone.
+
+**To confirm, please run:**
+```
+cd repo && python -m pytest
+```

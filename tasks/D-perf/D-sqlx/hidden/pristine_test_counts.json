@@ -1,0 +1,101 @@
+{
+ "sqlx_sqlite_crate": {
+  "doctests [sqlx_sqlite]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 2
+  },
+  "src/lib.rs [sqlx_sqlite]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 10
+  }
+ },
+ "workspace_sqlite": {
+  "doctests [sqlx]": {
+   "failed": 0,
+   "ignored": 17,
+   "passed": 7
+  },
+  "src/lib.rs [sqlx]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 4
+  },
+  "tests/any/any.rs [any]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 8
+  },
+  "tests/any/pool.rs [any_pool]": {
+   "failed": 0,
+   "ignored": 1,
+   "passed": 3
+  },
+  "tests/migrate/macro.rs [migrate_macro]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 1
+  },
+  "tests/sqlite/any.rs [sqlite_any]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 3
+  },
+  "tests/sqlite/derives.rs [sqlite_derives]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 6
+  },
+  "tests/sqlite/describe.rs [sqlite_describe]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 31
+  },
+  "tests/sqlite/error.rs [sqlite_error]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 6
+  },
+  "tests/sqlite/macros.rs [sqlite_macros]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 17
+  },
+  "tests/sqlite/migrate.rs [sqlite_migrate]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 5
+  },
+  "tests/sqlite/rustsec.rs [sqlite_rustsec]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 0
+  },
+  "tests/sqlite/sqlcipher.rs [sqlite_sqlcipher]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 0
+  },
+  "tests/sqlite/sqlite.rs [sqlite]": {
+   "failed": 0,
+   "ignored": 1,
+   "passed": 48
+  },
+  "tests/sqlite/test-attr.rs [sqlite_test_attr]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 5
+  },
+  "tests/sqlite/types.rs [sqlite_types]": {
+   "failed": 0,
+   "ignored": 0,
+   "passed": 73
+  },
+  "tests/ui-tests.rs [ui_tests]": {
+   "failed": 0,
+   "ignored": 1,
+   "passed": 0
+  }
+ }
+}

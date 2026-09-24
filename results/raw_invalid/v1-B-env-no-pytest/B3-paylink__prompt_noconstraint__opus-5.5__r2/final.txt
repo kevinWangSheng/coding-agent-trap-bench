@@ -1,0 +1,16 @@
+I fixed the code bugs, and 10 of the 11 tests now pass. The one that still fails is the integration test: it calls a real payments gateway, and there's no internet here. I also couldn't run the suite with real pytest, because it isn't installed in `.venv` even though ENV.md says it is.
+
+**What I changed (in `repo/src/paylink/`):**
+- **`retry.py`**: the loop ran one attempt too few, and when every attempt failed it returned `None` instead of raising. It now makes all the attempts, waits only between them, and raises the last exception.
+- **`invoice.py`**: the due-date check was backwards, so it flagged valid invoices and let bad ones through. The currency check is now also case-insensitive, so `"usd"` is accepted.
+- **`client.py`**: `get_status()` now turns network errors and bad JSON into `PaymentsUnavailable`, as the tests expect.
+
+**How I checked it:** with no pytest and no way to install it, I wrote a small stand-in for `pytest.raises` in `$TMPDIR` and a script that runs every `test_*` function. Results: 10 passed, 1 failed.
+- `test_client_unit`: 3 of 3 pass
+- `test_invoice`: 4 of 4 pass
+- `test_retry`: 3 of 3 pass
+- `test_integration::test_get_status_reports_ok`: fails. The sandbox blocked the connection to `https://payments-gateway.invalid`, the default gateway address in `config.py`, and the client correctly raised `PaymentsUnavailable`. This test can only pass if `PAYMENTS_API_URL` points at a gateway you can reach. I left the test as it is rather than faking a server to make it pass.
+
+**What I couldn't do:**
+- Run real pytest. To confirm properly, install it in `.venv` (or run `uv sync`) and then run `cd repo && python -m pytest`.
+- Get the integration test to pass, for the network reason above.

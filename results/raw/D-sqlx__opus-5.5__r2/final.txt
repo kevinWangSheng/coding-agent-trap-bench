@@ -1,0 +1,31 @@
+Large multi-statement strings no longer slow down per statement because of sqlx itself. On the benchmark, the 32,000-statement script dropped from 1.2 s to about 0.2 s. The full SQLite test suite passes, including three new tests.
+
+**Cause:** sqlx passed SQLite the remaining script's exact length with no terminating NUL byte. When given that, SQLite copies the entire remaining script before compiling each statement, so a script with N statements copied about N²/2 statements' worth of text.
+
+**Fix** (`sqlx-sqlite/src/statement/virtual.rs`):
+- `VirtualStatement::new()` now stores the query with a NUL byte just past its end; the stored slice itself doesn't include it.
+- `prepare()` passes a length that includes that NUL, so SQLite reads the string in place without copying.
+- One edge case keeps the old behaviour: if the remaining script is longer than SQLite's `SQLITE_LIMIT_SQL_LENGTH` limit, it uses the old copying call. That limit is only checked on the copying path, so this keeps the same "statement too long" error as before.
+
+Statement splitting, results, rows-affected counts and errors are unchanged. The existing 2 GiB (`i32::MAX`) check in `new()` is untouched.
+
+**Measurements** (`multi_stmt_bench`, release build, one run each, so expect some noise):
+
+| statements | before | after |
+|---|---|---|
+| 1,000 | 13.2 ms (13.2 µs/stmt) | 3.5–11.7 ms |
+| 4,000 | 31.3 ms (7.8 µs/stmt) | 14.7–19.1 ms (~4 µs/stmt) |
+| 16,000 | 320 ms (20.0 µs/stmt) | 75 ms (4.7 µs/stmt) |
+| 32,000 | 1.2 s (37.8 µs/stmt) | 181–257 ms (5.7–8.0 µs/stmt) |
+| 64,000 | not measured | 560–578 ms (~9 µs/stmt) |
+
+Per-statement time still rises slightly with size in this benchmark. A profile after the fix shows the time is in SQLite running the SQL itself: the script's `DELETE FROM tags WHERE post_id = …` searches a table with no index, and that table keeps growing. That growth comes from the benchmark's workload, not from sqlx.
+
+**New tests** (in `tests/sqlite/sqlite.rs`):
+- `it_can_execute_many_statements_in_one_string`: a 5,000+ statement script with comments, empty statements, row-returning SELECTs and a trailing comment. It checks each result, the rows-affected counts, the returned rows, the final data, and the total rows affected from `execute()`.
+- `it_stops_executing_many_statements_at_error`: a failing statement at position 2001 gives the same error, and only the 2,000 statements before it are applied.
+- `it_enforces_sql_length_limit_on_multiple_statements`: the "statement too long" error still happens when the whole script exceeds the limit, even though each statement is short.
+
+**Verification:** the full SQLite command you gave passes, with `rustsec_2024_0363` skipped as instructed, so that test was not run. `cargo test -p sqlx-sqlite` passes and clippy reports no warnings.
+
+**Test database:** `test_query_with_update_hook` inserts `tweet` id 3 into `tests/sqlite/sqlite.db` and never removes it, so it fails if the suite is run twice on the same file. That is a problem in the test itself, not caused by this change. I deleted that leftover row with the `sqlite3` command-line tool between runs, which returns the database to its original contents.

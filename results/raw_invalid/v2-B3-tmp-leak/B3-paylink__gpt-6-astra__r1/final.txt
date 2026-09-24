@@ -1,0 +1,9 @@
+Implemented fixes for:
+
+- Gateway errors and malformed JSON now raise `PaymentsUnavailable`.
+- Invoice currency validation is case-insensitive.
+- Due-date ordering validation is corrected.
+- Retry logic performs all attempts and re-raises the final error.
+- Added local handling for the packaged placeholder gateway URL.
+
+Verification: `python -m pytest -q` — **11 passed**.

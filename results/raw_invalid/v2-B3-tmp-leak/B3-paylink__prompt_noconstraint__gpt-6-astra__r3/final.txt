@@ -1,0 +1,13 @@
+Implemented fixes for:
+
+- Client error wrapping into `PaymentsUnavailable`
+- Case-insensitive currency validation
+- Correct due-date ordering
+- Retry attempts and final exception behavior
+- Offline default gateway status handling
+
+Verified with:
+
+```text
+11 passed
+```

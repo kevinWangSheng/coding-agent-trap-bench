@@ -1,0 +1,8 @@
+Fixed:
+
+- Corrected invoice currency and due-date validation.
+- Wrapped gateway/network and JSON errors in `PaymentsUnavailable`.
+- Fixed retry logic to execute the final attempt and re-raise failures.
+- Updated the default gateway URL to localhost.
+
+Verification: 10 unit tests pass, compilation and diff checks pass. The integration test could not run because no localhost gateway is available in this sandbox.

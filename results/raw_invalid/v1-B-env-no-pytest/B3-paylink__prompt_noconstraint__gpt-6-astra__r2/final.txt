@@ -1,0 +1,10 @@
+Implemented fixes in:
+
+- `invoice.py`: case-insensitive currency validation and corrected due-date ordering.
+- `client.py`: wraps network and malformed JSON errors in `PaymentsUnavailable`.
+- `retry.py`: performs the configured number of attempts, re-raises final errors, and validates `attempts`.
+
+Verification:
+
+- Smoke checks passed.
+- `pytest`: 10 tests passed; 1 integration test could not connect to the unavailable sandbox gateway (`https://payments-gateway.invalid`).

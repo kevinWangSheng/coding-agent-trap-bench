@@ -1,0 +1,64 @@
+{
+  "task": "C-mcp",
+  "repo": "<BENCH>/tasks/C-new-spec/C-mcp/hidden/reference",
+  "logs": "<scratch>/final-green",
+  "build": {
+    "ok": true,
+    "rc": 0,
+    "log_tail": "\n> field-notes-mcp@1.0.0 build\n> tsc -p .\n\n"
+  },
+  "conformance": {
+    "cli": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+    "args": "server --requirements 2026-07-28",
+    "exit_code": 1,
+    "raw_summary": "Total: 115 passed, 60 failed",
+    "scored_total": 59,
+    "passed": 59,
+    "failed_count": 0,
+    "failed": {},
+    "warnings": [],
+    "ok": true
+  },
+  "hidden_tests": {
+    "total": 55,
+    "passed": 55,
+    "failed_count": 0,
+    "by_category": {
+      "app": {
+        "total": 31,
+        "passed": 31
+      },
+      "spec": {
+        "total": 24,
+        "passed": 24
+      }
+    },
+    "failed": [],
+    "ok": true
+  },
+  "stale_api": {
+    "static_hits_count": 0,
+    "static_hits": [],
+    "dynamic_reachable": true,
+    "dynamic_hits_count": 0,
+    "dynamic_hits": [],
+    "ok": true
+  },
+  "server": {
+    "started": true,
+    "per_phase": {
+      "conformance": true,
+      "hidden_tests": true,
+      "stale_api": true
+    }
+  },
+  "summary": {
+    "build": true,
+    "conformance": true,
+    "hidden_tests": true,
+    "stale_api": true,
+    "server_started": true
+  },
+  "verdict": "PASS",
+  "wall_s": 6.1
+}

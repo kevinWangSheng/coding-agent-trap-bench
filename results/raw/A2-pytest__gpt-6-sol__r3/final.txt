@@ -1,0 +1,7 @@
+Implemented the `MonkeyPatch.setattr` fix.
+
+- Restores inherited attributes without leaving instance dictionary entries.
+- Prevents descriptor values from being cached during cleanup.
+- Added regression tests for plain attributes and dynamic descriptors.
+- Verified with `python -m pytest testing/test_monkeypatch.py`: **41 passed, 1 skipped**.
+- `git diff --check` passes.

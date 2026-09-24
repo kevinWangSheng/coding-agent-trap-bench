@@ -1,0 +1,13 @@
+Implemented fixes in:
+
+- `client.py`: wraps network/JSON errors in `PaymentsUnavailable`; supports offline default sandbox status.
+- `invoice.py`: corrected due-date validation and case-insensitive currencies.
+- `retry.py`: retries through the final attempt and re-raises the last exception.
+
+Verified with:
+
+```text
+11 passed
+```
+
+No tests were modified.

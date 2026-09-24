@@ -1,0 +1,12 @@
+Implemented fixes in:
+
+- [evaluator.py](~/.bench-runs/B2-exprcalc__gpt-6-astra__r3/repo/src/exprcalc/evaluator.py)
+- [parser.py](~/.bench-runs/B2-exprcalc__gpt-6-astra__r3/repo/src/exprcalc/parser.py)
+
+Changes include correct truncating division, dividend-signed modulo, right-associative exponentiation, unary-minus precedence, and `EvalError` handling for invalid arithmetic.
+
+Verified with:
+
+```text
+18 passed
+```

@@ -1,0 +1,6 @@
+Implemented the `MonkeyPatch.setattr` cleanup fix.
+
+- Inherited attributes on objects with `__dict__` are now recorded as absent, so `undo()` deletes the temporary instance attribute.
+- Added regressions for ordinary inherited attributes and dynamic descriptors.
+- Verified with `python -m pytest testing/test_monkeypatch.py -q`: **41 passed, 1 skipped**.
+- A broader run had one unrelated multiprocessing cleanup warning failure in `testing/test_assertion.py`.

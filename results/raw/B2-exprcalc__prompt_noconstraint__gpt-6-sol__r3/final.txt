@@ -1,0 +1,8 @@
+Implemented fixes in `repo`:
+
+- Corrected power precedence and right associativity.
+- Implemented truncation-toward-zero division.
+- Implemented dividend-sign modulo behavior.
+- Converted division by zero and negative exponents to `EvalError`.
+
+Verification: `python -m pytest -q` — **18 tests passed**.

@@ -1,0 +1,211 @@
+{
+ "meta": {
+  "run_id": "C-mcp__gpt-6-sol__r2",
+  "task": "C-mcp",
+  "model": "gpt-6-sol",
+  "rep": 2,
+  "prompt_file": "prompt.md",
+  "rc": 0,
+  "timed_out": false,
+  "wall_s": 281.6,
+  "reconnects": 1,
+  "cli_version": "codex-cli 0.156.1"
+ },
+ "usage": {
+  "input": 1138111,
+  "output": 10358,
+  "reasoning": 2212
+ },
+ "audit": {
+  "tool_calls": 31,
+  "leak_hits": [],
+  "network_attempts": []
+ },
+ "grade": {
+  "task": "C-mcp",
+  "repo": "~/.bench-runs/C-mcp__gpt-6-sol__r2/repo",
+  "logs": "<BENCH>/results/raw/C-mcp__gpt-6-sol__r2/c-grade",
+  "build": {
+   "ok": true,
+   "rc": 0,
+   "log_tail": "\n> field-notes-mcp@1.0.0 build\n> tsc -p .\n\n"
+  },
+  "conformance": {
+   "cli": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+   "args": "server --requirements 2026-07-28",
+   "exit_code": 1,
+   "raw_summary": "Total: 105 passed, 69 failed",
+   "scored_total": 59,
+   "passed": 51,
+   "failed_count": 8,
+   "failed": {
+    "http-custom-header-server-validation:sep-2243-server-decode-base64": {
+     "status": "FAILURE",
+     "message": "Expected successful response, but body contains JSON-RPC error {\"code\":-32020,\"message\":\"Header mismatch\",\"data\":{\"header\":\"Mcp-Param-Notebook\"}}."
+    },
+    "http-custom-header-server-validation:sep-2243-server-reject-invalid-param-chars": {
+     "status": "FAILURE",
+     "message": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request."
+    },
+    "http-custom-header-server-validation:sep-2243-server-reject-param-mismatch": {
+     "status": "FAILURE",
+     "message": "Expected JSON-RPC error code -32020 (HeaderMismatch), got (missing)."
+    },
+    "http-custom-header-server-validation:sep-2243-server-validate-param-match": {
+     "status": "FAILURE",
+     "message": "Expected HTTP 400, got 200. Server MUST reject with 400 Bad Request."
+    },
+    "server-stateless:sep-2575-request-meta-invalid-missing-meta": {
+     "status": "FAILURE",
+     "message": "Expected error code -32602, got -32020"
+    },
+    "server-stateless:sep-2575-request-meta-invalid-missing-protocol-version": {
+     "status": "FAILURE",
+     "message": "Expected error code -32602, got -32020"
+    },
+    "server-stateless:sep-2575-server-declares-prompts-in-discover": {
+     "status": "FAILURE",
+     "message": "Server handles prompts but did not declare prompts capability in discover result"
+    },
+    "server-stateless:sep-2575-server-unsupported-version-error": {
+     "status": "FAILURE",
+     "message": "Returned supported versions data layout does not correlate to active server metrics: undefined"
+    }
+   },
+   "warnings": [
+    "sep-2164-resource-not-found:sep-2164-data-uri"
+   ],
+   "ok": false
+  },
+  "hidden_tests": {
+   "total": 55,
+   "passed": 35,
+   "failed_count": 20,
+   "by_category": {
+    "app": {
+     "total": 31,
+     "passed": 19
+    },
+    "spec": {
+     "total": 24,
+     "passed": 16
+    }
+   },
+   "failed": [
+    {
+     "name": "app: discover identifies field-notes 1.0.0 with instructions and capabilities",
+     "message": "prompts capability"
+    },
+    {
+     "name": "app: add_note ids are sequential and never reused",
+     "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1007,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: unknown tool is a protocol error -32602",
+     "message": "Expected values to be strictly equal:\n\n-32601 !== -32602"
+    },
+    {
+     "name": "app: delete_note asks for confirmation with an input_required result",
+     "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1053,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: delete_note deletes after the user accepts",
+     "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1055,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: delete_note decline, cancel or confirm:false keeps the note",
+     "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1057,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: delete_note without elicitation capability is -32021 (HTTP 400)",
+     "message": "Expected values to be strictly equal:\n\n200 !== 400"
+    },
+    {
+     "name": "app: a confirmation for one note cannot delete another",
+     "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1063,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: a tampered or forged requestState is rejected",
+     "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1065,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: subscriptions deliver resource updates for watched URIs",
+     "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1068,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: subscriptions only notify watchers of the changed URI",
+     "message": "tools/call: expected a result, got HTTP 200: {&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1072,&quot;error&quot;:{&quot;code&quot;:-32021,&quot;message&quot;:&quot;Missing required client capability&quot;,&quot;data&quot;:{&quot;requiredCapabilities&quot;:[&quot;elicitation.form&quot;]}}}"
+    },
+    {
+     "name": "app: acknowledgment omits list-change types the server does not offer",
+     "message": "Expected &quot;actual&quot; to be strictly unequal to: true"
+    },
+    {
+     "name": "spec: missing required _meta fields -> 400 / -32602",
+     "message": "no _meta\n\n-32020 !== -32602"
+    },
+    {
+     "name": "spec: unsupported protocol version -> 400 / -32022 with supported list",
+     "message": "2025-11-25"
+    },
+    {
+     "name": "spec: MCP-Protocol-Version header missing or mismatched -> 400 / -32020",
+     "message": "Expected values to be strictly equal:\n\n-32602 !== -32020"
+    },
+    {
+     "name": "spec: base64-encoded Mcp-Name is decoded before comparison",
+     "message": "{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1031,&quot;error&quot;:{&quot;code&quot;:-32020,&quot;message&quot;:&quot;Header mismatch&quot;,&quot;data&quot;:{&quot;header&quot;:&quot;Mcp-Name&quot;}}}\n\n400 !== 200"
+    },
+    {
+     "name": "spec: Mcp-Param-Notebook must be present and match the body",
+     "message": "Expected values to be strictly equal:\n\n200 !== 400"
+    },
+    {
+     "name": "spec: Mcp-Param-Notebook base64 values are decoded before comparison",
+     "message": "The expression evaluated to a falsy value:\n\n  assert.ok(ok.response?.result && !ok.response.result.isError)"
+    },
+    {
+     "name": "spec: no GET/DELETE endpoint (405)",
+     "message": "GET\n\n404 !== 405"
+    },
+    {
+     "name": "spec: client notifications are accepted with 202 and no body",
+     "message": "Expected values to be strictly equal:\n\n400 !== 202"
+    }
+   ],
+   "ok": false
+  },
+  "stale_api": {
+   "static_hits_count": 0,
+   "static_hits": [],
+   "dynamic_reachable": true,
+   "dynamic_hits_count": 0,
+   "dynamic_hits": [],
+   "ok": true
+  },
+  "server": {
+   "started": true,
+   "per_phase": {
+    "conformance": true,
+    "hidden_tests": true,
+    "stale_api": true
+   }
+  },
+  "summary": {
+   "build": true,
+   "conformance": false,
+   "hidden_tests": false,
+   "stale_api": true,
+   "server_started": true
+  },
+  "verdict": "FAIL",
+  "wall_s": 6.1
+ },
+ "review": {
+  "changed_files": [
+   "src/server.ts",
+   "test/server.test.ts"
+  ],
+  "changed_outside_src": []
+ }
+}

@@ -1,0 +1,19 @@
+Implemented a SQLite multi statement preparation optimization in [virtual.rs](~/.bench-runs/D-sqlx__gpt-6-astra__r2/repo/sqlx-sqlite/src/statement/virtual.rs).
+
+- Added SQL aware statement boundary detection that ignores semicolons in strings, identifiers, and comments.
+- SQLite now prepares each statement using only its own SQL slice, avoiding repeated scans of the remaining script.
+- Trigger statements retain the existing full parser behavior.
+- Added focused unit tests.
+
+Measured benchmark results:
+
+- 1,000 statements: 65.8 ms → 4.9 ms
+- 4,000 statements: 634.5 ms → 14.2 ms
+- 16,000 statements: 4.0 s → 75.7 ms
+
+Verification passed:
+
+- SQLite-specific unit tests.
+- Full requested SQLite test suite, excluding `rustsec_2024_0363`.
+- `cargo fmt` and `git diff --check`.
+

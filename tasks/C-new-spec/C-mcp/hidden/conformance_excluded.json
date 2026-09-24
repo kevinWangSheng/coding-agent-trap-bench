@@ -1,0 +1,242 @@
+{
+ "completion-complete:completion-complete": {
+  "status": "FAILURE",
+  "message": "Failed: Method not found: completion/complete"
+ },
+ "completion-complete:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "input-required-result-basic-elicitation:sep-2322-elicitation-incomplete": {
+  "status": "FAILURE",
+  "message": "JSON-RPC error: Unknown tool: test_input_required_result_elicitation"
+ },
+ "input-required-result-basic-elicitation:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "input-required-result-basic-list-roots:sep-2322-list-roots-incomplete": {
+  "status": "FAILURE",
+  "message": "JSON-RPC error: Unknown tool: test_input_required_result_list_roots"
+ },
+ "input-required-result-basic-list-roots:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "input-required-result-basic-sampling:sep-2322-sampling-incomplete": {
+  "status": "FAILURE",
+  "message": "JSON-RPC error: Unknown tool: test_input_required_result_sampling"
+ },
+ "input-required-result-basic-sampling:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "input-required-result-capability-check:sep-2322-respect-client-capabilities": {
+  "status": "FAILURE",
+  "message": "JSON-RPC error: Unknown tool: test_input_required_result_capabilities"
+ },
+ "input-required-result-capability-check:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "input-required-result-ignore-extra-params:sep-2322-ignore-unexpected-params": {
+  "status": "WARNING",
+  "message": "Server returned JSON-RPC error when extra params were included: Unknown tool: test_input_required_result_elicitation. Servers SHOULD ignore unrecognized information."
+ },
+ "input-required-result-ignore-extra-params:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "input-required-result-missing-input-response:sep-2322-missing-response-rerequests": {
+  "status": "WARNING",
+  "message": "Server returned JSON-RPC error instead of re-requesting via InputRequiredResult. SEP-2322 recommends servers re-request missing information."
+ },
+ "input-required-result-missing-input-response:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "input-required-result-multi-round:sep-2322-multi-round-r1": {
+  "status": "FAILURE",
+  "message": "Expected InputRequiredResult with inputRequests and requestState"
+ },
+ "input-required-result-multi-round:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "input-required-result-multiple-input-requests:sep-2322-multiple-inputs-incomplete": {
+  "status": "FAILURE",
+  "message": "JSON-RPC error: Unknown tool: test_input_required_result_multiple_inputs"
+ },
+ "input-required-result-multiple-input-requests:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "input-required-result-non-tool-request:sep-2322-non-tool-incomplete": {
+  "status": "FAILURE",
+  "message": "JSON-RPC error: Unknown prompt: test_input_required_result_prompt"
+ },
+ "input-required-result-non-tool-request:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "input-required-result-request-state:sep-2322-request-state-incomplete": {
+  "status": "FAILURE",
+  "message": "JSON-RPC error: Unknown tool: test_input_required_result_request_state"
+ },
+ "input-required-result-request-state:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "input-required-result-result-type:sep-2322-result-type-included": {
+  "status": "FAILURE",
+  "message": "JSON-RPC error: Unknown tool: test_input_required_result_elicitation"
+ },
+ "input-required-result-result-type:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "input-required-result-tampered-state:sep-2322-reject-tampered-state": {
+  "status": "FAILURE",
+  "message": "Prerequisite failed: could not get initial InputRequiredResult with requestState"
+ },
+ "input-required-result-tampered-state:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "prompts-get-embedded-resource:prompts-get-embedded-resource": {
+  "status": "FAILURE",
+  "message": "Failed: Unknown prompt: test_prompt_with_embedded_resource"
+ },
+ "prompts-get-embedded-resource:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "prompts-get-simple:prompts-get-simple": {
+  "status": "FAILURE",
+  "message": "Failed: Unknown prompt: test_simple_prompt"
+ },
+ "prompts-get-simple:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "prompts-get-with-args:prompts-get-with-args": {
+  "status": "FAILURE",
+  "message": "Failed: Unknown prompt: test_prompt_with_arguments"
+ },
+ "prompts-get-with-args:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "prompts-get-with-image:prompts-get-with-image": {
+  "status": "FAILURE",
+  "message": "Failed: Unknown prompt: test_prompt_with_image"
+ },
+ "prompts-get-with-image:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "resources-read-binary:resources-read-binary": {
+  "status": "FAILURE",
+  "message": "Failed: Resource not found"
+ },
+ "resources-read-binary:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "resources-read-text:resources-read-text": {
+  "status": "FAILURE",
+  "message": "Failed: Resource not found"
+ },
+ "resources-read-text:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "resources-templates-read:resources-templates-read": {
+  "status": "FAILURE",
+  "message": "Failed: Resource not found"
+ },
+ "resources-templates-read:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "server-stateless:sep-2575-http-server-no-independent-requests-on-stream": {
+  "status": "FAILURE",
+  "message": "Not testable: server does not list the diagnostic tool 'test_streaming_elicitation' in tools/list, so the response stream could not be exercised"
+ },
+ "server-stateless:sep-2575-missing-capability-http-400": {
+  "status": "FAILURE",
+  "message": "Not testable: server does not list the diagnostic tool 'test_missing_capability' in tools/list, so the -32021 HTTP status could not be validated"
+ },
+ "server-stateless:sep-2575-server-no-log-without-loglevel": {
+  "status": "FAILURE",
+  "message": "Not testable: server does not list the diagnostic tool 'test_logging_tool' in tools/list, so the no-log-without-logLevel requirement could not be exercised"
+ },
+ "server-stateless:sep-2575-server-rejects-undeclared-capability": {
+  "status": "FAILURE",
+  "message": "Not testable: server does not list the diagnostic tool 'test_missing_capability' in tools/list and the probe call did not exercise it (required for the undeclared-capability rejection)"
+ },
+ "server-stateless:sep-2575-server-sends-prompts-list-changed-on-subscription": {
+  "status": "SKIPPED",
+  "message": ""
+ },
+ "server-stateless:sep-2575-server-sends-tools-list-changed-on-subscription": {
+  "status": "SKIPPED",
+  "message": ""
+ },
+ "tools-call-audio:tools-call-audio": {
+  "status": "FAILURE",
+  "message": "Failed: Unknown tool: test_audio_content"
+ },
+ "tools-call-audio:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "tools-call-embedded-resource:tools-call-embedded-resource": {
+  "status": "FAILURE",
+  "message": "Failed: Unknown tool: test_embedded_resource"
+ },
+ "tools-call-embedded-resource:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "tools-call-error:tools-call-error": {
+  "status": "FAILURE",
+  "message": "Failed: Unknown tool: test_error_handling"
+ },
+ "tools-call-error:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "tools-call-image:tools-call-image": {
+  "status": "FAILURE",
+  "message": "Failed: Unknown tool: test_image_content"
+ },
+ "tools-call-image:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "tools-call-mixed-content:tools-call-mixed-content": {
+  "status": "FAILURE",
+  "message": "Failed: Unknown tool: test_multiple_content_types"
+ },
+ "tools-call-mixed-content:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "tools-call-simple-text:tools-call-simple-text": {
+  "status": "FAILURE",
+  "message": "Failed: Unknown tool: test_simple_text"
+ },
+ "tools-call-simple-text:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ },
+ "tools-call-with-progress:tools-call-with-progress": {
+  "status": "FAILURE",
+  "message": "Failed: Unknown tool: test_tool_with_progress"
+ },
+ "tools-call-with-progress:wire-schema-valid": {
+  "status": "SUCCESS",
+  "message": "wire-schema-valid of a fixture-only scenario"
+ }
+}
